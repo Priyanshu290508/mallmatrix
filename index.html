@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MallMatrix — Mall Inventory & Stock Management Platform</title>
+  <meta name="description" content="MallMatrix: Enterprise Mall Inventory Management System with automated reordering, AI Copilot, POS sales analytics, staff duty rosters, and tenant store management.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- MOBILE OVERLAY BACKDROP -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="sidebar" id="sidebar">
+      <!-- SIDEBAR BRAND HEADER (Only Logo and Name) -->
+      <div class="sidebar-brand-header">
+        <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="brand-logo-img">
+        <div class="brand-title">Mall<span class="brand-highlight">Matrix</span></div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <!-- CREATE NEW REORDER / PO BUTTON (Styled in Mint Green Pill) -->
+      <div class="sidebar-action-wrap">
+        <button class="btn-create-order" id="sidebarCreateOrderBtn">
+          <span class="create-order-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </span>
+          <span>Create New Order</span>
+        </button>
+      </div>
+
+      <!-- SIDEBAR NAVIGATION MENU (Exact Project Features) -->
+      <nav class="sidebar-menu" aria-label="Main Navigation">
+        <!-- 1. Dashboard (Active Solid Green Pill) -->
+        <button class="menu-item active" data-view="dashboard" id="nav-dashboard">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+          </div>
+          <span class="menu-label">Dashboard</span>
+        </button>
+
+        <!-- 2. Inventory -->
+        <button class="menu-item" data-view="inventory" id="nav-inventory">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </div>
+          <span class="menu-label">Inventory</span>
+        </button>
+
+        <!-- 3. Reordering System -->
+        <button class="menu-item" data-view="reorder" id="nav-reorder">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/><path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3"/></svg>
+          </div>
+          <span class="menu-label">Reordering System</span>
+        </button>
+
+        <!-- 4. Sales Manage -->
+        <button class="menu-item" data-view="sales" id="nav-sales">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <span class="menu-label">Manage Sales</span>
+        </button>
+
+        <!-- 5. Staff Management -->
+        <button class="menu-item" data-view="staff" id="nav-staff">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <span class="menu-label">Staff Management</span>
+        </button>
+
+        <!-- 6. Tenant Stores -->
+        <button class="menu-item" data-view="tenants" id="nav-tenants">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <span class="menu-label">Tenant Stores</span>
+        </button>
+
+        <!-- 7. AI Copilot -->
+        <button class="menu-item copilot-item" data-view="copilot" id="nav-copilot">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+          </div>
+          <span class="menu-label">AI Copilot</span>
+          <span class="badge-copilot">Smart</span>
+        </button>
+
+        <!-- Inventory Settings -->
+        <button class="menu-item" id="nav-settings" onclick="MallApp.showToast('MallMatrix Settings: 48 Stores Integrated & Active', 'info')">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <span class="menu-label">Inventory Settings</span>
+        </button>
+
+        <!-- User Details at the Bottom of Sidebar -->
+        <div class="sidebar-user-footer">
+          <div class="user-footer-avatar-wrap">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80" alt="Alex Rivera" class="user-footer-avatar">
+            <span class="user-footer-online-dot"></span>
+          </div>
+          <div class="user-footer-info">
+            <div class="user-footer-name">Alex Rivera</div>
+            <div class="user-footer-role">Mall Operations Lead</div>
+          </div>
+          <button class="user-footer-logout-btn" title="Log Out" onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT AREA ==================== -->
+    <main class="main-content">
+      <!-- TOP HEADER (Clean White with Date & Log out) -->
+      <header class="dashboard-header">
+        <div class="header-left">
+          <button class="mobile-toggle-btn" id="mobileMenuBtn" aria-label="Open Navigation">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="welcome-title-wrap">
+            <h1 class="welcome-title" id="pageMainTitle">Welcome To Stock Management</h1>
+            <button class="icon-edit-btn title-edit-btn" title="Edit View Title" aria-label="Edit title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Calendar Date Pill -->
+          <div class="header-date-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="headerLiveDate">24th March 2026</span>
+          </div>
+
+          <!-- Log out Button -->
+          <button class="header-logout-btn" id="headerLogoutBtn" onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Log out</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 1: DASHBOARD (Orchestrator Summary, KPI Cards, Sales Trend & Agents) -->
+      <!-- ======================================================= -->
+      <div class="view-panel active" id="view-dashboard">
+        <!-- 1. ORCHESTRATOR SUMMARY BANNER -->
+        <div class="dash-card orchestrator-summary-card">
+          <div class="orch-header-row">
+            <div class="orch-title-wrap">
+              <div class="orch-status-pill">
+                <span class="orch-pulse-indicator"></span>
+                <span>AUTONOMOUS AGENT MESH ACTIVE</span>
+              </div>
+              <h2 class="orch-card-title">ORCHESTRATOR SUMMARY</h2>
+              <p class="orch-description">Central intelligence core orchestrating inventory buffers, POS telemetry streams, automated PO reorders, and tenant compliance.</p>
+            </div>
+            <div class="orch-action-btns">
+              <button class="btn-orch-secondary" onclick="MallApp.showToast('Full Mesh Diagnostic Passed: 48 Stores in Sync', 'success')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Run System Health Audit</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="orch-metrics-strip">
+            <div class="orch-metric-box">
+              <span class="orch-metric-label">System Synchronicity</span>
+              <div class="orch-metric-val">99.8% <span class="tag-badge tag-green">Optimal</span></div>
+              <span class="orch-metric-sub">Zero telemetry drops across 48 stores</span>
+            </div>
+            <div class="orch-metric-box">
+              <span class="orch-metric-label">Autonomous Sub-Agents</span>
+              <div class="orch-metric-val">5 Active <span class="tag-badge tag-cyan">Connected</span></div>
+              <span class="orch-metric-sub">Inventory, Sales, Tenants, Staff, Reorder</span>
+            </div>
+            <div class="orch-metric-box">
+              <span class="orch-metric-label">Stock Replenishment Triggers</span>
+              <div class="orch-metric-val">12 Auto-POs <span class="tag-badge tag-purple">In-Flight</span></div>
+              <span class="orch-metric-sub">Auto-replenishing 14 buffer breaches</span>
+            </div>
+            <div class="orch-metric-box">
+              <span class="orch-metric-label">Predicted Day Footfall</span>
+              <div class="orch-metric-val">38,420 <span class="tag-badge tag-amber">+14.2% Peak</span></div>
+              <span class="orch-metric-sub">Estimated retail spending: $240K+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. KPI CARDS & SALES TREND GRAPH SECTION -->
+        <div class="dashboard-section-block">
+          <div class="section-badge-header">
+            <h3 class="section-label-text">KPI Cards</h3>
+          </div>
+
+          <div class="kpi-sales-layout-grid">
+            <!-- LEFT: 3 KPI Cards Column -->
+            <div class="kpi-cards-column">
+              <!-- KPI Card 1: Revenue -->
+              <div class="dash-card kpi-item-card kpi-revenue">
+                <div class="kpi-card-header">
+                  <div class="kpi-icon-wrap icon-rev">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </div>
+                  <div class="kpi-title-meta">
+                    <span class="kpi-label">Revenue</span>
+                    <span class="kpi-period">Gross Today</span>
+                  </div>
+                  <span class="kpi-growth-badge positive">+18.4%</span>
+                </div>
+                <div class="kpi-value-row">
+                  <span class="kpi-main-val" id="kpiRevenueVal">$148,250.00</span>
+                </div>
+                <div class="kpi-footer-note">
+                  <span>Aggregated across 48 tenant retail POS terminals</span>
+                </div>
+              </div>
+
+              <!-- KPI Card 2: Stock-out -->
+              <div class="dash-card kpi-item-card kpi-stockout">
+                <div class="kpi-card-header">
+                  <div class="kpi-icon-wrap icon-alert">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  </div>
+                  <div class="kpi-title-meta">
+                    <span class="kpi-label">Stock-out</span>
+                    <span class="kpi-period">Inventory Thresholds</span>
+                  </div>
+                  <span class="kpi-growth-badge warning">Action Needed</span>
+                </div>
+                <div class="kpi-value-row">
+                  <span class="kpi-main-val text-warning">4 Critical Items</span>
+                  <span class="kpi-pill-tag tag-warning">12 Low Buffer</span>
+                </div>
+                <div class="kpi-footer-note">
+                  <span>Automated PO dispatched to suppliers for restock</span>
+                </div>
+              </div>
+
+              <!-- KPI Card 3: Rent Overdue -->
+              <div class="dash-card kpi-item-card kpi-rent">
+                <div class="kpi-card-header">
+                  <div class="kpi-icon-wrap icon-rent">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </div>
+                  <div class="kpi-title-meta">
+                    <span class="kpi-label">Rent Overdue</span>
+                    <span class="kpi-period">Lease Receivables</span>
+                  </div>
+                  <span class="kpi-growth-badge neutral">2 Stores</span>
+                </div>
+                <div class="kpi-value-row">
+                  <span class="kpi-main-val text-alert">$14,500.00</span>
+                  <span class="kpi-pill-tag tag-grace">Notice Sent</span>
+                </div>
+                <div class="kpi-footer-note">
+                  <span>Automated grace period advisory dispatched</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Sales Trend Graph Card -->
+            <div class="dash-card sales-trend-card">
+              <div class="trend-card-top">
+                <div>
+                  <h4 class="trend-card-title">Sales Trend graph</h4>
+                  <div class="trend-value-wrap">
+                    <span class="trend-main-amount">$30,000</span>
+                    <span class="badge-growth">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+                      +53.57%
+                    </span>
+                    <span class="trend-timeframe">Today vs 7-day baseline</span>
+                  </div>
+                </div>
+                <div class="trend-filter-pills">
+                  <span class="filter-pill active">Hourly</span>
+                  <span class="filter-pill">7 Days</span>
+                  <span class="filter-pill">30 Days</span>
+                </div>
+              </div>
+
+              <!-- Dynamic Chart Section -->
+              <div class="chart-container">
+                <div class="chart-axis-label">HOURLY TRANSACTION VELOCITY</div>
+                <div class="chart-ticks">
+                  <span>10:00</span>
+                  <span>12:00</span>
+                  <span>14:00</span>
+                  <span>16:00</span>
+                  <span class="tick-active">18:00 (Peak)</span>
+                  <span>20:00</span>
+                  <span>22:00</span>
+                </div>
+
+                <div class="svg-chart-wrap">
+                  <svg viewBox="0 0 540 180" class="smooth-wave-chart" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="waveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#5429FF" stop-opacity="0.28"/>
+                        <stop offset="100%" stop-color="#5429FF" stop-opacity="0.0"/>
+                      </linearGradient>
+                      <filter id="glowCircle" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                      </filter>
+                    </defs>
+
+                    <!-- Wave Area Fill -->
+                    <path d="M 0 135 
+                             C 45 135, 75 45, 120 45 
+                             C 150 45, 175 130, 205 130 
+                             C 235 130, 260 75, 290 100 
+                             C 320 125, 345 55, 380 55 
+                             C 410 55, 435 135, 470 135 
+                             C 495 135, 520 120, 540 120 
+                             L 540 180 L 0 180 Z" fill="url(#waveGlow)" />
+
+                    <!-- Wave Line -->
+                    <path d="M 0 135 
+                             C 45 135, 75 45, 120 45 
+                             C 150 45, 175 130, 205 130 
+                             C 235 130, 260 75, 290 100 
+                             C 320 125, 345 55, 380 55 
+                             C 410 55, 435 135, 470 135 
+                             C 495 135, 520 120, 540 120" 
+                          fill="none" stroke="#5429FF" stroke-width="3.2" stroke-linecap="round" />
+
+                    <!-- Peak Points -->
+                    <circle cx="120" cy="45" r="7" fill="#0090B5" filter="url(#glowCircle)" />
+                    <circle cx="120" cy="45" r="4" fill="#FFFFFF" />
+
+                    <circle cx="380" cy="55" r="7" fill="#5429FF" filter="url(#glowCircle)" />
+                    <circle cx="380" cy="55" r="4" fill="#FFFFFF" />
+
+                    <circle cx="540" cy="120" r="6" fill="#0090B5" />
+                  </svg>
+
+                  <div class="chart-tooltip-box" style="left: 66%; top: 12%;">
+                    <div class="tooltip-date">18:00 Peak Rush</div>
+                    <div class="tooltip-amount">$30,000 / hr</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="trend-footer-stats">
+                <div class="trend-sub-stat">
+                  <span class="stat-muted">Total Hourly Volume</span>
+                  <strong class="stat-highlight">1,420 Tx</strong>
+                </div>
+                <div class="trend-sub-stat">
+                  <span class="stat-muted">Avg Basket Value</span>
+                  <strong class="stat-highlight">$84.20</strong>
+                </div>
+                <div class="trend-sub-stat">
+                  <span class="stat-muted">Velocity Status</span>
+                  <strong class="stat-highlight text-cyan">High Inflow</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. AGENTS CARDS SECTION -->
+        <div class="dashboard-section-block">
+          <div class="section-badge-header">
+            <h3 class="section-label-text">Agents cards</h3>
+          </div>
+
+          <div class="agents-cards-grid">
+            <!-- Agent 1: Inventory Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('inventory')">
+              <div class="agent-card-header">
+                <div class="agent-icon-badge agent-inv">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                </div>
+                <div class="agent-title-info">
+                  <h4 class="agent-card-name">Inventory</h4>
+                  <span class="agent-tagline">Autonomous SKU & Buffer Monitor</span>
+                </div>
+                <span class="agent-status-badge status-active">Active</span>
+              </div>
+              <div class="agent-body-metrics">
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">18,450</span>
+                  <span class="agent-metric-name">SKUs Monitored</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">94.2%</span>
+                  <span class="agent-metric-name">In-Stock Ratio</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">14</span>
+                  <span class="agent-metric-name">Buffer Alerts</span>
+                </div>
+              </div>
+              <div class="agent-card-footer">
+                <span class="agent-cta-text">Open Inventory</span>
+                <span class="agent-arrow-icon">→</span>
+              </div>
+            </div>
+
+            <!-- Agent 2: Sales Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('sales')">
+              <div class="agent-card-header">
+                <div class="agent-icon-badge agent-sales">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div class="agent-title-info">
+                  <h4 class="agent-card-name">Sales</h4>
+                  <span class="agent-tagline">Live POS Stream & Revenue Engine</span>
+                </div>
+                <span class="agent-status-badge status-active">Active</span>
+              </div>
+              <div class="agent-body-metrics">
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">$148.2K</span>
+                  <span class="agent-metric-name">Gross Volume</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">342/hr</span>
+                  <span class="agent-metric-name">POS Velocity</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">99.8%</span>
+                  <span class="agent-metric-name">Gateway Health</span>
+                </div>
+              </div>
+              <div class="agent-card-footer">
+                <span class="agent-cta-text">Manage Sales Feed</span>
+                <span class="agent-arrow-icon">→</span>
+              </div>
+            </div>
+
+            <!-- Agent 3: Tenants Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('tenants')">
+              <div class="agent-card-header">
+                <div class="agent-icon-badge agent-tenants">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="agent-title-info">
+                  <h4 class="agent-card-name">Tenants</h4>
+                  <span class="agent-tagline">Retail Stores & Lease Compliance</span>
+                </div>
+                <span class="agent-status-badge status-active">Active</span>
+              </div>
+              <div class="agent-body-metrics">
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">48</span>
+                  <span class="agent-metric-name">Stores Active</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">100%</span>
+                  <span class="agent-metric-name">Lease Occupancy</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">Zara / Apple</span>
+                  <span class="agent-metric-name">Top Footfall</span>
+                </div>
+              </div>
+              <div class="agent-card-footer">
+                <span class="agent-cta-text">Store Directory</span>
+                <span class="agent-arrow-icon">→</span>
+              </div>
+            </div>
+
+            <!-- Agent 4: Staff Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('staff')">
+              <div class="agent-card-header">
+                <div class="agent-icon-badge agent-staff">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="agent-title-info">
+                  <h4 class="agent-card-name">Staff</h4>
+                  <span class="agent-tagline">Shift Coverage & Floor Auditors</span>
+                </div>
+                <span class="agent-status-badge status-active">Active</span>
+              </div>
+              <div class="agent-body-metrics">
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">24</span>
+                  <span class="agent-metric-name">On Active Shift</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">6</span>
+                  <span class="agent-metric-name">Floor Auditors</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">100%</span>
+                  <span class="agent-metric-name">Shift Coverage</span>
+                </div>
+              </div>
+              <div class="agent-card-footer">
+                <span class="agent-cta-text">Inspect Shift Roster</span>
+                <span class="agent-arrow-icon">→</span>
+              </div>
+            </div>
+
+            <!-- Agent 5: Reorder Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('reorder')">
+              <div class="agent-card-header">
+                <div class="agent-icon-badge agent-reorder">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/><path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3"/></svg>
+                </div>
+                <div class="agent-title-info">
+                  <h4 class="agent-card-name">Reorder</h4>
+                  <span class="agent-tagline">Automated PO Procurement Engine</span>
+                </div>
+                <span class="agent-status-badge status-active">Active</span>
+              </div>
+              <div class="agent-body-metrics">
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">8 POs</span>
+                  <span class="agent-metric-name">Dispatched Transit</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">3 POs</span>
+                  <span class="agent-metric-name">Vendor Approvals</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">1.4d</span>
+                  <span class="agent-metric-name">Avg Lead Time</span>
+                </div>
+              </div>
+              <div class="agent-card-footer">
+                <span class="agent-cta-text">Trigger PO Batch</span>
+                <span class="agent-arrow-icon">→</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 2: MANAGE STOCKS (INVENTORY FEATURE) -->
+      <!-- ======================================================= -->
+      <div class="view-panel" id="view-inventory">
+        <div class="panel-section-head">
+          <div>
+            <h2 class="section-title">Mall Multi-Tenant Stock Management</h2>
+            <p class="section-desc">Manage store SKUs, buffer thresholds, and live stock levels across all mall departments.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn-create-order" onclick="MallApp.openProductModal()">
+              <span>+ Add SKU Product</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="table-filter-bar">
+            <input type="text" id="inventorySearchInput" class="clean-search-input" placeholder="Search by SKU, product name, or tenant store...">
+            <select id="invCategoryFilter" class="clean-select">
+              <option value="all">All Departments</option>
+              <option value="Fashion">Fashion & Apparel</option>
+              <option value="Electronics">Electronics & Tech</option>
+              <option value="Footwear">Footwear & Sports</option>
+              <option value="Cosmetics">Cosmetics & Beauty</option>
+              <option value="Dining">Dining & Consumables</option>
+            </select>
+          </div>
+
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Product Details</th>
+                  <th>SKU Code</th>
+                  <th>Tenant Store</th>
+                  <th>Category</th>
+                  <th>Stock Qty</th>
+                  <th>Buffer Min</th>
+                  <th>Unit Price</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 3: REORDERING SYSTEM FEATURE -->
+      <!-- ======================================================= -->
+      <div class="view-panel" id="view-reorder">
+        <div class="panel-section-head">
+          <div>
+            <h2 class="section-title">Automated Reordering System</h2>
+            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.</p>
+          </div>
+          <button class="btn-create-order" onclick="MallApp.generateBatchReorder()">
+            <span>Batch Reorder All Low Stock</span>
+          </button>
+        </div>
+
+        <div class="dash-card">
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>PO Identifier</th>
+                  <th>Vendor / Supplier</th>
+                  <th>Requisition Items</th>
+                  <th>Target Tenant</th>
+                  <th>PO Total</th>
+                  <th>Status</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="purchaseOrdersTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 4: MANAGE SALES FEATURE -->
+      <!-- ======================================================= -->
+      <div class="view-panel" id="view-sales">
+        <div class="panel-section-head">
+          <div>
+            <h2 class="section-title">Tenant Sales & POS Terminal Inflow</h2>
+            <p class="section-desc">Consolidated mall sales reports, store terminal volume, and stock turnover.</p>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Tenant Store</th>
+                  <th>Mall Location</th>
+                  <th>Units Sold Today</th>
+                  <th>Today's Gross Sales</th>
+                  <th>Turnover Rate</th>
+                  <th>POS Status</th>
+                </tr>
+              </thead>
+              <tbody id="salesLeaderboardBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 5: STAFF MANAGEMENT FEATURE -->
+      <!-- ======================================================= -->
+      <div class="view-panel" id="view-staff">
+        <div class="panel-section-head">
+          <div>
+            <h2 class="section-title">Mall Operations Staff & Shift Roster</h2>
+            <p class="section-desc">Floor inventory auditors, dock receiving supervisors, and tenant compliance teams.</p>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Staff Name & ID</th>
+                  <th>Role</th>
+                  <th>Assigned Mall Zone</th>
+                  <th>Shift Status</th>
+                  <th>Active Audits</th>
+                  <th>Contact</th>
+                </tr>
+              </thead>
+              <tbody id="staffTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 6: TENANT STORES FEATURE -->
+      <!-- ======================================================= -->
+      <div class="view-panel" id="view-tenants">
+        <div class="panel-section-head">
+          <div>
+            <h2 class="section-title">Mall Tenant Stores Directory</h2>
+            <p class="section-desc">48 integrated retail tenants, POS sync health, and store manager contacts.</p>
+          </div>
+        </div>
+
+        <div class="tenant-grid-layout" id="tenantCardsGrid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- ======================================================= -->
+      <!-- VIEW 7: AI COPILOT FEATURE (M365 Copilot Style) -->
+      <!-- ======================================================= -->
+      <div class="view-panel" id="view-copilot">
+        <div class="copilot-m365-wrapper">
+          <!-- TOP HERO GREETING (Matches Reference Image) -->
+          <div class="copilot-m365-hero" id="copilotHeroSection">
+            <!-- 3D Multicolored Continuous Ribbon Copilot Emblem (Authentic M365 Copilot Style) -->
+            <div class="copilot-ribbon-logo-wrap">
+              <svg class="copilot-ribbon-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="copilotRibbonGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#00C4FF"/>
+                    <stop offset="45%" stop-color="#0078D4"/>
+                    <stop offset="85%" stop-color="#10B981"/>
+                    <stop offset="100%" stop-color="#FACC15"/>
+                  </linearGradient>
+                  <linearGradient id="copilotRibbonGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#F59E0B"/>
+                    <stop offset="35%" stop-color="#EF4444"/>
+                    <stop offset="70%" stop-color="#EC4899"/>
+                    <stop offset="100%" stop-color="#7C3AED"/>
+                  </linearGradient>
+                  <linearGradient id="copilotRibbonOverlap" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#F59E0B"/>
+                    <stop offset="100%" stop-color="#E11D48"/>
+                  </linearGradient>
+                  <filter id="copilotRibbonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(30, 41, 59, 0.18)"/>
+                  </filter>
+                </defs>
+                <g filter="url(#copilotRibbonGlow)">
+                  <!-- Ribbon Loop Left/Top (Cyan -> Green -> Yellow) -->
+                  <path d="M34 65C23 65 15 57 15 45C15 32 23 21 37 21C48 21 57 28 62 36L74 24C65 14 52 9 37 9C17 9 3 24 3 45C3 64 16 78 34 78C46 78 57 71 64 62L52 51C47 60 41 65 34 65Z" fill="url(#copilotRibbonGrad1)"/>
+                  <!-- Ribbon Loop Right/Bottom (Yellow -> Orange -> Magenta -> Purple) -->
+                  <path d="M66 35C77 35 85 43 85 55C85 68 77 79 63 79C52 79 43 72 38 64L26 76C35 86 48 91 63 91C83 91 97 76 97 55C97 36 84 22 66 22C54 22 43 29 36 38L48 49C53 40 59 35 66 35Z" fill="url(#copilotRibbonGrad2)"/>
+                  <!-- Center Twisted Knot Shading -->
+                  <path d="M48 49L62 36C57 28 48 21 37 21C34 21 31 22 28 23L40 37C43 40 46 44 48 49Z" fill="url(#copilotRibbonOverlap)" opacity="0.9"/>
+                </g>
+              </svg>
+            </div>
+
+            <h1 class="copilot-m365-title">Welcome to M365 Copilot</h1>
+            <p class="copilot-m365-subtitle">How can I help you today?</p>
+          </div>
+
+          <!-- PROMPT INPUT CONTAINER (Matches Reference Image) -->
+          <div class="copilot-input-container">
+            <form id="copilotChatForm" class="copilot-m365-form">
+              <div class="copilot-input-inner">
+                <textarea 
+                  id="copilotInput" 
+                  class="copilot-textarea" 
+                  rows="1" 
+                  placeholder="Use everyday words to describe what your agent should do..."
+                  aria-label="Ask Copilot"
+                ></textarea>
+
+                <div class="copilot-toolbar-row">
+                  <div class="toolbar-left-group">
+                    <button type="button" class="copilot-tool-btn" id="copilotAddBtn" title="Add data source" onclick="MallApp.showToast('Select local file, inventory catalog, or tenant CSV to attach', 'info')">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <button type="button" class="copilot-tool-btn" id="copilotImgBtn" title="Attach image" onclick="MallApp.showToast('Image recognition: upload product label or receipt', 'info')">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </button>
+                  </div>
+
+                  <div class="toolbar-right-group">
+                    <button type="button" class="copilot-tool-btn mic-btn" id="copilotMicBtn" title="Voice dictation" onclick="MallApp.showToast('Voice listening active: speak query...', 'info')">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    </button>
+                    <button type="submit" class="copilot-send-pill-btn" id="copilotSendBtn" aria-label="Send query">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- 3 SUGGESTION PROMPT CARDS (Matches Reference Image) -->
+          <div class="copilot-prompt-cards-grid" id="copilotCardsGrid">
+            <!-- Card 1: Analyze data trends -->
+            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Analyze data trends: Review quarterly performance and identify key insights across mall stores')">
+              <div class="action-card-sparkle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+              </div>
+              <div class="action-card-content">
+                <h3 class="action-card-title">Analyze data trends</h3>
+                <p class="action-card-desc">Review quarterly performance and identify key insights</p>
+              </div>
+            </div>
+
+            <!-- Card 2: Draft a proposal -->
+            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Draft a proposal: Create a professional business proposal for tenant inventory reordering')">
+              <div class="action-card-sparkle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+              </div>
+              <div class="action-card-content">
+                <h3 class="action-card-title">Draft a proposal</h3>
+                <p class="action-card-desc">Create a professional business proposal for new clients</p>
+              </div>
+            </div>
+
+            <!-- Card 3: Summarize documents -->
+            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Summarize documents: Get concise summaries of lengthy reports and retail stock files')">
+              <div class="action-card-sparkle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+              </div>
+              <div class="action-card-content">
+                <h3 class="action-card-title">Summarize documents</h3>
+                <p class="action-card-desc">Get concise summaries of lengthy reports and files</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONVERSATION STREAM (When user enters query) -->
+          <div class="copilot-thread-stream" id="copilotChatMessages">
+            <!-- Messages append here dynamically -->
+          </div>
+
+          <!-- RESET / NEW TOPIC BUTTON -->
+          <div class="copilot-thread-footer" id="copilotThreadFooter" style="display: none;">
+            <button type="button" class="btn-new-topic" onclick="MallApp.resetCopilotChat()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>New Topic</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FIXED AI COPILOT ACTION BUTTON (Fixed in bottom right corner of screen on Dashboard) -->
+      <button class="floating-copilot-pill" id="floatingCopilotBtn" onclick="MallApp.switchView('copilot')" title="Consult MallMatrix AI Copilot">
+        <span class="copilot-glow-ring"></span>
+        <span class="copilot-sparkle-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+        </span>
+        <span class="copilot-floating-text">AI Copilot</span>
+      </button>
+
+    </main>
+
+    <!-- CREATE ORDER / ADD SKU MODAL -->
+    <div class="modal-backdrop" id="newProductModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 class="modal-title">Create New Order / Product</h3>
+          <button class="modal-close-btn" id="closeProductModalBtn">&times;</button>
+        </div>
+        <form id="newProductForm" class="modal-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prodName">Product / Order Title</label>
+              <input type="text" id="prodName" required placeholder="e.g. Wireless Audio Headset">
+            </div>
+            <div class="form-group">
+              <label for="prodSKU">SKU Identifier</label>
+              <input type="text" id="prodSKU" required placeholder="e.g. SKU-AUD-108">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prodTenant">Target Tenant Store</label>
+              <select id="prodTenant" required>
+                <option value="Zara Flagship">Zara Flagship (#204)</option>
+                <option value="Apple Store">Apple Store (#101)</option>
+                <option value="Nike Experience">Nike Experience (#112)</option>
+                <option value="Sephora Luxury">Sephora Luxury (#108)</option>
+                <option value="H&M Retail">H&M Retail (#201)</option>
+                <option value="Starbucks Reserve">Starbucks Reserve (#G-05)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prodCategory">Department</label>
+              <select id="prodCategory" required>
+                <option value="Electronics">Electronics & Tech</option>
+                <option value="Fashion">Fashion & Apparel</option>
+                <option value="Footwear">Footwear & Sports</option>
+                <option value="Cosmetics">Cosmetics & Beauty</option>
+                <option value="Dining">Dining & Consumables</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prodQty">Quantity</label>
+              <input type="number" id="prodQty" min="1" required placeholder="50">
+            </div>
+            <div class="form-group">
+              <label for="prodMinBuffer">Safety Buffer</label>
+              <input type="number" id="prodMinBuffer" min="1" required placeholder="15">
+            </div>
+            <div class="form-group">
+              <label for="prodPrice">Unit Price ($)</label>
+              <input type="number" id="prodPrice" step="0.01" min="0" required placeholder="120.00">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="clean-btn" id="cancelProductModalBtn">Cancel</button>
+            <button type="submit" class="btn-create-order">Submit Order</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
