@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MallMatrix — Orchestrate Your Mall's Inventory Instantly and Effortlessly</title>
+  <meta name="description" content="Real-time POS telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs before they happen and run your whole mall from one dashboard.">
+  <link rel="icon" type="image/jpeg" href="./mallmatrix_logo.jpg">
+
+  <!-- Google Fonts: Manrope (UI), Cabin (Buttons & Tags), Instrument Serif (Headline), Inter (Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Standalone Landing Stylesheet (strictly isolated) -->
+  <link rel="stylesheet" href="./landing.css">
+</head>
+<body class="lp-root" id="top">
+  <!-- ========================================================
+       HERO SECTION (Full-Screen, Uncut Background Video)
+       ======================================================== -->
+  <section class="lp-hero" aria-label="Hero Section">
+    <!-- Uncut, Opaque Background Video -->
+    <video class="lp-video-bg" autoplay loop muted playsinline aria-hidden="true">
+      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260210_031346_d87182fb-b0af-4273-84d1-c6fd17d6bf0f.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+
+    <!-- Top Overlay Navbar -->
+    <header class="lp-navbar">
+      <!-- White Inline SVG Logo Wordmark -->
+      <a href="#top" class="lp-logo" aria-label="MallMatrix Home">
+        <svg class="lp-logo-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="2" y="2" width="10" height="10" rx="3" fill="#FFFFFF"/>
+          <rect x="16" y="2" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8"/>
+          <rect x="2" y="16" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8"/>
+          <rect x="16" y="16" width="10" height="10" rx="3" fill="#7B39FC"/>
+        </svg>
+        <span class="lp-logo-text">MallMatrix</span>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="lp-desktop-nav" aria-label="Main Navigation">
+        <ul class="lp-nav-links">
+          <li><a href="#top" class="lp-nav-link">Home</a></li>
+          <li>
+            <a href="#features" class="lp-nav-link lp-nav-link-dropdown">
+              <span>Features</span>
+              <svg class="lp-chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </a>
+          </li>
+          <li><a href="./index.html" class="lp-nav-link">Dashboard</a></li>
+          <li><a href="#contact" class="lp-nav-link">Contact us</a></li>
+        </ul>
+      </nav>
+
+      <!-- Desktop Action Buttons -->
+      <div class="lp-nav-actions">
+        <a href="./index.html" class="lp-btn-signin">Sign In</a>
+        <a href="./index.html" class="lp-btn-getstarted">Get Started</a>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <button class="lp-hamburger-btn" id="lpHamburgerBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="lpMobileMenu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Mobile Full-Screen Overlay Menu -->
+    <div class="lp-mobile-menu" id="lpMobileMenu" role="dialog" aria-modal="true" aria-label="Mobile Navigation Menu" hidden>
+      <div class="lp-mobile-menu-inner">
+        <div class="lp-mobile-menu-header">
+          <a href="#top" class="lp-logo lp-mobile-logo" aria-label="MallMatrix Home">
+            <svg class="lp-logo-icon" width="26" height="26" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="2" width="10" height="10" rx="3" fill="#FFFFFF"/>
+              <rect x="16" y="2" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8"/>
+              <rect x="2" y="16" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8"/>
+              <rect x="16" y="16" width="10" height="10" rx="3" fill="#7B39FC"/>
+            </svg>
+            <span class="lp-logo-text">MallMatrix</span>
+          </a>
+          <button class="lp-close-btn" id="lpCloseBtn" aria-label="Close navigation menu">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <nav class="lp-mobile-nav" aria-label="Mobile Links">
+          <ul class="lp-mobile-links">
+            <li><a href="#top" class="lp-mobile-link">Home</a></li>
+            <li><a href="#features" class="lp-mobile-link">Features</a></li>
+            <li><a href="./index.html" class="lp-mobile-link">Dashboard</a></li>
+            <li><a href="#contact" class="lp-mobile-link">Contact us</a></li>
+          </ul>
+        </nav>
+
+        <div class="lp-mobile-actions">
+          <a href="./index.html" class="lp-btn-signin lp-mobile-btn">Sign In</a>
+          <a href="./index.html" class="lp-btn-getstarted lp-mobile-btn">Get Started</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centered Hero Main Content -->
+    <main class="lp-hero-content">
+      <!-- Tagline Pill -->
+      <div class="lp-tagline-pill">
+        <span class="lp-tagline-badge">New</span>
+        <span class="lp-tagline-text">Say Hello to MallMatrix Copilot</span>
+      </div>
+
+      <!-- Headline with Italic "and" -->
+      <h1 class="lp-headline">
+        Orchestrate your mall's inventory instantly <span class="lp-headline-italic">and</span> effortlessly
+      </h1>
+
+      <!-- Subtext -->
+      <p class="lp-subtext">
+        Real-time POS telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs before they happen and run your whole mall from one dashboard.
+      </p>
+
+      <!-- CTA Row -->
+      <div class="lp-cta-row">
+        <button type="button" class="lp-btn-demo" id="lpBookDemoBtn">Book a Free Demo</button>
+        <a href="./index.html" class="lp-btn-start">Get Started Now</a>
+      </div>
+    </main>
+  </section>
+
+  <!-- Interactive Demo Modal for "Book a Free Demo" -->
+  <div class="lp-modal-backdrop" id="lpDemoModal" role="dialog" aria-modal="true" aria-labelledby="lpDemoModalTitle" hidden>
+    <div class="lp-modal-card">
+      <div class="lp-modal-head">
+        <h2 id="lpDemoModalTitle" class="lp-modal-title">Book a Free MallMatrix Demo</h2>
+        <button type="button" class="lp-modal-close" id="lpDemoModalClose" aria-label="Close demo booking modal">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <p class="lp-modal-desc">See how MallMatrix manages 48+ retail stores with automated reordering and live AI Copilot telemetry.</p>
+      <form class="lp-modal-form" id="lpDemoForm">
+        <div class="lp-form-field">
+          <label for="lpDemoName" class="lp-form-label">Full Name</label>
+          <input type="text" id="lpDemoName" class="lp-form-input" placeholder="e.g. Alex Rivera" required>
+        </div>
+        <div class="lp-form-field">
+          <label for="lpDemoEmail" class="lp-form-label">Work Email</label>
+          <input type="email" id="lpDemoEmail" class="lp-form-input" placeholder="e.g. alex@grandmall.com" required>
+        </div>
+        <div class="lp-form-field">
+          <label for="lpDemoMall" class="lp-form-label">Mall / Property Name</label>
+          <input type="text" id="lpDemoMall" class="lp-form-input" placeholder="e.g. Grand Horizon Mall" required>
+        </div>
+        <button type="submit" class="lp-btn-demo lp-modal-submit">Confirm Demo Request</button>
+      </form>
+      <div class="lp-modal-success" id="lpDemoSuccess" hidden>
+        <svg class="lp-success-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#7B39FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <h3>Demo Request Confirmed!</h3>
+        <p>Our mall operations team will connect with you within 2 hours. You can also explore the live dashboard directly.</p>
+        <a href="./index.html" class="lp-btn-start" style="display:inline-block; margin-top:14px;">Open Live Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standalone Landing Script (strictly isolated) -->
+  <script type="module" src="./landing.js"></script>
+</body>
+</html>
+
