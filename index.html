@@ -772,7 +772,8 @@
         <div class="panel-section-head">
           <div>
             <h2 class="section-title">Automated Reordering System</h2>
-            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.</p>
+            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.
+            </p>
           </div>
           <!-- 1. Top-Right Primary Button for Batch Reorder -->
           <button type="button" class="btn-primary-reorder" onclick="MallApp.openBatchReorderModal()">
@@ -855,22 +856,28 @@
         <div class="panel-section-head">
           <div>
             <h2 class="section-title">Manage Sales & POS Analytics</h2>
-            <p class="section-desc">Consolidated mall sales reports, store terminal volume, turnover velocity, and live POS telemetry.</p>
+            <p class="section-desc">Consolidated mall sales reports, store terminal volume, turnover velocity, and live
+              POS telemetry.</p>
           </div>
           <!-- 1. DATE RANGE SELECTOR -->
           <div class="sales-date-selector-wrap">
             <div class="sales-date-btn-group" id="salesDateRangeGroup">
-              <button type="button" class="sales-date-btn active" data-range="today" onclick="MallApp.setSalesDateRange('today')">Today</button>
-              <button type="button" class="sales-date-btn" data-range="7d" onclick="MallApp.setSalesDateRange('7d')">7 Days</button>
-              <button type="button" class="sales-date-btn" data-range="30d" onclick="MallApp.setSalesDateRange('30d')">30 Days</button>
-              <button type="button" class="sales-date-btn" data-range="custom" onclick="MallApp.setSalesDateRange('custom')">Custom</button>
+              <button type="button" class="sales-date-btn active" data-range="today"
+                onclick="MallApp.setSalesDateRange('today')">Today</button>
+              <button type="button" class="sales-date-btn" data-range="7d" onclick="MallApp.setSalesDateRange('7d')">7
+                Days</button>
+              <button type="button" class="sales-date-btn" data-range="30d"
+                onclick="MallApp.setSalesDateRange('30d')">30 Days</button>
+              <button type="button" class="sales-date-btn" data-range="custom"
+                onclick="MallApp.setSalesDateRange('custom')">Custom</button>
             </div>
             <!-- Custom date pickers -->
             <div class="sales-custom-date-box" id="salesCustomDateBox" style="display: none;">
               <input type="date" id="salesDateStart" class="clean-date-input" value="2026-03-01">
               <span>to</span>
               <input type="date" id="salesDateEnd" class="clean-date-input" value="2026-03-24">
-              <button type="button" class="clean-btn" style="padding: 4px 10px; font-size: 0.76rem;" onclick="MallApp.applyCustomDateRange()">Apply</button>
+              <button type="button" class="clean-btn" style="padding: 4px 10px; font-size: 0.76rem;"
+                onclick="MallApp.applyCustomDateRange()">Apply</button>
             </div>
           </div>
         </div>
@@ -880,7 +887,8 @@
           <div class="sales-chart-header">
             <div>
               <h3 class="sales-chart-title">Revenue by Store</h3>
-              <p class="sales-chart-subtitle">Aggregated retail POS turnover across active mall tenants (<span id="salesChartRangeLabel">Today</span>)</p>
+              <p class="sales-chart-subtitle">Aggregated retail POS turnover across active mall tenants (<span
+                  id="salesChartRangeLabel">Today</span>)</p>
             </div>
             <div class="sales-chart-legend-wrap">
               <div class="sales-chart-legend">
@@ -919,15 +927,19 @@
                     Units Sold <span class="sales-sort-icon" id="sales-sort-unitsSold">↕</span>
                   </th>
                   <th class="sales-th-sortable" data-col="salesAmount" onclick="MallApp.sortSalesTable('salesAmount')">
-                    <span id="salesHeaderPeriodTitle">Today's Gross Sales</span> <span class="sales-sort-icon" id="sales-sort-salesAmount">↓</span>
+                    <span id="salesHeaderPeriodTitle">Today's Gross Sales</span> <span class="sales-sort-icon"
+                      id="sales-sort-salesAmount">↓</span>
                   </th>
-                  <th class="sales-th-sortable" data-col="changePct" onclick="MallApp.sortSalesTable('changePct')" style="min-width: 140px;">
+                  <th class="sales-th-sortable" data-col="changePct" onclick="MallApp.sortSalesTable('changePct')"
+                    style="min-width: 140px;">
                     7-Day Trend <span class="sales-sort-icon" id="sales-sort-changePct">↕</span>
                   </th>
-                  <th class="sales-th-sortable" data-col="turnoverRate" onclick="MallApp.sortSalesTable('turnoverRate')" style="min-width: 170px;">
+                  <th class="sales-th-sortable" data-col="turnoverRate" onclick="MallApp.sortSalesTable('turnoverRate')"
+                    style="min-width: 170px;">
                     Turnover Rate <span class="sales-sort-icon" id="sales-sort-turnoverRate">↕</span>
                   </th>
-                  <th class="sales-th-sortable" data-col="posStatus" onclick="MallApp.sortSalesTable('posStatus')" style="min-width: 150px;">
+                  <th class="sales-th-sortable" data-col="posStatus" onclick="MallApp.sortSalesTable('posStatus')"
+                    style="min-width: 150px;">
                     POS Status <span class="sales-sort-icon" id="sales-sort-posStatus">↕</span>
                   </th>
                 </tr>
@@ -1386,62 +1398,64 @@
     </aside>
 
     <!-- 1. BATCH REORDER CONFIRMATION MODAL -->
-    <div class="modal-backdrop" id="batchReorderBackdrop" onclick="MallApp.closeBatchReorderModal()"></div>
-    <div class="clean-modal-card batch-reorder-modal" id="batchReorderModal" role="dialog" aria-modal="true" aria-labelledby="batchReorderTitle">
-      <div class="modal-head">
-        <div>
-          <h3 class="modal-title" id="batchReorderTitle">Confirm Batch Reorder</h3>
-          <p class="modal-desc">Automated replenishment for all SKUs currently below safety stock buffer thresholds.</p>
+    <div class="modal-backdrop" id="batchReorderModal" onclick="if(event.target === this) MallApp.closeBatchReorderModal()">
+      <div class="modal-box batch-reorder-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title" id="batchReorderTitle">Confirm Batch Reorder</h3>
+            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Automated replenishment for all SKUs currently below safety stock buffer thresholds.</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="MallApp.closeBatchReorderModal()" aria-label="Close batch reorder modal">&times;</button>
         </div>
-        <button type="button" class="modal-close" onclick="MallApp.closeBatchReorderModal()" aria-label="Close batch reorder modal">✕</button>
-      </div>
 
-      <div class="modal-body" id="batchReorderModalBody">
-        <!-- Rendered dynamically -->
-      </div>
+        <div class="modal-body" id="batchReorderModalBody" style="margin-top: 14px;">
+          <!-- Rendered dynamically -->
+        </div>
 
-      <div class="modal-foot">
-        <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeBatchReorderModal()">Cancel</button>
-        <button type="button" class="clean-btn btn-primary" id="btnConfirmBatchReorder" onclick="MallApp.confirmBatchReorder()">
-          Confirm & Create POs
-        </button>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+          <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeBatchReorderModal()">Cancel</button>
+          <button type="button" class="btn-primary-reorder" id="btnConfirmBatchReorder" onclick="MallApp.confirmBatchReorder()">
+            Confirm & Create POs
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- 2. REJECT PO REASON MODAL -->
-    <div class="modal-backdrop" id="poRejectBackdrop" onclick="MallApp.closeRejectModal()"></div>
-    <div class="clean-modal-card po-reject-modal" id="poRejectModal" role="dialog" aria-modal="true" aria-labelledby="rejectModalTitle">
-      <div class="modal-head">
-        <div>
-          <h3 class="modal-title" id="rejectModalTitle">Reject Purchase Order</h3>
-          <p class="modal-desc">Provide a mandatory reason for rejecting this PO for procurement compliance.</p>
-        </div>
-        <button type="button" class="modal-close" onclick="MallApp.closeRejectModal()" aria-label="Close reject modal">✕</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="po-reject-summary-card" id="rejectModalSummary">
-          <!-- Populated dynamically -->
+    <div class="modal-backdrop" id="poRejectModal" onclick="if(event.target === this) MallApp.closeRejectModal()">
+      <div class="modal-box po-reject-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title" id="rejectModalTitle">Reject Purchase Order</h3>
+            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Provide a mandatory reason for rejecting this PO for procurement compliance.</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="MallApp.closeRejectModal()" aria-label="Close reject modal">&times;</button>
         </div>
 
-        <div class="form-group" style="margin-top: 14px;">
-          <label class="form-label" for="rejectModalComment">
-            Rejection Reason <span style="color: #DC2626;">*</span>
-          </label>
-          <textarea id="rejectModalComment" class="clean-textarea" rows="3" placeholder="Enter reason (e.g. price mismatch, budget freeze, duplicate order)..." required></textarea>
-          <div id="rejectModalError" class="reject-error-text" style="display: none;">A rejection reason is required before confirming.</div>
-        </div>
-      </div>
+        <div class="modal-body" style="margin-top: 14px;">
+          <div class="po-reject-summary-card" id="rejectModalSummary">
+            <!-- Populated dynamically -->
+          </div>
 
-      <div class="modal-foot">
-        <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeRejectModal()">Cancel</button>
-        <button type="button" class="clean-btn btn-danger-action" onclick="MallApp.confirmRejectPO()">Confirm Rejection</button>
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label" for="rejectModalComment" style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 6px;">
+              Rejection Reason <span style="color: #DC2626;">*</span>
+            </label>
+            <textarea id="rejectModalComment" class="clean-textarea" rows="3" placeholder="Enter reason (e.g. price mismatch, budget freeze, duplicate order)..." required style="width: 100%; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 10px; font-family: inherit; font-size: 0.84rem; resize: vertical; outline: none;"></textarea>
+            <div id="rejectModalError" class="reject-error-text" style="display: none;">A rejection reason is required before confirming.</div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+          <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeRejectModal()">Cancel</button>
+          <button type="button" class="btn-danger-action" onclick="MallApp.confirmRejectPO()" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 0.84rem; cursor: pointer; border: none;">Confirm Rejection</button>
+        </div>
       </div>
     </div>
 
     <!-- 3. PO DETAIL SLIDE-OVER DRAWER -->
-    <div class="drawer-backdrop" id="poDrawerBackdrop" onclick="MallApp.closePODetailDrawer()"></div>
-    <aside class="inv-drawer po-detail-drawer" id="poDetailDrawer" role="dialog" aria-modal="true" aria-labelledby="poDrawerTitle">
+    <div class="inv-drawer-backdrop" id="poDrawerBackdrop" onclick="MallApp.closePODetailDrawer()" aria-hidden="true"></div>
+    <aside class="inv-restock-drawer po-detail-drawer" id="poDetailDrawer" role="dialog" aria-modal="true" aria-labelledby="poDrawerTitle" aria-hidden="true" tabindex="-1">
       <div class="inv-drawer-header">
         <div class="po-drawer-title-group">
           <div class="po-drawer-id-line">

@@ -3172,10 +3172,34 @@ body {
   color: #1E293B !important;
 }
 
-/* 5. Confirmation Modal (Batch Reorder) */
+/* 5. Confirmation Modal (Batch Reorder) & Reject Modal Overlay Enforcements */
+#batchReorderModal,
+#poRejectModal {
+  display: none !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(11, 19, 48, 0.55) !important;
+  backdrop-filter: blur(4px) !important;
+  z-index: 1300 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+}
+
+#batchReorderModal.open,
+#poRejectModal.open {
+  display: flex !important;
+}
+
 .batch-reorder-modal {
   width: 720px;
   max-width: 95vw;
+  background: #FFFFFF;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .batch-modal-summary-grid {
@@ -3243,6 +3267,10 @@ body {
 .po-reject-modal {
   width: 500px;
   max-width: 95vw;
+  background: #FFFFFF;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
 }
 
 .po-reject-summary-card {
@@ -3279,9 +3307,44 @@ body {
 }
 
 /* 7. PO Detail Drawer Components */
+#poDetailDrawer,
 .po-detail-drawer {
-  width: 520px;
-  max-width: 95vw;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 520px !important;
+  max-width: 95vw !important;
+  height: 100vh !important;
+  background: #FFFFFF !important;
+  z-index: 1210 !important;
+  box-shadow: -12px 0 45px rgba(0, 0, 0, 0.18) !important;
+  transform: translateX(100%) !important;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  outline: none !important;
+}
+
+#poDetailDrawer.open,
+.po-detail-drawer.open {
+  transform: translateX(0) !important;
+}
+
+#poDrawerBackdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(11, 19, 48, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+  z-index: 1200 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#poDrawerBackdrop.open {
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .po-drawer-title-group {

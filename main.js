@@ -1053,10 +1053,9 @@ window.MallApp = {
   // BATCH REORDER CONFIRMATION MODAL & EXECUTION
   openBatchReorderModal() {
     const modal = document.getElementById('batchReorderModal');
-    const backdrop = document.getElementById('batchReorderBackdrop');
     const body = document.getElementById('batchReorderModalBody');
     const confirmBtn = document.getElementById('btnConfirmBatchReorder');
-    if (!modal || !backdrop || !body) return;
+    if (!modal || !body) return;
 
     // Scan for low stock products (stock <= minBuffer)
     const lowStockItems = MallState.products.filter(p => p.stock <= p.minBuffer);
@@ -1151,7 +1150,6 @@ window.MallApp = {
     }
 
     modal.classList.add('open');
-    backdrop.classList.add('open');
 
     if (this._batchModalKeydownHandler) {
       document.removeEventListener('keydown', this._batchModalKeydownHandler);
@@ -1164,9 +1162,7 @@ window.MallApp = {
 
   closeBatchReorderModal() {
     const modal = document.getElementById('batchReorderModal');
-    const backdrop = document.getElementById('batchReorderBackdrop');
     if (modal) modal.classList.remove('open');
-    if (backdrop) backdrop.classList.remove('open');
 
     if (this._batchModalKeydownHandler) {
       document.removeEventListener('keydown', this._batchModalKeydownHandler);
@@ -1843,7 +1839,6 @@ window.MallApp = {
     this._activeRejectPoId = poId;
 
     const modal = document.getElementById('poRejectModal');
-    const backdrop = document.getElementById('poRejectBackdrop');
     const summary = document.getElementById('rejectModalSummary');
     const textarea = document.getElementById('rejectModalComment');
     const err = document.getElementById('rejectModalError');
@@ -1876,7 +1871,6 @@ window.MallApp = {
     if (err) err.style.display = 'none';
 
     if (modal) modal.classList.add('open');
-    if (backdrop) backdrop.classList.add('open');
 
     if (this._rejectModalKeydownHandler) {
       document.removeEventListener('keydown', this._rejectModalKeydownHandler);
@@ -1893,9 +1887,7 @@ window.MallApp = {
 
   closeRejectModal() {
     const modal = document.getElementById('poRejectModal');
-    const backdrop = document.getElementById('poRejectBackdrop');
     if (modal) modal.classList.remove('open');
-    if (backdrop) backdrop.classList.remove('open');
 
     if (this._rejectModalKeydownHandler) {
       document.removeEventListener('keydown', this._rejectModalKeydownHandler);
