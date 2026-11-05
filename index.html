@@ -276,7 +276,7 @@
             <div class="orch-metric-box">
               <span class="orch-metric-label">Predicted Day Footfall</span>
               <div class="orch-metric-val">38,420 <span class="tag-badge tag-amber">+14.2% Peak</span></div>
-              <span class="orch-metric-sub">Estimated retail spending: $240K+</span>
+              <span class="orch-metric-sub">Estimated retail spending: <span id="orchEstimatedSpendingVal">$240K+</span></span>
             </div>
           </div>
         </div>
@@ -360,7 +360,7 @@
                   <span class="kpi-growth-badge neutral">2 Stores</span>
                 </div>
                 <div class="kpi-value-row">
-                  <span class="kpi-main-val text-alert">$14,500.00</span>
+                  <span class="kpi-main-val text-alert" id="kpiRentOverdueVal">$14,500.00</span>
                   <span class="kpi-pill-tag tag-grace">Notice Sent</span>
                 </div>
                 <div class="kpi-footer-note">
@@ -375,7 +375,7 @@
                 <div>
                   <h4 class="trend-card-title">Sales Trend graph</h4>
                   <div class="trend-value-wrap">
-                    <span class="trend-main-amount">$30,000</span>
+                    <span class="trend-main-amount" id="trendMainAmount">$30,000</span>
                     <span class="badge-growth">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="3">
@@ -451,7 +451,7 @@
 
                   <div class="chart-tooltip-box" style="left: 66%; top: 12%;">
                     <div class="tooltip-date">18:00 Peak Rush</div>
-                    <div class="tooltip-amount">$30,000 / hr</div>
+                    <div class="tooltip-amount" id="trendTooltipAmount">$30,000 / hr</div>
                   </div>
                 </div>
               </div>
@@ -463,7 +463,7 @@
                 </div>
                 <div class="trend-sub-stat">
                   <span class="stat-muted">Avg Basket Value</span>
-                  <strong class="stat-highlight">$84.20</strong>
+                  <strong class="stat-highlight" id="trendAvgBasketVal">$84.20</strong>
                 </div>
                 <div class="trend-sub-stat">
                   <span class="stat-muted">Velocity Status</span>
@@ -535,7 +535,7 @@
               </div>
               <div class="agent-body-metrics">
                 <div class="agent-metric-pair">
-                  <span class="agent-metric-num">$148.2K</span>
+                  <span class="agent-metric-num" id="salesAgentGrossVal">$148.2K</span>
                   <span class="agent-metric-name">Gross Volume</span>
                 </div>
                 <div class="agent-metric-pair">
@@ -1357,7 +1357,7 @@
               <input type="number" id="prodMinBuffer" min="1" required placeholder="15">
             </div>
             <div class="form-group">
-              <label for="prodPrice">Unit Price ($)</label>
+              <label for="prodPrice">Unit Price (<span class="currency-symbol">$</span>)</label>
               <input type="number" id="prodPrice" step="0.01" min="0" required placeholder="120.00">
             </div>
           </div>

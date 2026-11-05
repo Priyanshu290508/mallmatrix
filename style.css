@@ -1163,9 +1163,9 @@ body {
   cursor: pointer;
   box-shadow: 0 8px 25px rgba(84, 41, 255, 0.42);
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.22s ease;
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s ease;
 }
 
 /* Hidden state when any drawer or modal is open */
@@ -3425,7 +3425,8 @@ body.has-overlay-open .floating-copilot-pill {
   min-height: 0 !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  padding: 22px 24px 32px 24px !important; /* pb-6 so last row is never clipped behind footer */
+  padding: 22px 24px 32px 24px !important;
+  /* pb-6 so last row is never clipped behind footer */
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
@@ -3446,6 +3447,7 @@ body.has-overlay-open .floating-copilot-pill {
 
 /* Mobile full width under 640px */
 @media (max-width: 640px) {
+
   #poDetailDrawer,
   .po-detail-drawer,
   #invRestockDrawer,
@@ -4224,6 +4226,7 @@ body.has-overlay-open .floating-copilot-pill {
     opacity: 0;
     transform: translateY(-4px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -4344,7 +4347,9 @@ body.has-overlay-open .floating-copilot-pill {
 }
 
 @keyframes exportSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 2. PO Detail Drawer Export Button */
@@ -4558,11 +4563,11 @@ body.has-overlay-open .floating-copilot-pill {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.export-toggle-input:checked + .export-toggle-switch {
+.export-toggle-input:checked+.export-toggle-switch {
   background: #5429FF;
 }
 
-.export-toggle-input:checked + .export-toggle-switch::after {
+.export-toggle-input:checked+.export-toggle-switch::after {
   transform: translateX(16px);
 }
 

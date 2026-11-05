@@ -1037,6 +1037,15 @@ window.MallApp = {
     this.renderTenantCards();
     this.renderAllExportButtons();
     this.renderExportCenter();
+    if (this._activeRestockSku) {
+      const p = MallState.products.find(item => item.sku === this._activeRestockSku);
+      const unitPriceEl = document.getElementById('invDrawerUnitPrice');
+      if (p && unitPriceEl) unitPriceEl.textContent = this.formatCurrency(p.price);
+      this.updateDrawerCostPreview();
+    }
+    if (this._activeDetailPoId) {
+      this.openPODetailDrawer(this._activeDetailPoId);
+    }
     this.updateCurrencyUI();
   },
 
@@ -1088,7 +1097,34 @@ window.MallApp = {
       salesAgentGrossEl.textContent = MallState.currency === 'INR' ? '₹1.49L' : '$148.9K';
     }
 
-    // 7. Reorder page pending value sum
+    // 7. Estimated Retail Spending in Orchestrator summary
+    const orchSpendingEl = document.getElementById('orchEstimatedSpendingVal');
+    if (orchSpendingEl) {
+      orchSpendingEl.textContent = MallState.currency === 'INR' ? '₹20L+' : '$240K+';
+    }
+
+    // 8. Sales Trend Graph amounts
+    const trendAmountEl = document.getElementById('trendMainAmount');
+    if (trendAmountEl) {
+      trendAmountEl.textContent = this.formatCurrency(30000).replace(/\.00$/, '');
+    }
+    const trendTooltipEl = document.getElementById('trendTooltipAmount');
+    if (trendTooltipEl) {
+      const formatted30k = this.formatCurrency(30000).replace(/\.00$/, '');
+      trendTooltipEl.textContent = `${formatted30k} / hr`;
+    }
+    const trendAvgEl = document.getElementById('trendAvgBasketVal');
+    if (trendAvgEl) {
+      trendAvgEl.textContent = this.formatCurrency(84.20);
+    }
+
+    // 9. Form & Header Currency symbols
+    const isINR = MallState.currency === 'INR';
+    document.querySelectorAll('.currency-symbol').forEach(el => {
+      el.textContent = isINR ? '₹' : '$';
+    });
+
+    // 10. Reorder page pending value sum
     const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending');
     const pendingValSum = pendingOrders.reduce((sum, po) => {
       const num = typeof po.value === 'number' ? po.value : (parseFloat(String(po.value).replace(/[^0-9.-]+/g, '')) || 0);
@@ -2447,7 +2483,7 @@ window.MallApp = {
           </div>
           <div>
             <div style="font-size: 0.72rem; color: #8A98A5;">Sales Today</div>
-            <div style="font-weight: 700; color: var(--green-main);">${t.salesToday}</div>
+            <div style="font-weight: 700; color: var(--green-main);">${this.formatCurrency(t.salesAmount)}</div>
           </div>
         </div>
       </div>
