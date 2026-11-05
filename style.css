@@ -450,7 +450,236 @@ body {
 }
 
 /* ========================================================
-   1. ORCHESTRATOR SUMMARY CARD
+   0. NEEDS YOUR ATTENTION STRIP (Dashboard Top Actionable Alerts)
+   ======================================================== */
+.dash-attention-strip {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 18px 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.attention-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.attention-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attention-indicator-pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  animation: pulseAttention 2s infinite ease-in-out;
+}
+
+@keyframes pulseAttention {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.attention-section-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--text-dark, #0F172A);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.attention-pill-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #B45309;
+  background-color: #FEF3C7;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.attention-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 980px) {
+  .attention-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.attention-alert-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  background-color: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: var(--radius-lg);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s ease,
+              background-color 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.attention-alert-card:hover {
+  transform: translateY(-2px);
+  background-color: #FFFFFF;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.attention-alert-card.alert-card-critical:hover {
+  border-color: #FCA5A5;
+}
+
+.attention-alert-card.alert-card-overdue:hover {
+  border-color: #FCD34D;
+}
+
+.attention-alert-card.alert-card-approval:hover {
+  border-color: #C7D2FE;
+}
+
+.attention-card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.attention-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.attention-icon-box.icon-critical {
+  background-color: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid rgba(220, 38, 38, 0.15);
+}
+
+.attention-icon-box.icon-overdue {
+  background-color: #FFFBEB;
+  color: #D97706;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.attention-icon-box.icon-approval {
+  background-color: #EEF2FF;
+  color: var(--solar-primary, #5429FF);
+  border: 1px solid rgba(84, 41, 255, 0.15);
+}
+
+.attention-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attention-headline {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-dark, #0F172A);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attention-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted, #64748B);
+  margin: 2px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-attention-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.btn-attention-action.btn-review {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.btn-attention-action.btn-review:hover {
+  background-color: #DC2626;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-attention-action.btn-reminder {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.btn-attention-action.btn-reminder:hover {
+  background-color: #D97706;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-attention-action.btn-approve {
+  background-color: #EEF2FF;
+  color: var(--solar-primary, #5429FF);
+  border: 1px solid rgba(84, 41, 255, 0.25);
+}
+
+.btn-attention-action.btn-approve:hover {
+  background-color: var(--solar-primary, #5429FF);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(84, 41, 255, 0.32);
+  transform: translateY(-1px);
+}
+
+/* ========================================================
+   1. ORCHESTRATOR / TODAY'S OVERVIEW SUMMARY CARD
    ======================================================== */
 .orchestrator-summary-card {
   background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFD 100%);
@@ -1002,18 +1231,32 @@ body {
 }
 
 .agent-module-card {
-  padding: 20px;
+  padding: 22px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  background-color: #FFFFFF;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.22s ease;
+  user-select: none;
+  outline: none;
+  position: relative;
 }
 
-.agent-module-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-hover);
-  border-color: #BAC8FF;
+.agent-module-card:hover,
+.agent-module-card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(84, 41, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+  border-color: #A5B4FC;
+}
+
+.agent-module-card:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(84, 41, 255, 0.1);
 }
 
 .agent-card-header {
@@ -1137,8 +1380,13 @@ body {
   transition: transform 0.15s;
 }
 
+.agent-module-card:hover .agent-cta-text {
+  color: #431ED4;
+}
+
 .agent-module-card:hover .agent-arrow-icon {
-  transform: translateX(4px);
+  transform: translateX(5px);
+  color: #431ED4;
 }
 
 /* ========================================================
@@ -1163,9 +1411,9 @@ body {
   cursor: pointer;
   box-shadow: 0 8px 25px rgba(84, 41, 255, 0.42);
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.22s ease;
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s ease;
 }
 
 /* Hidden state when any drawer or modal is open */
@@ -3397,7 +3645,8 @@ body.has-overlay-open .floating-copilot-pill {
   min-height: 0 !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  padding: 22px 24px 32px 24px !important; /* pb-6 so last row is never clipped behind footer */
+  padding: 22px 24px 32px 24px !important;
+  /* pb-6 so last row is never clipped behind footer */
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
@@ -3418,6 +3667,7 @@ body.has-overlay-open .floating-copilot-pill {
 
 /* Mobile full width under 640px */
 @media (max-width: 640px) {
+
   #poDetailDrawer,
   .po-detail-drawer,
   #invRestockDrawer,

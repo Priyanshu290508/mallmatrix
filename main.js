@@ -580,6 +580,28 @@ window.MallApp = {
     }
   },
 
+  // DASHBOARD "NEEDS YOUR ATTENTION" ACTION NAVIGATION
+  navigateAttention(targetView, action) {
+    if (targetView === 'inventory') {
+      this._invLowStockOnly = true;
+      const toggle = document.getElementById('invLowStockToggle');
+      if (toggle) toggle.checked = true;
+      this._invPage = 1;
+      this.switchView('inventory');
+      this.showToast('Showing 4 critical stock items below safety buffer', 'warning');
+    } else if (targetView === 'tenants') {
+      this.switchView('tenants');
+      if (action === 'reminder') {
+        this.showToast('Payment reminder sent to 2 overdue stores (Zara Flagship, Nike Experience)', 'info');
+      }
+    } else if (targetView === 'reorder') {
+      this.switchView('reorder');
+      this.showToast('Showing 3 purchase orders awaiting approval', 'info');
+    } else {
+      this.switchView(targetView);
+    }
+  },
+
   // 2. INVENTORY FILTERS & CONTROLS
   bindInventoryFilters() {
     const searchInput = document.getElementById('inventorySearchInput');
