@@ -37,7 +37,7 @@ export function getExportTotalsSetting() {
 export function setExportTotalsSetting(enabled) {
   try {
     localStorage.setItem(STORAGE_KEYS.TOTALS, String(enabled));
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /**
@@ -96,7 +96,7 @@ export function addExportHistory(record) {
 export function clearExportHistory() {
   try {
     localStorage.removeItem(STORAGE_KEYS.HISTORY);
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /**
@@ -123,7 +123,7 @@ export function setLastExported(moduleKey, timestamp) {
       hour12: true
     });
     localStorage.setItem(STORAGE_KEYS.LAST_EXPORT + moduleKey, ts);
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /**
@@ -356,7 +356,7 @@ export function exportToExcel(sheets, filename, options = {}) {
 
 function drawHeaderAndBranding(doc, title, subtitle, isLandscape) {
   const pageWidth = doc.internal.pageSize.getWidth();
-  
+
   // Top decorative purple accent bar
   doc.setFillColor(84, 41, 255); // #5429FF
   doc.rect(0, 0, pageWidth, 6, 'F');
