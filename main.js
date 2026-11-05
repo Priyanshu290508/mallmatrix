@@ -262,6 +262,7 @@ window.MallApp = {
   _drawerKeydownHandler: null,
 
   init() {
+    this.loadStateFromStorage();
     this.bindNavigation();
     this.bindModals();
     this.bindInventoryFilters();
@@ -273,6 +274,33 @@ window.MallApp = {
     if (copilotBtn) {
       copilotBtn.style.display = 'flex';
     }
+  },
+
+  loadStateFromStorage() {
+    try {
+      const savedPOs = localStorage.getItem('mallmatrix_purchase_orders');
+      if (savedPOs) {
+        MallState.purchaseOrders = JSON.parse(savedPOs);
+      }
+      const savedProds = localStorage.getItem('mallmatrix_products');
+      if (savedProds) {
+        MallState.products = JSON.parse(savedProds);
+      }
+    } catch (e) {
+      console.warn('Storage restore error:', e);
+    }
+  },
+
+  savePurchaseOrders() {
+    try {
+      localStorage.setItem('mallmatrix_purchase_orders', JSON.stringify(MallState.purchaseOrders));
+    } catch (e) {}
+  },
+
+  saveProducts() {
+    try {
+      localStorage.setItem('mallmatrix_products', JSON.stringify(MallState.products));
+    } catch (e) {}
   },
 
   // 1. NAVIGATION
@@ -325,6 +353,13 @@ window.MallApp = {
     document.querySelectorAll('.view-panel').forEach(panel => {
       panel.classList.toggle('active', panel.id === `view-${viewName}`);
     });
+
+    // Ensure view tables refresh when navigated to
+    if (viewName === 'reorder') {
+      this.renderPurchaseOrders();
+    } else if (viewName === 'inventory') {
+      this.renderInventoryTable();
+    }
 
     // Keep bottom-right Copilot button visible on all views except the copilot view itself
     const copilotBtn = document.getElementById('floatingCopilotBtn');
@@ -1206,19 +1241,89 @@ window.MallApp = {
     const tbody = document.getElementById('purchaseOrdersTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = MallState.purchaseOrders.map((po, idx) => {
-      const pillClass = po.status === 'Order Delivered' ? 'pill-delivered' : 'pill-pending';
+    const searchInput = document.getElementById('reorderSearchInput');
+    const statusFilter = document.getElementById('reorderStatusFilter');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const statusVal = statusFilter ? statusFilter.value : 'all';
+
+    let orders = [...MallState.purchaseOrders];
+
+    if (query) {
+      orders = orders.filter(po =>
+        (po.id && po.id.toLowerCase().includes(query)) ||
+        (po.supplier && po.supplier.toLowerCase().includes(query)) ||
+        (po.items && po.items.toLowerCase().includes(query)) ||
+        (po.tenant && po.tenant.toLowerCase().includes(query))
+      );
+    }
+
+    if (statusVal === 'Pending') {
+      orders = orders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
+    } else if (statusVal === 'Delivered') {
+      orders = orders.filter(po => po.status === 'Order Delivered');
+    }
+
+    // Update summary metrics
+    const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
+    const deliveredOrders = MallState.purchaseOrders.filter(po => po.status === 'Order Delivered');
+    
+    let pendingValSum = 0;
+    pendingOrders.forEach(po => {
+      const num = parseFloat((po.value || '').replace(/[^0-9.-]+/g, '')) || 0;
+      pendingValSum += num;
+    });
+
+    const pendingCountEl = document.getElementById('reorderPendingCount');
+    const pendingValEl = document.getElementById('reorderPendingVal');
+    const deliveredCountEl = document.getElementById('reorderDeliveredCount');
+    const totalBadgeEl = document.getElementById('reorderTotalBadge');
+
+    if (pendingCountEl) pendingCountEl.textContent = `${pendingOrders.length} Orders`;
+    if (pendingValEl) pendingValEl.textContent = `$${pendingValSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (deliveredCountEl) deliveredCountEl.textContent = `${deliveredOrders.length} Completed`;
+    if (totalBadgeEl) totalBadgeEl.textContent = `${MallState.purchaseOrders.length} Requisitions Tracked`;
+
+    if (orders.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 36px 16px; color: #94A3B8; font-weight: 500;">No purchase orders match your filter criteria.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = orders.map(po => {
+      const isDelivered = po.status === 'Order Delivered';
+      const pillClass = isDelivered ? 'pill-delivered' : 'pill-pending';
+      const displayStatus = (po.status === 'On Pending' || po.status === 'Pending') ? 'Pending' : po.status;
+      const actualIdx = MallState.purchaseOrders.indexOf(po);
+
       return `
-        <tr>
-          <td><strong>${po.id}</strong></td>
-          <td>${this.escapeHTML(po.supplier)}</td>
-          <td>${this.escapeHTML(po.items)}</td>
-          <td>${this.escapeHTML(po.tenant)}</td>
-          <td><strong>${po.value}</strong></td>
-          <td><span class="status-pill ${pillClass}">${po.status}</span></td>
+        <tr class="reorder-table-row">
+          <td>
+            <code class="reorder-po-code">${this.escapeHTML(po.id)}</code>
+          </td>
+          <td>
+            <div class="reorder-vendor-cell">
+              <strong>${this.escapeHTML(po.supplier)}</strong>
+              <span class="reorder-sub-tenant">Approved Vendor</span>
+            </div>
+          </td>
+          <td>
+            <div class="reorder-items-cell">
+              <span class="reorder-items-text">${this.escapeHTML(po.items)}</span>
+            </div>
+          </td>
+          <td>
+            <span class="reorder-tenant-badge">${this.escapeHTML(po.tenant)}</span>
+          </td>
+          <td>
+            <strong class="reorder-value-text">${this.escapeHTML(po.value)}</strong>
+          </td>
+          <td>
+            <span class="status-pill ${pillClass}">
+              ${isDelivered ? '✓ ' : '⏳ '}${displayStatus}
+            </span>
+          </td>
           <td class="text-right">
-            <button class="btn-table-action" onclick="MallApp.approvePO(${idx})">
-              ${po.status === 'Order Delivered' ? 'Archive' : 'Approve PO'}
+            <button class="btn-table-action ${isDelivered ? 'btn-action-archive' : 'btn-action-approve'}" onclick="MallApp.approvePO(${actualIdx})">
+              ${isDelivered ? 'Archive' : 'Approve PO'}
             </button>
           </td>
         </tr>
@@ -1229,9 +1334,17 @@ window.MallApp = {
   approvePO(idx) {
     const po = MallState.purchaseOrders[idx];
     if (po) {
-      po.status = 'Order Delivered';
-      this.renderPurchaseOrders();
-      this.showToast(`Purchase Order ${po.id} has been approved and delivered!`, 'success');
+      if (po.status === 'Order Delivered') {
+        MallState.purchaseOrders.splice(idx, 1);
+        this.savePurchaseOrders();
+        this.renderPurchaseOrders();
+        this.showToast(`Purchase Order ${po.id} archived.`, 'info');
+      } else {
+        po.status = 'Order Delivered';
+        this.savePurchaseOrders();
+        this.renderPurchaseOrders();
+        this.showToast(`Purchase Order ${po.id} approved and marked Delivered!`, 'success');
+      }
     }
   },
 

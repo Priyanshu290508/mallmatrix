@@ -5,36 +5,49 @@
 
 :root {
   /* Violet Pulse Color Palette */
-  --bg-app: #F6F8FD;          /* Soft ice periwinkle mist background */
+  --bg-app: #F6F8FD;
+  /* Soft ice periwinkle mist background */
   --bg-sidebar: #FFFFFF;
   --bg-card: #FFFFFF;
-  --border-light: #E2E8F4;    /* Soft lavender-slate border */
+  --border-light: #E2E8F4;
+  /* Soft lavender-slate border */
   --border-subtle: #EDF2FA;
 
-  --text-dark: #0B1330;       /* Deep ink navy */
+  --text-dark: #0B1330;
+  /* Deep ink navy */
   --text-body: #334155;
   --text-muted: #64748B;
   --text-light: #94A3B8;
 
   /* Card Accent Colors - Violet Pulse Suite */
-  --card-purple: #5429FF; /* Electric Violet Pulse */
-  --card-blue: #0090B5;   /* Ocean Cyan / Vibrant Teal */
-  --card-green: #1E1B4B;  /* Deep Indigo Navy */
-  --card-yellow: #4338CA; /* Royal Blue Violet */
+  --card-purple: #5429FF;
+  /* Electric Violet Pulse */
+  --card-blue: #0090B5;
+  /* Ocean Cyan / Vibrant Teal */
+  --card-green: #1E1B4B;
+  /* Deep Indigo Navy */
+  --card-yellow: #4338CA;
+  /* Royal Blue Violet */
 
   /* Violet Pulse Brand & Status Colors */
-  --solar-primary: #5429FF;   /* Electric Violet */
+  --solar-primary: #5429FF;
+  /* Electric Violet */
   --solar-dark: #3D1EB8;
-  --solar-light: #EEF2FF;     /* Soft Periwinkle Lavender Ice */
-  --solar-amber: #0090B5;     /* Ocean Cyan */
+  --solar-light: #EEF2FF;
+  /* Soft Periwinkle Lavender Ice */
+  --solar-amber: #0090B5;
+  /* Ocean Cyan */
   --solar-glow: rgba(84, 41, 255, 0.28);
 
-  --green-main: #5429FF;      /* Primary Accent mapped to Violet Pulse */
-  --green-bg: #EEF2FF;        /* Soft Lavender Periwinkle */
+  --green-main: #5429FF;
+  /* Primary Accent mapped to Violet Pulse */
+  --green-bg: #EEF2FF;
+  /* Soft Lavender Periwinkle */
   --violet-primary: #5429FF;
   --violet-dark: #3D1EB8;
   --violet-light: #EEF2FF;
-  --teal-main: #0090B5;       /* Ocean Cyan */
+  --teal-main: #0090B5;
+  /* Ocean Cyan */
   --teal-bg: #E6F7FA;
   --yellow-main: #6366F1;
   --yellow-bg: #EEF2FF;
@@ -59,13 +72,16 @@
 }
 
 /* Base Resets */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   background-color: var(--bg-app);
@@ -482,9 +498,20 @@ html, body {
 }
 
 @keyframes pulseGreen {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }
 
 .orch-card-title {
@@ -597,10 +624,25 @@ html, body {
   border-radius: var(--radius-pill);
 }
 
-.tag-green { background-color: #ECFDF5; color: #059669; }
-.tag-cyan { background-color: #E6F7FA; color: #0090B5; }
-.tag-purple { background-color: #EEF2FF; color: #5429FF; }
-.tag-amber { background-color: #FEF3C7; color: #D97706; }
+.tag-green {
+  background-color: #ECFDF5;
+  color: #059669;
+}
+
+.tag-cyan {
+  background-color: #E6F7FA;
+  color: #0090B5;
+}
+
+.tag-purple {
+  background-color: #EEF2FF;
+  color: #5429FF;
+}
+
+.tag-amber {
+  background-color: #FEF3C7;
+  color: #D97706;
+}
 
 /* ========================================================
    2. DASHBOARD SECTION BLOCKS & HEADERS
@@ -681,9 +723,20 @@ html, body {
   justify-content: center;
 }
 
-.icon-rev { background-color: #EEF2FF; color: #5429FF; }
-.icon-alert { background-color: #FEF2F2; color: #EF4444; }
-.icon-rent { background-color: #ECFDF5; color: #059669; }
+.icon-rev {
+  background-color: #EEF2FF;
+  color: #5429FF;
+}
+
+.icon-alert {
+  background-color: #FEF2F2;
+  color: #EF4444;
+}
+
+.icon-rent {
+  background-color: #ECFDF5;
+  color: #059669;
+}
 
 .kpi-title-meta {
   flex: 1;
@@ -710,9 +763,20 @@ html, body {
   border-radius: var(--radius-pill);
 }
 
-.kpi-growth-badge.positive { background-color: #ECFDF5; color: #059669; }
-.kpi-growth-badge.warning { background-color: #FEF2F2; color: #DC2626; }
-.kpi-growth-badge.neutral { background-color: #F1F5F9; color: #475569; }
+.kpi-growth-badge.positive {
+  background-color: #ECFDF5;
+  color: #059669;
+}
+
+.kpi-growth-badge.warning {
+  background-color: #FEF2F2;
+  color: #DC2626;
+}
+
+.kpi-growth-badge.neutral {
+  background-color: #F1F5F9;
+  color: #475569;
+}
 
 .kpi-value-row {
   display: flex;
@@ -728,8 +792,13 @@ html, body {
   letter-spacing: -0.02em;
 }
 
-.kpi-main-val.text-warning { color: #DC2626; }
-.kpi-main-val.text-alert { color: #0090B5; }
+.kpi-main-val.text-warning {
+  color: #DC2626;
+}
+
+.kpi-main-val.text-alert {
+  color: #0090B5;
+}
 
 .kpi-pill-tag {
   font-size: 0.72rem;
@@ -738,8 +807,15 @@ html, body {
   border-radius: var(--radius-pill);
 }
 
-.tag-warning { background-color: #FEE2E2; color: #DC2626; }
-.tag-grace { background-color: #E6F7FA; color: #0090B5; }
+.tag-warning {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.tag-grace {
+  background-color: #E6F7FA;
+  color: #0090B5;
+}
 
 .kpi-footer-note {
   font-size: 0.74rem;
@@ -912,7 +988,9 @@ html, body {
   color: var(--text-dark);
 }
 
-.text-cyan { color: #0090B5; }
+.text-cyan {
+  color: #0090B5;
+}
 
 /* ========================================================
    3. AGENTS CARDS GRID (Matches Sketch)
@@ -954,11 +1032,30 @@ html, body {
   flex-shrink: 0;
 }
 
-.agent-inv { background-color: #EEF2FF; color: #5429FF; }
-.agent-sales { background-color: #E6F7FA; color: #0090B5; }
-.agent-tenants { background-color: #FDF2F8; color: #DB2777; }
-.agent-staff { background-color: #ECFDF5; color: #059669; }
-.agent-reorder { background-color: #FFFBEB; color: #D97706; }
+.agent-inv {
+  background-color: #EEF2FF;
+  color: #5429FF;
+}
+
+.agent-sales {
+  background-color: #E6F7FA;
+  color: #0090B5;
+}
+
+.agent-tenants {
+  background-color: #FDF2F8;
+  color: #DB2777;
+}
+
+.agent-staff {
+  background-color: #ECFDF5;
+  color: #059669;
+}
+
+.agent-reorder {
+  background-color: #FFFBEB;
+  color: #D97706;
+}
 
 .agent-title-info {
   flex: 1;
@@ -1096,8 +1193,13 @@ html, body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .panel-section-head {
@@ -1302,8 +1404,15 @@ html, body {
 }
 
 @keyframes floatRibbon {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 .copilot-ribbon-svg {
@@ -1626,8 +1735,15 @@ html, body {
 }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modal-header {
@@ -1736,8 +1852,15 @@ html, body {
 }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ========================================================
@@ -1747,9 +1870,11 @@ html, body {
   .kpi-sales-layout-grid {
     grid-template-columns: 1fr;
   }
+
   .agents-cards-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .orch-metrics-strip {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1759,31 +1884,39 @@ html, body {
   .sidebar {
     transform: translateX(-100%);
   }
+
   .sidebar.open {
     transform: translateX(0);
   }
+
   .sidebar-backdrop.active {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.4);
     z-index: 45;
   }
+
   .mobile-toggle-btn {
     display: flex;
   }
+
   .main-content {
     margin-left: 0;
     padding: 18px;
   }
+
   .orch-metrics-strip {
     grid-template-columns: 1fr;
   }
+
   .agents-cards-grid {
     grid-template-columns: 1fr;
   }
+
   .tenant-grid-layout {
     grid-template-columns: 1fr;
   }
+
   .floating-copilot-pill {
     bottom: 18px;
     right: 18px;
@@ -1925,11 +2058,11 @@ html, body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.inv-toggle-input:checked + .inv-toggle-track {
+.inv-toggle-input:checked+.inv-toggle-track {
   background-color: var(--solar-primary, #5429FF);
 }
 
-.inv-toggle-input:checked + .inv-toggle-track .inv-toggle-thumb {
+.inv-toggle-input:checked+.inv-toggle-track .inv-toggle-thumb {
   transform: translateX(16px);
 }
 
@@ -2006,6 +2139,7 @@ html, body {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2163,11 +2297,30 @@ html, body {
   color: #475569;
 }
 
-.inv-cat-pill.inv-cat-fashion { background: #FAF5FF; color: #7E22CE; }
-.inv-cat-pill.inv-cat-electronics { background: #F0F9FF; color: #0284C7; }
-.inv-cat-pill.inv-cat-footwear { background: #FFFBEB; color: #D97706; }
-.inv-cat-pill.inv-cat-cosmetics { background: #FDF2F8; color: #DB2777; }
-.inv-cat-pill.inv-cat-dining { background: #F0FDF4; color: #16A34A; }
+.inv-cat-pill.inv-cat-fashion {
+  background: #FAF5FF;
+  color: #7E22CE;
+}
+
+.inv-cat-pill.inv-cat-electronics {
+  background: #F0F9FF;
+  color: #0284C7;
+}
+
+.inv-cat-pill.inv-cat-footwear {
+  background: #FFFBEB;
+  color: #D97706;
+}
+
+.inv-cat-pill.inv-cat-cosmetics {
+  background: #FDF2F8;
+  color: #DB2777;
+}
+
+.inv-cat-pill.inv-cat-dining {
+  background: #F0FDF4;
+  color: #16A34A;
+}
 
 .btn-action-restock {
   background-color: #FEE2E2 !important;
@@ -2658,4 +2811,190 @@ html, body {
 
 .inv-drawer-btn-create:active {
   transform: translateY(0);
+}
+
+/* ==========================================================================
+   GLOBAL STATUS PILLS & REORDERING SYSTEM UPGRADE
+   ========================================================================== */
+
+/* 1. Global Status Pills (Delivered, Pending, Cancelled) */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.status-pill.pill-delivered {
+  background-color: #D1FAE5;
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.25);
+}
+
+.status-pill.pill-pending {
+  background-color: #FEF3C7;
+  color: #D97706;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.15);
+}
+
+.status-pill.pill-cancelled {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+/* 2. Reordering Metrics Strip */
+.reorder-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1024px) {
+  .reorder-metrics-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .reorder-metrics-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reorder-stat-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.reorder-stat-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.reorder-stat-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 2px;
+}
+
+.reorder-stat-sub {
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.btn-batch-reorder {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+}
+
+.reorder-queue-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  background: #F1F5F9;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+}
+
+.reorder-po-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+  background: #F1F5F9;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #E2E8F0;
+  white-space: nowrap;
+}
+
+.reorder-vendor-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reorder-sub-tenant {
+  font-size: 0.72rem;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.reorder-items-cell {
+  max-width: 280px;
+}
+
+.reorder-items-text {
+  font-size: 0.85rem;
+  color: #1E293B;
+  font-weight: 500;
+}
+
+.reorder-tenant-badge {
+  display: inline-block;
+  font-size: 0.82rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.reorder-value-text {
+  font-size: 0.95rem;
+  color: #0F172A;
+  font-weight: 800;
+}
+
+.btn-action-approve {
+  background-color: #FEF3C7 !important;
+  color: #D97706 !important;
+  border: 1px solid rgba(217, 119, 6, 0.25) !important;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-action-approve:hover {
+  background-color: #D97706 !important;
+  color: #FFFFFF !important;
+}
+
+.btn-action-archive {
+  background-color: #F1F5F9 !important;
+  color: #64748B !important;
+  border: 1px solid #E2E8F0 !important;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-action-archive:hover {
+  background-color: #E2E8F0 !important;
+  color: #1E293B !important;
 }

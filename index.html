@@ -772,20 +772,58 @@
         <div class="panel-section-head">
           <div>
             <h2 class="section-title">Automated Reordering System</h2>
-            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.
-            </p>
+            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.</p>
           </div>
-          <button class="btn-create-order" onclick="MallApp.generateBatchReorder()">
+          <button class="btn-create-order btn-batch-reorder" onclick="MallApp.generateBatchReorder()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             <span>Batch Reorder All Low Stock</span>
           </button>
         </div>
 
+        <!-- REORDER METRICS STRIP -->
+        <div class="reorder-metrics-strip">
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">Pending Approval Queue</span>
+            <div class="reorder-stat-val" id="reorderPendingCount">2 Orders</div>
+            <span class="reorder-stat-sub" style="color: #D97706;">Awaiting tenant manager approval</span>
+          </div>
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">Pending PO Valuation</span>
+            <div class="reorder-stat-val" id="reorderPendingVal">$30,350.00</div>
+            <span class="reorder-stat-sub" style="color: #059669;">Ready for B2B supplier dispatch</span>
+          </div>
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">Delivered This Cycle</span>
+            <div class="reorder-stat-val" id="reorderDeliveredCount">2 Completed</div>
+            <span class="reorder-stat-sub" style="color: #64748B;">Stock updated in inventory</span>
+          </div>
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">On-Time Logistics Rate</span>
+            <div class="reorder-stat-val" style="color: var(--solar-primary, #5429FF);">98.8%</div>
+            <span class="reorder-stat-sub" style="color: #059669;">Avg lead time: 2.4 days</span>
+          </div>
+        </div>
+
         <div class="dash-card">
+          <div class="table-filter-bar inv-filter-bar">
+            <div class="inv-filter-left">
+              <input type="text" id="reorderSearchInput" class="clean-search-input" placeholder="Search POs by identifier, vendor, items, or tenant store..." oninput="MallApp.renderPurchaseOrders()">
+              <select id="reorderStatusFilter" class="clean-select" onchange="MallApp.renderPurchaseOrders()">
+                <option value="all">All Statuses</option>
+                <option value="Pending">Pending Approval</option>
+                <option value="Delivered">Order Delivered</option>
+              </select>
+            </div>
+            <div class="inv-filter-right">
+              <span class="reorder-queue-badge" id="reorderTotalBadge">4 Requisitions Tracked</span>
+            </div>
+          </div>
+
           <div class="table-responsive">
-            <table class="clean-table">
+            <table class="clean-table reorder-table">
               <thead>
                 <tr>
-                  <th>PO Identifier</th>
+                  <th style="min-width: 130px;">PO Identifier</th>
                   <th>Vendor / Supplier</th>
                   <th>Requisition Items</th>
                   <th>Target Tenant</th>
@@ -1133,8 +1171,10 @@
     </div>
 
     <!-- RESTOCK SIDE DRAWER -->
-    <div class="inv-drawer-backdrop" id="invDrawerBackdrop" onclick="MallApp.closeRestockDrawer()" aria-hidden="true"></div>
-    <aside class="inv-restock-drawer transform transition ease-in-out duration-300" id="invRestockDrawer" role="dialog" aria-modal="true" aria-labelledby="invDrawerTitle" aria-hidden="true" tabindex="-1">
+    <div class="inv-drawer-backdrop" id="invDrawerBackdrop" onclick="MallApp.closeRestockDrawer()" aria-hidden="true">
+    </div>
+    <aside class="inv-restock-drawer transform transition ease-in-out duration-300" id="invRestockDrawer" role="dialog"
+      aria-modal="true" aria-labelledby="invDrawerTitle" aria-hidden="true" tabindex="-1">
       <div class="inv-drawer-header">
         <div>
           <span class="inv-drawer-kicker">INVENTORY REPLENISHMENT</span>
@@ -1183,15 +1223,24 @@
         <div class="inv-drawer-field">
           <div class="inv-drawer-field-header">
             <label class="inv-drawer-label" for="invDrawerQty">Reorder Quantity</label>
-            <span class="inv-drawer-calc-badge" id="invDrawerFormulaBadge">Suggested: min buffer × 3 - current stock</span>
+            <span class="inv-drawer-calc-badge" id="invDrawerFormulaBadge">Suggested: min buffer × 3 - current
+              stock</span>
           </div>
           <div class="inv-stepper-wrap">
-            <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(-1)" aria-label="Decrease quantity">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(-1)"
+              aria-label="Decrease quantity">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
-            <input type="number" id="invDrawerQty" class="inv-stepper-input" min="1" value="25" aria-label="Reorder quantity">
-            <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(1)" aria-label="Increase quantity">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <input type="number" id="invDrawerQty" class="inv-stepper-input" min="1" value="25"
+              aria-label="Reorder quantity">
+            <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(1)"
+              aria-label="Increase quantity">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </button>
           </div>
           <span class="inv-drawer-hint" id="invDrawerSuggestedNote">Auto-calculated using safety buffer target</span>
@@ -1207,8 +1256,10 @@
             <option value="LVMH Luxury Supply" data-lead="3">LVMH Luxury Supply (Secure Transit)</option>
             <option value="H&M Supply Chain Services" data-lead="3">H&M Supply Chain Services (Standard Road)</option>
             <option value="Starbucks Supply Chain EMEA" data-lead="2">Starbucks Supply Chain EMEA (Cold Chain)</option>
-            <option value="MallMatrix Express Delivery" data-lead="1">MallMatrix Express Delivery (Priority Intra-Mall)</option>
-            <option value="Global Consolidated Freight" data-lead="5">Global Consolidated Freight (Bulk Freight)</option>
+            <option value="MallMatrix Express Delivery" data-lead="1">MallMatrix Express Delivery (Priority Intra-Mall)
+            </option>
+            <option value="Global Consolidated Freight" data-lead="5">Global Consolidated Freight (Bulk Freight)
+            </option>
           </select>
         </div>
 
@@ -1216,14 +1267,22 @@
           <div class="inv-drawer-meta-item">
             <span class="inv-drawer-meta-label">Expected Lead Time</span>
             <div class="inv-drawer-lead-badge" id="invDrawerLeadTime">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
               <span id="invDrawerLeadDays">3 business days</span>
             </div>
           </div>
           <div class="inv-drawer-meta-item">
             <span class="inv-drawer-meta-label">Requisition Type</span>
             <div class="inv-drawer-lead-badge" style="background:#F1F5F9; color:#475569;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
               <span>Automated B2B PO</span>
             </div>
           </div>
@@ -1246,12 +1305,13 @@
         <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.closeRestockDrawer()">
           Cancel
         </button>
-        <button type="button" class="inv-drawer-btn-create" id="invDrawerSubmitBtn" onclick="MallApp.createPOFromDrawer()">
+        <button type="button" class="inv-drawer-btn-create" id="invDrawerSubmitBtn"
+          onclick="MallApp.createPOFromDrawer()">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="12" y1="18" x2="12" y2="12"/>
-            <line x1="9" y1="15" x2="15" y2="15"/>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
           </svg>
           Create PO
         </button>
