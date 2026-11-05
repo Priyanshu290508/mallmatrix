@@ -4120,3 +4120,639 @@ body.has-overlay-open .floating-copilot-pill {
 .sales-row.row-pos-offline:hover {
   background-color: rgba(239, 68, 68, 0.07) !important;
 }
+
+/* ========================================================
+   MALLMATRIX DATA EXPORT SYSTEM & EXPORT CENTER STYLES
+   ======================================================== */
+
+/* 1. Reusable Export Button Dropdown */
+.export-dropdown-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.export-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.export-dropdown-btn:hover:not(:disabled) {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.export-dropdown-btn:focus-visible {
+  outline: 2px solid var(--solar-primary, #5429FF);
+  outline-offset: 2px;
+}
+
+.export-dropdown-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+  color: #94A3B8;
+}
+
+.export-caret {
+  transition: transform 0.2s ease;
+}
+
+.export-dropdown-wrap.open .export-caret {
+  transform: rotate(180deg);
+}
+
+.export-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 260px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  z-index: 65;
+  display: none;
+  animation: exportFadeIn 0.16s ease-out;
+}
+
+@keyframes exportFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.export-dropdown-wrap.open .export-dropdown-menu {
+  display: block;
+}
+
+/* Filter badge indicator */
+.export-menu-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #EEF2FF;
+  border: 1px solid #E0E7FF;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #5429FF;
+  margin-bottom: 8px;
+}
+
+.export-scope-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: #F1F5F9;
+  padding: 3px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.export-scope-btn {
+  padding: 5px 6px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.export-scope-btn.active {
+  background: #FFFFFF;
+  color: #5429FF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.export-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+
+.export-menu-item:hover {
+  background: #F8FAFC;
+  color: var(--solar-primary, #5429FF);
+}
+
+.export-menu-item:hover .export-item-icon {
+  transform: scale(1.08);
+}
+
+.export-item-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.export-icon-csv {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.export-icon-xlsx {
+  background: #F0FDF4;
+  color: #16A34A;
+}
+
+.export-icon-pdf {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+/* Spinner */
+.export-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(84, 41, 255, 0.2);
+  border-top-color: #5429FF;
+  border-radius: 50%;
+  animation: exportSpin 0.6s linear infinite;
+}
+
+@keyframes exportSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* 2. PO Detail Drawer Export Button */
+.po-btn-download-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: #EEF2FF;
+  border: 1.5px solid rgba(84, 41, 255, 0.3);
+  border-radius: 10px;
+  color: var(--solar-primary, #5429FF);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.po-btn-download-pdf:hover {
+  background: var(--solar-primary, #5429FF);
+  border-color: var(--solar-primary, #5429FF);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(84, 41, 255, 0.25);
+}
+
+/* 3. Export Center Page Views */
+.export-center-wrapper {
+  max-width: 1260px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.export-hero-banner {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F5F3FF 60%, #EDE9FE 100%);
+  border: 1.5px solid #E0E7FF;
+  border-radius: 18px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 4px 16px rgba(84, 41, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.export-hero-left h2 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+}
+
+.export-hero-left p {
+  font-size: 0.88rem;
+  color: #64748B;
+  margin: 0;
+  max-width: 580px;
+  line-height: 1.45;
+}
+
+.export-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-export-everything {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 20px;
+  background: linear-gradient(135deg, #5429FF 0%, #431ED4 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 11px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(84, 41, 255, 0.32);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-export-everything:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(84, 41, 255, 0.45);
+}
+
+.btn-export-full-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 18px;
+  background: #FFFFFF;
+  color: #5429FF;
+  border: 1.5px solid #5429FF;
+  border-radius: 11px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-export-full-report:hover {
+  background: #EEF2FF;
+  box-shadow: 0 4px 12px rgba(84, 41, 255, 0.15);
+}
+
+/* Export Filter & Options Toolbar */
+.export-toolbar-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.export-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.export-filter-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.export-date-btn-group {
+  display: inline-flex;
+  background: #F1F5F9;
+  padding: 3px;
+  border-radius: 9px;
+  border: 1px solid #E2E8F0;
+}
+
+.export-date-btn {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: #64748B;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.export-date-btn.active {
+  background: #FFFFFF;
+  color: #5429FF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.export-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.export-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.export-toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.export-toggle-switch {
+  width: 36px;
+  height: 20px;
+  background: #CBD5E1;
+  border-radius: 20px;
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.export-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.export-toggle-input:checked + .export-toggle-switch {
+  background: #5429FF;
+}
+
+.export-toggle-input:checked + .export-toggle-switch::after {
+  transform: translateX(16px);
+}
+
+.export-toggle-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* Dataset Cards Grid */
+.export-dataset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 18px;
+}
+
+.export-dataset-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.export-dataset-card:hover {
+  border-color: #C7D2FE;
+  box-shadow: 0 8px 24px rgba(84, 41, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.export-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.export-card-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.export-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #EEF2FF;
+  color: #5429FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.export-card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 2px 0;
+}
+
+.export-card-count {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  background: #F1F5F9;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.export-card-desc {
+  font-size: 0.82rem;
+  color: #64748B;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.export-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: #94A3B8;
+  font-weight: 600;
+}
+
+.export-card-format-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.export-btn-card-format {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.export-btn-card-format:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #5429FF;
+}
+
+.export-btn-card-format.format-csv:hover {
+  border-color: #10B981;
+  color: #059669;
+  background: #ECFDF5;
+}
+
+.export-btn-card-format.format-xlsx:hover {
+  border-color: #16A34A;
+  color: #16A34A;
+  background: #F0FDF4;
+}
+
+.export-btn-card-format.format-pdf:hover {
+  border-color: #DC2626;
+  color: #DC2626;
+  background: #FEF2F2;
+}
+
+/* 4. Export History Section */
+.export-history-box {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.export-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.export-history-title-wrap h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 3px 0;
+}
+
+.export-history-title-wrap p {
+  font-size: 0.8rem;
+  color: #64748B;
+  margin: 0;
+}
+
+.btn-clear-history {
+  padding: 6px 12px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-clear-history:hover {
+  background: #FEE2E2;
+  border-color: #F87171;
+  color: #DC2626;
+}
+
+.export-format-badge {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.export-format-badge.badge-csv {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.export-format-badge.badge-excel,
+.export-format-badge.badge-xlsx {
+  background: #F0FDF4;
+  color: #16A34A;
+}
+
+.export-format-badge.badge-pdf {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.export-history-empty {
+  text-align: center;
+  padding: 38px 20px;
+  color: #94A3B8;
+  font-size: 0.86rem;
+}

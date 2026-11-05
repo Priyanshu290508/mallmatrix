@@ -3,6 +3,21 @@
  * Production Core Logic & Reactive State Management
  */
 
+import {
+  exportToCSV,
+  exportToExcel,
+  exportToPDF,
+  exportSinglePOToPDF,
+  exportFullReportToPDF,
+  getExportHistory,
+  clearExportHistory,
+  getLastExported,
+  setLastExported,
+  getExportTotalsSetting,
+  setExportTotalsSetting,
+  getExportFilename
+} from './src/utils/exportData.js';
+
 const MallState = {
   activeView: 'dashboard',
   totalSKUs: 18450,
@@ -384,6 +399,12 @@ window.MallApp = {
   _poDrawerKeydownHandler: null,
   _batchModalKeydownHandler: null,
   _rejectModalKeydownHandler: null,
+  _exportDateRange: 'today',
+  _exportDateMultiplier: 1.0,
+  _currentFilteredInventory: null,
+  _currentFilteredPOs: null,
+  _currentSalesRows: null,
+  _currentPODetail: null,
 
   init() {
     this.loadStateFromStorage();
@@ -392,6 +413,9 @@ window.MallApp = {
     this.bindInventoryFilters();
     this.bindCopilot();
     this.renderAll();
+    this.checkRoute();
+
+    window.addEventListener('hashchange', () => this.checkRoute());
 
     // Ensure Copilot button is visible on initial dashboard load
     const copilotBtn = document.getElementById('floatingCopilotBtn');
@@ -517,6 +541,8 @@ window.MallApp = {
     } else if (viewName === 'sales') {
       this.renderSalesLeaderboard();
       this.renderRevenueBarChart();
+    } else if (viewName === 'export') {
+      this.renderExportCenter();
     }
 
     // Keep bottom-right Copilot button visible on all views except the copilot view itself
@@ -536,7 +562,8 @@ window.MallApp = {
         sales: 'Manage Sales & POS Analytics',
         staff: 'Staff & Shift Duty Roster',
         tenants: 'Mall Tenant Stores Directory',
-        copilot: 'MallMatrix AI Copilot Assistant'
+        copilot: 'MallMatrix AI Copilot Assistant',
+        export: 'Data Export Center'
       };
       mainTitle.textContent = titles[viewName] || 'Welcome To Stock Management';
     }
@@ -1297,6 +1324,8 @@ window.MallApp = {
     this.renderSalesLeaderboard();
     this.renderStaffTable();
     this.renderTenantCards();
+    this.renderAllExportButtons();
+    this.renderExportCenter();
   },
 
   renderMetrics() {
@@ -1417,6 +1446,10 @@ window.MallApp = {
         }
       }
     });
+
+    // Store filtered and sorted inventory for data export
+    this._currentFilteredInventory = items;
+    this.renderInventoryExportButton();
 
     // Pagination calculations
     const totalItems = items.length;
@@ -1693,6 +1726,10 @@ window.MallApp = {
         orders = orders.filter(po => po.status === statusVal);
       }
     }
+
+    // Store filtered POs and render export button
+    this._currentFilteredPOs = orders;
+    this.renderReorderExportButton();
 
     // Update summary metrics
     const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
@@ -1994,6 +2031,7 @@ window.MallApp = {
     if (!po) return;
 
     this._activeDetailPoId = poId;
+    this._currentPODetail = po;
 
     const drawer = document.getElementById('poDetailDrawer');
     const backdrop = document.getElementById('poDrawerBackdrop');
@@ -2180,11 +2218,23 @@ window.MallApp = {
 
     // Footer actions
     if (footerEl) {
+      const downloadBtnHtml = `
+        <button type="button" class="po-btn-download-pdf" onclick="MallApp.downloadCurrentPOPDF('${po.id}')" title="Download Formatted Purchase Order (PDF)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download PO (PDF)</span>
+        </button>
+      `;
+
       if (isPending) {
         footerEl.innerHTML = `
           <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.openRejectModal('${po.id}')" style="color: #DC2626; border-color: rgba(220, 38, 38, 0.35);">
             Reject PO
           </button>
+          ${downloadBtnHtml}
           <button type="button" class="inv-drawer-btn-create" onclick="MallApp.approvePO('${po.id}')">
             Approve PO
           </button>
@@ -2194,6 +2244,7 @@ window.MallApp = {
           <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.closePODetailDrawer()">
             Close
           </button>
+          ${downloadBtnHtml}
           <button type="button" class="inv-drawer-btn-create" onclick="MallApp.shipPO('${po.id}')" style="background: #7E22CE;">
             Mark as Shipped
           </button>
@@ -2203,6 +2254,7 @@ window.MallApp = {
           <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.closePODetailDrawer()">
             Close
           </button>
+          ${downloadBtnHtml}
           <button type="button" class="inv-drawer-btn-create" onclick="MallApp.deliverPO('${po.id}')" style="background: #10B981;">
             Mark as Delivered
           </button>
@@ -2213,6 +2265,7 @@ window.MallApp = {
           <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.archivePO('${po.id}')">
             Archive PO
           </button>
+          ${downloadBtnHtml}
           <button type="button" class="inv-drawer-btn-create" onclick="MallApp.closePODetailDrawer()">
             Close
           </button>
@@ -2507,6 +2560,10 @@ window.MallApp = {
       return 0;
     });
 
+    // Store sorted & calculated sales rows for export
+    this._currentSalesRows = tenants;
+    this.renderSalesExportButton();
+
     tbody.innerHTML = tenants.map((t, idx) => {
       const isOffline = t.posStatus === 'offline';
       const isPositiveChange = t.changePct >= 0;
@@ -2602,6 +2659,8 @@ window.MallApp = {
         <td><a href="mailto:${s.contact}" style="color: var(--green-main); text-decoration: none; font-weight: 600;">${s.contact}</a></td>
       </tr>
     `).join('');
+
+    this.renderStaffExportButton();
   },
 
   renderTenantCards() {
@@ -2628,6 +2687,824 @@ window.MallApp = {
         </div>
       </div>
     `).join('');
+
+    this.renderTenantsExportButton();
+  },
+
+  // ========================================================
+  // DATA EXPORT SYSTEM & EXPORT CENTER IMPLEMENTATION
+  // ========================================================
+
+  checkRoute() {
+    const hash = (window.location.hash || '').toLowerCase().replace('#', '');
+    const path = (window.location.pathname || '').toLowerCase();
+    if (hash === 'export' || path.endsWith('/export')) {
+      this.switchView('export');
+    }
+  },
+
+  // 1. MODULE EXPORT CONFIGURATIONS
+  getInventoryExportConfig() {
+    return {
+      moduleKey: 'inventory',
+      moduleTitle: 'Inventory Catalog',
+      getData: () => this._currentFilteredInventory || [...MallState.products],
+      getAllData: () => [...MallState.products],
+      columns: [
+        { key: 'name', label: 'Product' },
+        { key: 'sku', label: 'SKU' },
+        { key: 'tenant', label: 'Tenant Store' },
+        { key: 'category', label: 'Category' },
+        { key: 'stock', label: 'Stock Qty', excelType: 'number' },
+        { key: 'minBuffer', label: 'Min Buffer', excelType: 'number' },
+        {
+          key: 'price',
+          label: 'Unit Price',
+          excelType: 'number',
+          format: val => `$${Number(val || 0).toFixed(2)}`
+        },
+        {
+          key: 'status',
+          label: 'Status',
+          format: (_, row) => {
+            if (row.stock < row.minBuffer * 0.5) return 'Critical';
+            if (row.stock <= row.minBuffer) return 'Low';
+            return 'Healthy';
+          }
+        }
+      ],
+      getSummaryRow: null
+    };
+  },
+
+  getReorderExportConfig() {
+    return {
+      moduleKey: 'reorder',
+      moduleTitle: 'Purchase Orders',
+      getData: () => this._currentFilteredPOs || [...MallState.purchaseOrders],
+      getAllData: () => [...MallState.purchaseOrders],
+      columns: [
+        { key: 'id', label: 'PO ID' },
+        { key: 'supplier', label: 'Vendor' },
+        { key: 'items', label: 'Items' },
+        { key: 'tenant', label: 'Target Tenant' },
+        {
+          key: 'value',
+          label: 'Total',
+          excelType: 'number',
+          format: val => typeof val === 'number' ? `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : val
+        },
+        { key: 'status', label: 'Status' },
+        { key: 'createdDate', label: 'Created Date' },
+        { key: 'expectedDelivery', label: 'Expected Delivery' }
+      ],
+      getSummaryRow: (rows) => {
+        let totalVal = 0;
+        rows.forEach(r => {
+          const num = parseFloat(String(r.value || '').replace(/[^0-9.-]+/g, '')) || 0;
+          totalVal += num;
+        });
+        return {
+          id: 'TOTALS',
+          supplier: `${rows.length} Orders`,
+          items: '',
+          tenant: '',
+          value: `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          status: '',
+          createdDate: '',
+          expectedDelivery: ''
+        };
+      }
+    };
+  },
+
+  getSalesExportConfig() {
+    return {
+      moduleKey: 'sales',
+      moduleTitle: 'Sales & POS Analytics',
+      getData: () => this.getCalculatedSalesRows(),
+      getAllData: () => this.getCalculatedSalesRows(),
+      columns: [
+        { key: 'rank', label: 'Rank', format: (val, _, idx) => `#0${idx + 1}` },
+        { key: 'name', label: 'Store' },
+        { key: 'unit', label: 'Location' },
+        {
+          key: 'calculatedUnits',
+          label: 'Units Sold',
+          excelType: 'number',
+          format: val => `${Number(val || 0).toLocaleString()} units`
+        },
+        {
+          key: 'calculatedSales',
+          label: 'Gross Sales',
+          excelType: 'number',
+          format: val => `$${Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        },
+        {
+          key: 'turnoverRate',
+          label: 'Turnover Rate',
+          excelType: 'number',
+          format: val => `${val}%`
+        },
+        {
+          key: 'posStatus',
+          label: 'POS Status',
+          format: val => String(val || 'online').toUpperCase()
+        }
+      ],
+      getSummaryRow: (rows) => {
+        const sumUnits = rows.reduce((acc, r) => acc + (r.calculatedUnits || 0), 0);
+        const sumSales = rows.reduce((acc, r) => acc + (r.calculatedSales || 0), 0);
+        return {
+          rank: 'TOTAL',
+          name: `${rows.length} Stores`,
+          unit: 'All Mall Wings',
+          calculatedUnits: `${sumUnits.toLocaleString()} units`,
+          calculatedSales: `$${sumSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          turnoverRate: '',
+          posStatus: 'All Synced'
+        };
+      }
+    };
+  },
+
+  getStaffExportConfig() {
+    return {
+      moduleKey: 'staff',
+      moduleTitle: 'Staff Directory',
+      getData: () => [...MallState.staff],
+      getAllData: () => [...MallState.staff],
+      columns: [
+        { key: 'name', label: 'Name' },
+        { key: 'id', label: 'ID' },
+        { key: 'role', label: 'Role' },
+        { key: 'zone', label: 'Zone' },
+        { key: 'status', label: 'Shift Status' },
+        { key: 'audits', label: 'Active Audits' },
+        { key: 'contact', label: 'Contact' }
+      ],
+      getSummaryRow: null
+    };
+  },
+
+  getTenantsExportConfig() {
+    return {
+      moduleKey: 'tenants',
+      moduleTitle: 'Tenant Stores',
+      getData: () => [...MallState.tenants],
+      getAllData: () => [...MallState.tenants],
+      columns: [
+        { key: 'name', label: 'Store' },
+        { key: 'unit', label: 'Location' },
+        { key: 'manager', label: 'Manager' },
+        { key: 'contact', label: 'Contact' },
+        {
+          key: 'posStatus',
+          label: 'POS Sync Status',
+          format: val => String(val || 'online').toUpperCase()
+        },
+        { key: 'status', label: 'Lease status' }
+      ],
+      getSummaryRow: null
+    };
+  },
+
+  getCalculatedSalesRows(multiplierOverride) {
+    const mult = multiplierOverride !== undefined ? multiplierOverride : (this._salesDateMultiplier || 1.0);
+    const sortCol = this._salesSort?.col || 'salesAmount';
+    const sortDir = this._salesSort?.dir || 'desc';
+
+    let tenants = MallState.tenants.map((t, idx) => {
+      const calculatedSales = Math.round(t.salesAmount * mult);
+      const calculatedUnits = Math.round(t.unitsSold * mult);
+      return {
+        ...t,
+        originalRank: idx + 1,
+        calculatedSales,
+        calculatedUnits
+      };
+    });
+
+    const sign = sortDir === 'asc' ? 1 : -1;
+    tenants.sort((a, b) => {
+      if (sortCol === 'rank') return sign * (a.originalRank - b.originalRank);
+      if (sortCol === 'name') return sign * a.name.localeCompare(b.name);
+      if (sortCol === 'unit') return sign * a.unit.localeCompare(b.unit);
+      if (sortCol === 'unitsSold') return sign * (a.calculatedUnits - b.calculatedUnits);
+      if (sortCol === 'salesAmount') return sign * (a.calculatedSales - b.calculatedSales);
+      if (sortCol === 'changePct') return sign * (a.changePct - b.changePct);
+      if (sortCol === 'turnoverRate') return sign * (a.turnoverRate - b.turnoverRate);
+      if (sortCol === 'posStatus') return sign * a.posStatus.localeCompare(b.posStatus);
+      return 0;
+    });
+
+    return tenants;
+  },
+
+  // 2. REUSABLE EXPORT BUTTON COMPONENT RENDERER
+  renderExportDropdown(containerId, config) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const {
+      moduleKey,
+      moduleTitle,
+      getData,
+      getAllData,
+      columns,
+      getSummaryRow
+    } = config;
+
+    const data = getData ? getData() : [];
+    const allData = getAllData ? getAllData() : data;
+    const isFiltered = (allData.length > 0 && data.length !== allData.length);
+    const isDisabled = data.length === 0 && allData.length === 0;
+
+    let currentScope = isFiltered ? 'view' : 'all';
+
+    container.innerHTML = `
+      <div class="export-dropdown-wrap" id="exportWrap_${moduleKey}">
+        <button type="button" 
+          class="export-dropdown-btn" 
+          id="exportBtn_${moduleKey}"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          aria-label="Export ${moduleTitle} data"
+          ${isDisabled ? 'disabled title="No data to export"' : ''}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span class="export-btn-text">Export</span>
+          <svg width="12" height="12" class="export-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+
+        <div class="export-dropdown-menu" id="exportMenu_${moduleKey}" role="menu">
+          ${isFiltered ? `
+            <div class="export-menu-badge">
+              <span>Exporting ${data.length} filtered rows</span>
+              <span style="font-size:0.7rem; color:#64748B;">Total: ${allData.length}</span>
+            </div>
+            <div class="export-scope-toggle" id="exportScopeToggle_${moduleKey}">
+              <button type="button" class="export-scope-btn active" data-scope="view">Current view (${data.length})</button>
+              <button type="button" class="export-scope-btn" data-scope="all">All rows (${allData.length})</button>
+            </div>
+          ` : ''}
+
+          <button type="button" class="export-menu-item" role="menuitem" data-format="csv">
+            <span class="export-item-icon export-icon-csv">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </span>
+            <span>Export as CSV</span>
+          </button>
+
+          <button type="button" class="export-menu-item" role="menuitem" data-format="xlsx">
+            <span class="export-item-icon export-icon-xlsx">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="9" y1="21" x2="9" y2="9"/>
+              </svg>
+            </span>
+            <span>Export as Excel (.xlsx)</span>
+          </button>
+
+          <button type="button" class="export-menu-item" role="menuitem" data-format="pdf">
+            <span class="export-item-icon export-icon-pdf">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </span>
+            <span>Export as PDF</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const wrap = document.getElementById(`exportWrap_${moduleKey}`);
+    const btn = document.getElementById(`exportBtn_${moduleKey}`);
+    const menu = document.getElementById(`exportMenu_${moduleKey}`);
+    if (!wrap || !btn || !menu) return;
+
+    const toggleMenu = (open) => {
+      const isOpen = open !== undefined ? open : !wrap.classList.contains('open');
+      wrap.classList.toggle('open', isOpen);
+      btn.setAttribute('aria-expanded', String(isOpen));
+    };
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.export-dropdown-wrap.open').forEach(w => {
+        if (w !== wrap) w.classList.remove('open');
+      });
+      toggleMenu();
+    });
+
+    const scopeToggle = document.getElementById(`exportScopeToggle_${moduleKey}`);
+    if (scopeToggle) {
+      scopeToggle.querySelectorAll('.export-scope-btn').forEach(sBtn => {
+        sBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scopeToggle.querySelectorAll('.export-scope-btn').forEach(b => b.classList.remove('active'));
+          sBtn.classList.add('active');
+          currentScope = sBtn.getAttribute('data-scope');
+        });
+      });
+    }
+
+    menu.querySelectorAll('.export-menu-item').forEach(item => {
+      item.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const format = item.getAttribute('data-format');
+        toggleMenu(false);
+
+        const rowsToExport = currentScope === 'all'
+          ? (getAllData ? getAllData() : data)
+          : (getData ? getData() : data);
+
+        if (!rowsToExport || rowsToExport.length === 0) {
+          this.showToast('No data rows to export', 'warning');
+          return;
+        }
+
+        const summaryRow = getSummaryRow ? getSummaryRow(rowsToExport) : null;
+        const textSpan = btn.querySelector('.export-btn-text');
+        const origText = textSpan ? textSpan.textContent : 'Export';
+        if (textSpan) textSpan.innerHTML = '<span class="export-spinner"></span> Generating...';
+        btn.disabled = true;
+
+        try {
+          await new Promise(r => setTimeout(r, 60));
+          const filename = getExportFilename(moduleKey, format);
+
+          if (format === 'csv') {
+            exportToCSV(rowsToExport, columns, filename, {
+              moduleName: moduleKey,
+              moduleTitle,
+              summaryRow
+            });
+            this.showToast(`${moduleTitle} exported as CSV`, 'success');
+          } else if (format === 'xlsx') {
+            exportToExcel({
+              name: moduleTitle.substring(0, 31),
+              rows: rowsToExport,
+              columns,
+              summaryRow
+            }, filename, {
+              moduleName: moduleKey,
+              moduleTitle
+            });
+            this.showToast(`${moduleTitle} exported as Excel`, 'success');
+          } else if (format === 'pdf') {
+            exportToPDF(`${moduleTitle} Report`, rowsToExport, columns, filename, {
+              moduleName: moduleKey,
+              moduleTitle,
+              summaryRow
+            });
+            this.showToast(`${moduleTitle} exported as PDF`, 'success');
+          }
+
+          this.renderExportCenter();
+        } catch (err) {
+          console.error('Export error:', err);
+          this.showToast(`Export failed: ${err.message || 'Unknown error'}`, 'error');
+        } finally {
+          if (textSpan) textSpan.textContent = origText;
+          btn.disabled = false;
+        }
+      });
+    });
+
+    const outsideClickListener = (e) => {
+      if (!wrap.contains(e.target)) {
+        toggleMenu(false);
+      }
+    };
+    document.addEventListener('click', outsideClickListener);
+
+    const escapeListener = (e) => {
+      if (e.key === 'Escape' && wrap.classList.contains('open')) {
+        toggleMenu(false);
+        btn.focus();
+      }
+    };
+    document.addEventListener('keydown', escapeListener);
+  },
+
+  renderAllExportButtons() {
+    this.renderInventoryExportButton();
+    this.renderReorderExportButton();
+    this.renderSalesExportButton();
+    this.renderStaffExportButton();
+    this.renderTenantsExportButton();
+  },
+
+  renderInventoryExportButton() {
+    this.renderExportDropdown('exportBtnInventoryWrap', this.getInventoryExportConfig());
+  },
+
+  renderReorderExportButton() {
+    this.renderExportDropdown('exportBtnReorderWrap', this.getReorderExportConfig());
+  },
+
+  renderSalesExportButton() {
+    this.renderExportDropdown('exportBtnSalesWrap', this.getSalesExportConfig());
+  },
+
+  renderStaffExportButton() {
+    this.renderExportDropdown('exportBtnStaffWrap', this.getStaffExportConfig());
+  },
+
+  renderTenantsExportButton() {
+    this.renderExportDropdown('exportBtnTenantsWrap', this.getTenantsExportConfig());
+  },
+
+  // 3. SINGLE PO DOCUMENT EXPORT
+  downloadCurrentPOPDF(poId) {
+    const po = MallState.purchaseOrders.find(item => item.id === poId) || this._currentPODetail;
+    if (!po) {
+      this.showToast('Purchase Order not found', 'error');
+      return;
+    }
+    try {
+      exportSinglePOToPDF(po);
+      this.showToast(`PO ${po.id} document exported as PDF`, 'success');
+      this.renderExportCenter();
+    } catch (err) {
+      console.error('Single PO export failed:', err);
+      this.showToast(`Export failed: ${err.message}`, 'error');
+    }
+  },
+
+  // 4. EXPORT CENTER PAGE IMPLEMENTATION
+  renderExportCenter() {
+    const grid = document.getElementById('exportDatasetsGrid');
+    const historyContainer = document.getElementById('exportHistoryContainer');
+    const totalsSwitch = document.getElementById('exportIncludeTotalsSwitch');
+
+    if (totalsSwitch) {
+      totalsSwitch.checked = getExportTotalsSetting();
+    }
+
+    if (grid) {
+      const mult = this._exportDateMultiplier || 1.0;
+      const calculatedSalesCount = MallState.tenants.length;
+
+      const datasets = [
+        {
+          key: 'inventory',
+          title: 'Inventory Catalog',
+          desc: 'Stock buffer limits, SKU thresholds, product pricing, and health metrics.',
+          count: `${MallState.products.length} SKUs`,
+          lastExport: getLastExported('inventory'),
+          iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
+        },
+        {
+          key: 'reorder',
+          title: 'Purchase Orders',
+          desc: 'Safety stock replenishment queue, supplier SLAs, approval audit logs, and lead times.',
+          count: `${MallState.purchaseOrders.length} Orders`,
+          lastExport: getLastExported('reorder'),
+          iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`
+        },
+        {
+          key: 'sales',
+          title: 'Sales & POS Analytics',
+          desc: `Store revenue, units sold, turnover velocity, and terminal status (${this._exportDateRange || 'today'}).`,
+          count: `${calculatedSalesCount} Stores`,
+          lastExport: getLastExported('sales'),
+          iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`
+        },
+        {
+          key: 'staff',
+          title: 'Staff Directory',
+          desc: 'Duty rosters, assigned mall corridors, active audit allocations, and contact data.',
+          count: `${MallState.staff.length} Officers`,
+          lastExport: getLastExported('staff'),
+          iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+        },
+        {
+          key: 'tenants',
+          title: 'Tenant Stores Directory',
+          desc: 'Retail tenants, assigned unit locations, managers, contact details, and POS link status.',
+          count: `${MallState.tenants.length} Tenants`,
+          lastExport: getLastExported('tenants'),
+          iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
+        }
+      ];
+
+      grid.innerHTML = datasets.map(d => `
+        <div class="export-dataset-card">
+          <div>
+            <div class="export-card-head">
+              <div class="export-card-icon-title">
+                <div class="export-card-icon">${d.iconSvg}</div>
+                <div>
+                  <h4 class="export-card-title">${this.escapeHTML(d.title)}</h4>
+                  <div class="export-card-meta">
+                    <span>🕒 Last: ${this.escapeHTML(d.lastExport)}</span>
+                  </div>
+                </div>
+              </div>
+              <span class="export-card-count">${d.count}</span>
+            </div>
+            <p class="export-card-desc" style="margin-top: 10px;">${this.escapeHTML(d.desc)}</p>
+          </div>
+
+          <div class="export-card-format-group">
+            <button type="button" class="export-btn-card-format format-csv" onclick="MallApp.exportDataset('${d.key}', 'csv')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              CSV
+            </button>
+            <button type="button" class="export-btn-card-format format-xlsx" onclick="MallApp.exportDataset('${d.key}', 'xlsx')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              Excel
+            </button>
+            <button type="button" class="export-btn-card-format format-pdf" onclick="MallApp.exportDataset('${d.key}', 'pdf')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+              PDF
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    if (historyContainer) {
+      const history = getExportHistory();
+      if (!history || history.length === 0) {
+        historyContainer.innerHTML = `
+          <div class="export-history-empty">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.8" style="margin: 0 auto 10px auto; display: block;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+            No export downloads recorded in this session yet. Choose an export option above to generate files.
+          </div>
+        `;
+      } else {
+        const rowsHtml = history.map(h => {
+          let badgeClass = 'badge-csv';
+          const fmt = String(h.format || '').toLowerCase();
+          if (fmt.includes('excel') || fmt.includes('xlsx')) badgeClass = 'badge-excel';
+          else if (fmt.includes('pdf')) badgeClass = 'badge-pdf';
+
+          return `
+            <tr>
+              <td>
+                <div style="font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span>${this.escapeHTML(h.fileName)}</span>
+                </div>
+              </td>
+              <td><span style="font-weight: 600; color: #475569;">${this.escapeHTML(h.module)}</span></td>
+              <td><span class="export-format-badge ${badgeClass}">${this.escapeHTML(h.format)}</span></td>
+              <td><strong style="color: #334155;">${h.recordCount} rows</strong></td>
+              <td style="color: #64748B; font-size: 0.78rem;">${this.escapeHTML(h.timestamp)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        historyContainer.innerHTML = `
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>File Name</th>
+                  <th>Dataset / Scope</th>
+                  <th>Format</th>
+                  <th>Record Count</th>
+                  <th>Generated Timestamp</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+  },
+
+  setExportDateRange(range) {
+    this._exportDateRange = range;
+    const group = document.getElementById('exportCenterDateGroup');
+    const customBox = document.getElementById('exportCenterCustomDates');
+
+    if (group) {
+      group.querySelectorAll('.export-date-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-range') === range);
+      });
+    }
+
+    if (range === 'custom') {
+      if (customBox) customBox.style.display = 'flex';
+      return;
+    } else {
+      if (customBox) customBox.style.display = 'none';
+    }
+
+    if (range === 'today') this._exportDateMultiplier = 1.0;
+    else if (range === '7d') this._exportDateMultiplier = 6.8;
+    else if (range === '30d') this._exportDateMultiplier = 28.5;
+
+    this.renderExportCenter();
+    this.showToast(`Export scope set to ${range.toUpperCase()}`, 'info');
+  },
+
+  applyExportCustomDateRange() {
+    const start = document.getElementById('exportDateStart')?.value || '2026-03-01';
+    const end = document.getElementById('exportDateEnd')?.value || '2026-03-24';
+    const d1 = new Date(start);
+    const d2 = new Date(end);
+    const diffDays = Math.max(1, Math.round((d2 - d1) / (1000 * 60 * 60 * 24))) + 1;
+
+    this._exportDateMultiplier = Number((diffDays * 0.95).toFixed(1));
+    this.renderExportCenter();
+    this.showToast(`Export range updated: ${diffDays} days`, 'info');
+  },
+
+  exportDataset(moduleKey, format) {
+    let config = null;
+    if (moduleKey === 'inventory') config = this.getInventoryExportConfig();
+    else if (moduleKey === 'reorder') config = this.getReorderExportConfig();
+    else if (moduleKey === 'sales') {
+      config = this.getSalesExportConfig();
+      config.getData = () => this.getCalculatedSalesRows(this._exportDateMultiplier);
+    } else if (moduleKey === 'staff') config = this.getStaffExportConfig();
+    else if (moduleKey === 'tenants') config = this.getTenantsExportConfig();
+
+    if (!config) return;
+
+    try {
+      const rows = config.getData();
+      const filename = getExportFilename(moduleKey, format);
+      const summaryRow = config.getSummaryRow ? config.getSummaryRow(rows) : null;
+
+      if (format === 'csv') {
+        exportToCSV(rows, config.columns, filename, {
+          moduleName: moduleKey,
+          moduleTitle: config.moduleTitle,
+          summaryRow
+        });
+        this.showToast(`${config.moduleTitle} exported as CSV`, 'success');
+      } else if (format === 'xlsx') {
+        exportToExcel({
+          name: config.moduleTitle.substring(0, 31),
+          rows,
+          columns: config.columns,
+          summaryRow
+        }, filename, {
+          moduleName: moduleKey,
+          moduleTitle: config.moduleTitle
+        });
+        this.showToast(`${config.moduleTitle} exported as Excel`, 'success');
+      } else if (format === 'pdf') {
+        exportToPDF(`${config.moduleTitle} Report`, rows, config.columns, filename, {
+          moduleName: moduleKey,
+          moduleTitle: config.moduleTitle,
+          summaryRow
+        });
+        this.showToast(`${config.moduleTitle} exported as PDF`, 'success');
+      }
+
+      this.renderExportCenter();
+    } catch (err) {
+      console.error('Export dataset failed:', err);
+      this.showToast(`Export failed: ${err.message}`, 'error');
+    }
+  },
+
+  exportEverythingExcel() {
+    try {
+      const filename = getExportFilename('all-modules', 'xlsx');
+      const salesRows = this.getCalculatedSalesRows(this._exportDateMultiplier);
+      const poRows = [...MallState.purchaseOrders];
+      const invRows = [...MallState.products];
+      const staffRows = [...MallState.staff];
+      const tenantRows = [...MallState.tenants];
+
+      const sheets = [
+        {
+          name: 'Inventory Catalog',
+          rows: invRows,
+          columns: this.getInventoryExportConfig().columns
+        },
+        {
+          name: 'Purchase Orders',
+          rows: poRows,
+          columns: this.getReorderExportConfig().columns,
+          summaryRow: this.getReorderExportConfig().getSummaryRow(poRows)
+        },
+        {
+          name: 'Store Sales POS',
+          rows: salesRows,
+          columns: this.getSalesExportConfig().columns,
+          summaryRow: this.getSalesExportConfig().getSummaryRow(salesRows)
+        },
+        {
+          name: 'Staff Directory',
+          rows: staffRows,
+          columns: this.getStaffExportConfig().columns
+        },
+        {
+          name: 'Tenant Stores Directory',
+          rows: tenantRows,
+          columns: this.getTenantsExportConfig().columns
+        }
+      ];
+
+      exportToExcel(sheets, filename, {
+        moduleName: 'all-modules',
+        moduleTitle: 'Complete Mall Operations'
+      });
+
+      this.showToast('All 5 MallMatrix modules exported as multi-sheet Excel workbook!', 'success');
+      this.renderExportCenter();
+    } catch (err) {
+      console.error('Export everything failed:', err);
+      this.showToast(`Export failed: ${err.message}`, 'error');
+    }
+  },
+
+  exportFullReportPDF() {
+    try {
+      const salesRows = this.getCalculatedSalesRows(this._exportDateMultiplier);
+      const totalRev = salesRows.reduce((acc, cur) => acc + (cur.calculatedSales || cur.salesAmount), 0);
+      const lowStockCount = MallState.products.filter(p => p.stock <= p.minBuffer).length;
+      const pendingPOCount = MallState.purchaseOrders.filter(p => p.status === 'Pending' || p.status === 'On Pending').length;
+      const staffOnDuty = MallState.staff.filter(s => s.status === 'On Duty').length;
+
+      const mallData = {
+        totalRevenue: totalRev,
+        lowStockCount,
+        pendingPOCount,
+        staffOnDuty,
+        tenants: salesRows,
+        products: MallState.products,
+        purchaseOrders: MallState.purchaseOrders,
+        staff: MallState.staff
+      };
+
+      exportFullReportToPDF(mallData);
+      this.showToast('Full Mall Operations Report exported as PDF!', 'success');
+      this.renderExportCenter();
+    } catch (err) {
+      console.error('Full report export failed:', err);
+      this.showToast(`Export failed: ${err.message}`, 'error');
+    }
+  },
+
+  handleClearExportHistory() {
+    clearExportHistory();
+    this.renderExportCenter();
+    this.showToast('Export history cleared', 'info');
+  },
+
+  // 5. SETTINGS MODAL & TOTALS CONFIGURATION
+  openSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    const switchInModal = document.getElementById('settingsModalTotalsSwitch');
+    if (switchInModal) {
+      switchInModal.checked = getExportTotalsSetting();
+    }
+    if (modal) {
+      modal.classList.add('open');
+      modal.style.display = 'flex';
+      this.setOverlayOpen(true);
+    }
+  },
+
+  closeSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    if (modal) {
+      modal.classList.remove('open');
+      modal.style.display = 'none';
+      this.setOverlayOpen(false);
+    }
+  },
+
+  toggleTotalsSetting(checked) {
+    setExportTotalsSetting(checked);
+    const sw1 = document.getElementById('exportIncludeTotalsSwitch');
+    const sw2 = document.getElementById('settingsModalTotalsSwitch');
+    if (sw1) sw1.checked = checked;
+    if (sw2) sw2.checked = checked;
+    this.showToast(`Summary totals row ${checked ? 'enabled' : 'disabled'} for exports`, 'info');
   },
 
   showToast(msg, type = 'info') {

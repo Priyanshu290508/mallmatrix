@@ -10,5 +10,10 @@
   },
   "devDependencies": {
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
+    "xlsx": "^0.18.5"
   }
 }
