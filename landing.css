@@ -656,3 +656,56 @@
   outline: 2px solid var(--lp-purple);
   outline-offset: 3px;
 }
+
+/* ========================================================
+   FLOATING AI COPILOT BUTTON (bottom-right, all pages)
+   ======================================================== */
+
+.lp-root .lp-floating-copilot {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: linear-gradient(135deg, #5429FF 0%, #3D1EB8 100%);
+  color: #FFFFFF;
+  text-decoration: none;
+  border-radius: 9999px;
+  padding: 13px 22px;
+  font-family: var(--lp-font-ui);
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(84, 41, 255, 0.42);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.lp-root .lp-floating-copilot:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 12px 30px rgba(84, 41, 255, 0.55);
+}
+
+.lp-root .lp-copilot-glow-ring {
+  display: none;
+}
+
+.lp-root .lp-copilot-sparkle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-root .lp-copilot-floating-text {
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 640px) {
+  .lp-root .lp-floating-copilot {
+    bottom: 18px;
+    right: 18px;
+    padding: 10px 16px;
+    font-size: 0.84rem;
+  }
+}
