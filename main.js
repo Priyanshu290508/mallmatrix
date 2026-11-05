@@ -258,6 +258,8 @@ window.MallApp = {
   _invSelected: new Set(),
   _invLowStockOnly: false,
   _activeRestockSku: null,
+  _lastFocusedElement: null,
+  _drawerKeydownHandler: null,
 
   init() {
     this.bindNavigation();
@@ -604,50 +606,133 @@ window.MallApp = {
     this.openRestockDrawer(sku);
   },
 
+  adjustRestockQty(delta) {
+    const qtyInput = document.getElementById('invDrawerQty');
+    if (!qtyInput) return;
+    let curr = parseInt(qtyInput.value, 10) || 0;
+    curr = Math.max(1, curr + delta);
+    qtyInput.value = curr;
+    this.updateDrawerCostPreview();
+  },
+
+  onDrawerVendorChange() {
+    const vendorSelect = document.getElementById('invDrawerVendor');
+    const leadDaysEl = document.getElementById('invDrawerLeadDays');
+    if (!vendorSelect || !leadDaysEl) return;
+    const selectedOpt = vendorSelect.options[vendorSelect.selectedIndex];
+    const lead = selectedOpt ? selectedOpt.getAttribute('data-lead') : '3';
+    leadDaysEl.textContent = `${lead} business days`;
+  },
+
+  trapDrawerFocus(drawer) {
+    if (this._drawerKeydownHandler) {
+      document.removeEventListener('keydown', this._drawerKeydownHandler);
+      this._drawerKeydownHandler = null;
+    }
+
+    const focusableSelectors = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    this._drawerKeydownHandler = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.closeRestockDrawer();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusables = Array.from(drawer.querySelectorAll(focusableSelectors))
+          .filter(el => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+
+        const firstEl = focusables[0];
+        const lastEl = focusables[focusables.length - 1];
+
+        if (e.shiftKey) { // Shift + Tab
+          if (document.activeElement === firstEl || !drawer.contains(document.activeElement)) {
+            e.preventDefault();
+            lastEl.focus();
+          }
+        } else { // Tab
+          if (document.activeElement === lastEl) {
+            e.preventDefault();
+            firstEl.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', this._drawerKeydownHandler);
+  },
+
   openRestockDrawer(sku) {
     const p = MallState.products.find(item => item.sku === sku);
     if (!p) return;
 
+    this._lastFocusedElement = document.activeElement;
     this._activeRestockSku = sku;
 
     const drawer = document.getElementById('invRestockDrawer');
     const backdrop = document.getElementById('invDrawerBackdrop');
     if (!drawer || !backdrop) return;
 
+    // Suggested reorder quantity formula: (min buffer x 3) - current stock
+    const calculatedSuggested = (p.minBuffer * 3) - p.stock;
+    const suggestedQty = Math.max(1, calculatedSuggested);
+
     const titleEl = document.getElementById('invDrawerTitle');
     const skuEl = document.getElementById('invDrawerSku');
+    const prodNameEl = document.getElementById('invDrawerProdName');
+    const skuBadgeEl = document.getElementById('invDrawerSkuBadge');
+    const tenantEl = document.getElementById('invDrawerTenant');
     const currStockEl = document.getElementById('invDrawerCurrentStock');
     const minBufferEl = document.getElementById('invDrawerMinBuffer');
     const unitPriceEl = document.getElementById('invDrawerUnitPrice');
     const statusWrap = document.getElementById('invDrawerStatusPill');
     const qtyInput = document.getElementById('invDrawerQty');
-    const supplierInput = document.getElementById('invDrawerSupplier');
-    const notesInput = document.getElementById('invDrawerNotes');
+    const formulaBadgeEl = document.getElementById('invDrawerFormulaBadge');
+    const suggestedNoteEl = document.getElementById('invDrawerSuggestedNote');
+    const vendorSelect = document.getElementById('invDrawerVendor');
 
-    if (titleEl) titleEl.textContent = p.name;
+    if (titleEl) titleEl.textContent = `Restock ${p.name}`;
     if (skuEl) skuEl.textContent = `${p.sku} • ${p.tenant} (${p.unit})`;
+    if (prodNameEl) prodNameEl.textContent = p.name;
+    if (skuBadgeEl) skuBadgeEl.textContent = p.sku;
+    if (tenantEl) tenantEl.textContent = `${p.tenant} (${p.unit})`;
     if (currStockEl) currStockEl.textContent = p.stock;
     if (minBufferEl) minBufferEl.textContent = p.minBuffer;
     if (unitPriceEl) unitPriceEl.textContent = `$${p.price.toFixed(2)}`;
+
+    if (formulaBadgeEl) {
+      formulaBadgeEl.textContent = `Suggested: ${suggestedQty} units`;
+    }
+    if (suggestedNoteEl) {
+      suggestedNoteEl.textContent = `Calculated: (${p.minBuffer} min buffer × 3) - ${p.stock} current stock = ${suggestedQty} units`;
+    }
 
     const status = this.getProductStatus(p);
     if (statusWrap) {
       statusWrap.innerHTML = `
         <span class="inv-status-pill ${status.pillClass}">
-          ${status.label} (${p.stock} in stock / ${p.minBuffer} min safety buffer)
+          ${status.label} (${p.stock} / ${p.minBuffer} min)
         </span>
       `;
     }
 
-    const defaultQty = Math.max(15, p.minBuffer * 2);
-    if (qtyInput) qtyInput.value = defaultQty;
-
-    if (supplierInput) {
-      supplierInput.value = `${p.tenant.split(' ')[0]} Direct Logistics Hub`;
+    if (qtyInput) {
+      qtyInput.value = suggestedQty;
     }
 
-    if (notesInput) {
-      notesInput.value = `Expedited restocking requisition for SKU: ${p.sku}. Current inventory: ${p.stock} units.`;
+    // Pre-select matching vendor by tenant
+    if (vendorSelect) {
+      const tenantPrefix = p.tenant.split(' ')[0].toLowerCase();
+      let matchedIndex = 0;
+      for (let i = 0; i < vendorSelect.options.length; i++) {
+        if (vendorSelect.options[i].value.toLowerCase().includes(tenantPrefix)) {
+          matchedIndex = i;
+          break;
+        }
+      }
+      vendorSelect.selectedIndex = matchedIndex;
+      this.onDrawerVendorChange();
     }
 
     this.updateDrawerCostPreview();
@@ -656,9 +741,14 @@ window.MallApp = {
     drawer.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
 
-    if (qtyInput) {
-      setTimeout(() => qtyInput.focus(), 180);
-    }
+    this.trapDrawerFocus(drawer);
+
+    setTimeout(() => {
+      if (qtyInput) {
+        qtyInput.focus();
+        qtyInput.select();
+      }
+    }, 120);
   },
 
   closeRestockDrawer() {
@@ -671,6 +761,17 @@ window.MallApp = {
     if (backdrop) {
       backdrop.classList.remove('open');
     }
+
+    if (this._drawerKeydownHandler) {
+      document.removeEventListener('keydown', this._drawerKeydownHandler);
+      this._drawerKeydownHandler = null;
+    }
+
+    if (this._lastFocusedElement && typeof this._lastFocusedElement.focus === 'function') {
+      this._lastFocusedElement.focus();
+      this._lastFocusedElement = null;
+    }
+
     this._activeRestockSku = null;
   },
 
@@ -678,44 +779,61 @@ window.MallApp = {
     const p = MallState.products.find(item => item.sku === this._activeRestockSku);
     const qtyInput = document.getElementById('invDrawerQty');
     const costVal = document.getElementById('invDrawerCostVal');
+    const formulaEl = document.getElementById('invDrawerCalcFormula');
     if (!p || !qtyInput || !costVal) return;
 
-    const qty = parseInt(qtyInput.value, 10) || 0;
+    let qty = parseInt(qtyInput.value, 10);
+    if (isNaN(qty) || qty < 1) qty = 0;
     const total = Math.max(0, qty * p.price);
+
     costVal.textContent = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (formulaEl) {
+      formulaEl.textContent = `${qty} units × $${p.price.toFixed(2)}`;
+    }
   },
 
-  confirmRestockFromDrawer() {
+  createPOFromDrawer() {
     if (!this._activeRestockSku) return;
     const p = MallState.products.find(item => item.sku === this._activeRestockSku);
     if (!p) return;
 
     const qtyInput = document.getElementById('invDrawerQty');
-    const supplierInput = document.getElementById('invDrawerSupplier');
+    const vendorSelect = document.getElementById('invDrawerVendor');
     const qty = parseInt(qtyInput ? qtyInput.value : 0, 10);
 
     if (isNaN(qty) || qty <= 0) {
-      this.showToast('Please enter a valid restock quantity (at least 1 unit).', 'info');
+      this.showToast('Please enter a valid reorder quantity (at least 1 unit).', 'info');
       return;
     }
 
-    p.stock += qty;
-    MallState.stockValuation += (qty * p.price);
+    const vendor = vendorSelect ? vendorSelect.value : `${p.tenant} Logistics Hub`;
+    const totalCost = qty * p.price;
 
-    // Record PO in Reordering system for cross-module orchestration
-    const supplier = (supplierInput && supplierInput.value.trim()) ? supplierInput.value.trim() : `${p.tenant} Logistics`;
-    MallState.purchaseOrders.unshift({
+    // Add new PO to Reordering page list with status "Pending"
+    const newPO = {
       id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
-      supplier: supplier,
+      supplier: vendor,
       items: `${qty}x ${p.name}`,
       tenant: `${p.tenant} (${p.unit})`,
-      value: `$${(qty * p.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      status: 'Order Delivered'
-    });
+      value: `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      status: 'Pending'
+    };
 
+    MallState.purchaseOrders.unshift(newPO);
+
+    // Close the drawer
     this.closeRestockDrawer();
-    this.renderAll();
-    this.showToast(`Restock confirmed: +${qty} units added to ${p.name}!`, 'success');
+
+    // Re-render Reordering list and Inventory view
+    this.renderPurchaseOrders();
+    this.renderInventoryTable();
+
+    // Show exact success toast requested: "PO created for <product>"
+    this.showToast(`PO created for ${p.name}`, 'success');
+  },
+
+  confirmRestockFromDrawer() {
+    this.createPOFromDrawer();
   },
 
   generateBatchReorder() {

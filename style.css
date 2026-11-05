@@ -2249,16 +2249,16 @@ html, body {
   box-shadow: 0 2px 6px rgba(84, 41, 255, 0.25);
 }
 
-/* 9. Restock Right Drawer */
+/* 9. Restock Right Drawer Component (Tailwind Transitions & Focus Trap) */
 .inv-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(11, 19, 48, 0.45);
-  backdrop-filter: blur(3px);
+  background: rgba(11, 19, 48, 0.5);
+  backdrop-filter: blur(4px);
   z-index: 1200;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .inv-drawer-backdrop.open {
@@ -2269,20 +2269,23 @@ html, body {
 .inv-restock-drawer {
   position: fixed;
   top: 0;
-  right: -480px;
-  width: 440px;
-  max-width: 92vw;
+  right: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: 95vw;
   height: 100vh;
   background: #FFFFFF;
   z-index: 1210;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15);
-  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -12px 0 45px rgba(0, 0, 0, 0.18);
+  transform: translateX(100%);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  outline: none;
 }
 
 .inv-restock-drawer.open {
-  right: 0;
+  transform: translateX(0);
 }
 
 .inv-drawer-header {
@@ -2345,6 +2348,54 @@ html, body {
   gap: 18px;
 }
 
+/* Product Summary Card */
+.inv-drawer-summary-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.inv-drawer-summary-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inv-drawer-prod-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 4px 0;
+}
+
+.inv-drawer-sub-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inv-drawer-sku-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  background: #E2E8F0;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.inv-drawer-tenant-name {
+  font-size: 0.8rem;
+  color: #64748B;
+  font-weight: 600;
+}
+
 .inv-drawer-stat-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2352,7 +2403,7 @@ html, body {
 }
 
 .inv-drawer-stat {
-  background: #F8FAFC;
+  background: #FFFFFF;
   border: 1px solid #E2E8F0;
   border-radius: 10px;
   padding: 10px 12px;
@@ -2374,17 +2425,19 @@ html, body {
   color: #0F172A;
 }
 
-.inv-drawer-status-wrap {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  padding: 12px;
-}
-
+/* Stepper Quantity Input with +/- */
 .inv-drawer-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.inv-drawer-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
 }
 
 .inv-drawer-label {
@@ -2393,75 +2446,216 @@ html, body {
   color: #334155;
 }
 
+.inv-drawer-calc-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--solar-primary, #5429FF);
+  background: #EEF2FF;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.inv-stepper-wrap {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  background: #FFFFFF;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inv-stepper-wrap:focus-within {
+  border-color: var(--solar-primary, #5429FF);
+  box-shadow: 0 0 0 3px rgba(84, 41, 255, 0.12);
+}
+
+.inv-stepper-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: #F8FAFC;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.inv-stepper-btn:hover {
+  background: #EEF2FF;
+  color: var(--solar-primary, #5429FF);
+}
+
+.inv-stepper-btn:active {
+  background: #E0E7FF;
+}
+
+.inv-stepper-input {
+  flex: 1;
+  border: none;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0F172A;
+  outline: none;
+  padding: 8px 12px;
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+.inv-stepper-input::-webkit-outer-spin-button,
+.inv-stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .inv-drawer-hint {
   font-size: 0.72rem;
   color: #94A3B8;
   font-weight: 500;
 }
 
-.inv-drawer-input {
+/* Vendor Dropdown & Meta Row */
+.inv-drawer-select {
   border: 1.5px solid #CBD5E1;
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 0.88rem;
   color: #0F172A;
-  font-family: inherit;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  background-color: #FFFFFF;
 }
 
-.inv-drawer-input:focus {
+.inv-drawer-select:focus {
   border-color: var(--solar-primary, #5429FF);
   box-shadow: 0 0 0 3px rgba(84, 41, 255, 0.12);
 }
 
-.inv-drawer-textarea {
-  resize: vertical;
-  min-height: 70px;
+.inv-drawer-meta-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
+.inv-drawer-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inv-drawer-meta-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inv-drawer-lead-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid rgba(29, 78, 216, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+/* Cost Breakdown Card */
 .inv-drawer-cost-card {
-  background: #EEF2FF;
+  background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
   border: 1px solid rgba(84, 41, 255, 0.2);
-  border-radius: 10px;
-  padding: 14px 16px;
+  border-radius: 12px;
+  padding: 16px 18px;
 }
 
 .inv-drawer-cost-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.86rem;
-  color: #3730A3;
-  font-weight: 600;
 }
 
-.inv-drawer-cost-row strong {
-  font-size: 1.15rem;
+.inv-drawer-cost-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.82rem;
+  color: #4338CA;
+  font-weight: 700;
+}
+
+.inv-drawer-calc-formula {
+  font-size: 0.74rem;
+  color: #6366F1;
+  font-weight: 500;
+}
+
+.inv-drawer-total-cost {
+  font-size: 1.35rem;
   font-weight: 800;
   color: var(--solar-primary, #5429FF);
 }
 
-.inv-drawer-submit {
+/* Footer with Cancel & Create PO */
+.inv-drawer-footer {
+  padding: 18px 24px;
+  border-top: 1px solid #E2E8F0;
+  background: #FFFFFF;
   display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inv-drawer-btn-cancel {
+  flex: 1;
+  padding: 12px 18px;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.inv-drawer-btn-cancel:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #1E293B;
+}
+
+.inv-drawer-btn-create {
+  flex: 2;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 12px 22px;
   background: var(--solar-primary, #5429FF);
   color: #FFFFFF;
   border: none;
   border-radius: 10px;
-  padding: 14px 20px;
   font-size: 0.92rem;
   font-weight: 800;
   cursor: pointer;
-  margin-top: 10px;
   box-shadow: 0 4px 14px rgba(84, 41, 255, 0.3);
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.inv-drawer-submit:hover {
+.inv-drawer-btn-create:hover {
   background: #431ED4;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(84, 41, 255, 0.4);
+}
+
+.inv-drawer-btn-create:active {
+  transform: translateY(0);
 }
