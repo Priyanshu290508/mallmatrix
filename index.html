@@ -560,30 +560,70 @@
           </div>
         </div>
 
+        <!-- BULK ACTION BAR -->
+        <div class="inv-bulk-bar" id="invBulkBar" style="display: none;">
+          <div class="inv-bulk-left">
+            <span class="inv-bulk-badge" id="invBulkBadge">0</span>
+            <span class="inv-bulk-label" id="invBulkLabel">rows selected</span>
+          </div>
+          <div class="inv-bulk-actions">
+            <button class="inv-bulk-btn inv-bulk-restock" id="invBulkRestockBtn" onclick="MallApp.bulkRestockSelected()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span id="invBulkRestockText">Restock selected (0)</span>
+            </button>
+            <button class="inv-bulk-btn inv-bulk-clear" onclick="MallApp.clearSelection()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              Clear selection
+            </button>
+          </div>
+        </div>
+
         <div class="dash-card">
-          <div class="table-filter-bar">
-            <input type="text" id="inventorySearchInput" class="clean-search-input" placeholder="Search by SKU, product name, or tenant store...">
-            <select id="invCategoryFilter" class="clean-select">
-              <option value="all">All Departments</option>
-              <option value="Fashion">Fashion & Apparel</option>
-              <option value="Electronics">Electronics & Tech</option>
-              <option value="Footwear">Footwear & Sports</option>
-              <option value="Cosmetics">Cosmetics & Beauty</option>
-              <option value="Dining">Dining & Consumables</option>
-            </select>
+          <div class="table-filter-bar inv-filter-bar">
+            <div class="inv-filter-left">
+              <input type="text" id="inventorySearchInput" class="clean-search-input" placeholder="Search by SKU, product name, or tenant store...">
+              <select id="invCategoryFilter" class="clean-select">
+                <option value="all">All Departments</option>
+                <option value="Fashion">Fashion & Apparel</option>
+                <option value="Electronics">Electronics & Tech</option>
+                <option value="Footwear">Footwear & Sports</option>
+                <option value="Cosmetics">Cosmetics & Beauty</option>
+                <option value="Dining">Dining & Consumables</option>
+              </select>
+            </div>
+            <div class="inv-filter-right">
+              <label class="inv-toggle-label" for="invLowStockToggle">
+                <input type="checkbox" id="invLowStockToggle" class="inv-toggle-input">
+                <span class="inv-toggle-track">
+                  <span class="inv-toggle-thumb"></span>
+                </span>
+                <span class="inv-toggle-text">Low stock only</span>
+              </label>
+            </div>
           </div>
 
           <div class="table-responsive">
-            <table class="clean-table">
+            <table class="clean-table inv-table">
               <thead>
                 <tr>
-                  <th>Product Details</th>
-                  <th>SKU Code</th>
+                  <th class="inv-th-check">
+                    <input type="checkbox" id="invSelectAll" class="inv-checkbox" title="Select all rows on page">
+                  </th>
+                  <th class="inv-th-sortable" data-col="name">
+                    Product Details <span class="inv-sort-icon" id="sort-icon-name">↕</span>
+                  </th>
+                  <th class="inv-th-sku">SKU Code</th>
                   <th>Tenant Store</th>
                   <th>Category</th>
-                  <th>Stock Qty</th>
-                  <th>Buffer Min</th>
-                  <th>Unit Price</th>
+                  <th class="inv-th-sortable" data-col="stock">
+                    Stock Qty <span class="inv-sort-icon" id="sort-icon-stock">↕</span>
+                  </th>
+                  <th class="inv-th-sortable" data-col="minBuffer">
+                    Min Buffer <span class="inv-sort-icon" id="sort-icon-minBuffer">↕</span>
+                  </th>
+                  <th class="inv-th-sortable" data-col="price">
+                    Unit Price <span class="inv-sort-icon" id="sort-icon-price">↕</span>
+                  </th>
                   <th class="text-right">Action</th>
                 </tr>
               </thead>
@@ -591,6 +631,23 @@
                 <!-- Rendered dynamically -->
               </tbody>
             </table>
+          </div>
+
+          <!-- PAGINATION BAR -->
+          <div class="inv-pagination-bar" id="invPaginationBar">
+            <div class="inv-rows-per-page">
+              <label for="invRowsPerPage">Rows per page:</label>
+              <select id="invRowsPerPage" class="clean-select inv-rpp-select">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+            <div class="inv-page-info" id="invPageInfo">Showing 1 to 8 of 8 items</div>
+            <div class="inv-page-btns" id="invPageBtns">
+              <!-- Dynamically populated page buttons -->
+            </div>
           </div>
         </div>
       </div>
@@ -917,6 +974,71 @@
         </form>
       </div>
     </div>
+
+    <!-- RESTOCK SIDE DRAWER -->
+    <div class="inv-drawer-backdrop" id="invDrawerBackdrop" onclick="MallApp.closeRestockDrawer()"></div>
+    <aside class="inv-restock-drawer" id="invRestockDrawer" aria-hidden="true">
+      <div class="inv-drawer-header">
+        <div>
+          <span class="inv-drawer-kicker">INVENTORY REPLENISHMENT</span>
+          <h3 class="inv-drawer-title" id="invDrawerTitle">Restock Product</h3>
+          <p class="inv-drawer-sku" id="invDrawerSku">SKU-XXX-000</p>
+        </div>
+        <button class="inv-drawer-close" onclick="MallApp.closeRestockDrawer()" aria-label="Close restock drawer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="inv-drawer-body">
+        <div class="inv-drawer-stat-row">
+          <div class="inv-drawer-stat">
+            <span class="inv-drawer-stat-label">Current Stock</span>
+            <span class="inv-drawer-stat-val" id="invDrawerCurrentStock">0</span>
+          </div>
+          <div class="inv-drawer-stat">
+            <span class="inv-drawer-stat-label">Min Buffer</span>
+            <span class="inv-drawer-stat-val" id="invDrawerMinBuffer">0</span>
+          </div>
+          <div class="inv-drawer-stat">
+            <span class="inv-drawer-stat-label">Unit Price</span>
+            <span class="inv-drawer-stat-val" id="invDrawerUnitPrice">$0.00</span>
+          </div>
+        </div>
+
+        <div class="inv-drawer-status-wrap">
+          <span class="inv-drawer-stat-label">Stock Health Status</span>
+          <div id="invDrawerStatusPill" style="margin-top: 6px;"></div>
+        </div>
+
+        <div class="inv-drawer-field">
+          <label class="inv-drawer-label" for="invDrawerQty">Restock Quantity (Units)</label>
+          <input type="number" id="invDrawerQty" class="inv-drawer-input" min="1" value="25">
+          <span class="inv-drawer-hint">Recommended replenishment: 2x min safety buffer.</span>
+        </div>
+
+        <div class="inv-drawer-field">
+          <label class="inv-drawer-label" for="invDrawerSupplier">Target Supplier / Logistics Partner</label>
+          <input type="text" id="invDrawerSupplier" class="inv-drawer-input" placeholder="e.g. Inditex Global Logistics">
+        </div>
+
+        <div class="inv-drawer-field">
+          <label class="inv-drawer-label" for="invDrawerNotes">Purchase Order Notes & Delivery Instructions</label>
+          <textarea id="invDrawerNotes" class="inv-drawer-input inv-drawer-textarea" rows="3" placeholder="Priority loading dock 3 delivery with security sign-off..."></textarea>
+        </div>
+
+        <div class="inv-drawer-cost-card">
+          <div class="inv-drawer-cost-row">
+            <span>Estimated Replenishment Cost:</span>
+            <strong id="invDrawerCostVal">$0.00</strong>
+          </div>
+        </div>
+
+        <button class="inv-drawer-submit" id="invDrawerSubmitBtn" onclick="MallApp.confirmRestockFromDrawer()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirm & Restock Stock
+        </button>
+      </div>
+    </aside>
 
     <!-- TOAST NOTIFICATIONS -->
     <div class="toast-container" id="toastContainer"></div>

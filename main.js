@@ -10,7 +10,7 @@ const MallState = {
   taxesAmount: 470.00,
   netIncome: 57000,
   stockValuation: 586.14,
-  
+
   // Real-time Inventory Catalog across Mall Tenants
   products: [
     {
@@ -75,7 +75,7 @@ const MallState = {
       tenant: 'Starbucks Reserve',
       unit: '#G-05',
       category: 'Dining',
-      stock: 11,
+      stock: 22,
       minBuffer: 35,
       price: 28.50
     },
@@ -252,6 +252,13 @@ const MallState = {
 
 // Global Application Controller
 window.MallApp = {
+  _invSort: { col: null, dir: 'asc' },
+  _invPage: 1,
+  _invRowsPerPage: 10,
+  _invSelected: new Set(),
+  _invLowStockOnly: false,
+  _activeRestockSku: null,
+
   init() {
     this.bindNavigation();
     this.bindModals();
@@ -347,19 +354,71 @@ window.MallApp = {
     }
   },
 
-  // 2. INVENTORY FILTERS
+  // 2. INVENTORY FILTERS & CONTROLS
   bindInventoryFilters() {
     const searchInput = document.getElementById('inventorySearchInput');
     const catSelect = document.getElementById('invCategoryFilter');
+    const lowStockToggle = document.getElementById('invLowStockToggle');
+    const selectAllCheck = document.getElementById('invSelectAll');
+    const rowsPerPageSelect = document.getElementById('invRowsPerPage');
 
     const runFilter = () => {
-      const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
-      const cat = catSelect ? catSelect.value : 'all';
-      this.renderInventoryTable(q, cat);
+      this._invPage = 1;
+      this.renderInventoryTable();
     };
 
     if (searchInput) searchInput.addEventListener('input', runFilter);
     if (catSelect) catSelect.addEventListener('change', runFilter);
+
+    if (lowStockToggle) {
+      lowStockToggle.addEventListener('change', (e) => {
+        this._invLowStockOnly = e.target.checked;
+        this._invPage = 1;
+        this.renderInventoryTable();
+      });
+    }
+
+    if (selectAllCheck) {
+      selectAllCheck.addEventListener('change', (e) => {
+        this.toggleSelectAll(e.target.checked);
+      });
+    }
+
+    if (rowsPerPageSelect) {
+      rowsPerPageSelect.addEventListener('change', (e) => {
+        this._invRowsPerPage = parseInt(e.target.value, 10) || 10;
+        this._invPage = 1;
+        this.renderInventoryTable();
+      });
+    }
+
+    // Sortable column headers
+    document.querySelectorAll('.inv-th-sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.getAttribute('data-col');
+        if (!col) return;
+        if (this._invSort.col === col) {
+          this._invSort.dir = this._invSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this._invSort.col = col;
+          this._invSort.dir = 'asc';
+        }
+        this.renderInventoryTable();
+      });
+    });
+
+    // Drawer quantity live calculation
+    const qtyInput = document.getElementById('invDrawerQty');
+    if (qtyInput) {
+      qtyInput.addEventListener('input', () => this.updateDrawerCostPreview());
+    }
+
+    // Global Escape key to dismiss drawer
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.closeRestockDrawer();
+      }
+    });
   },
 
   // 3. MODALS
@@ -540,15 +599,123 @@ window.MallApp = {
     }, 400);
   },
 
-  // 5. REORDER ACTIONS
+  // 5. REORDER & DRAWER ACTIONS
   reorderItem(sku) {
-    const item = MallState.products.find(p => p.sku === sku);
-    if (!item) return;
+    this.openRestockDrawer(sku);
+  },
 
-    const added = item.minBuffer * 2;
-    item.stock += added;
+  openRestockDrawer(sku) {
+    const p = MallState.products.find(item => item.sku === sku);
+    if (!p) return;
+
+    this._activeRestockSku = sku;
+
+    const drawer = document.getElementById('invRestockDrawer');
+    const backdrop = document.getElementById('invDrawerBackdrop');
+    if (!drawer || !backdrop) return;
+
+    const titleEl = document.getElementById('invDrawerTitle');
+    const skuEl = document.getElementById('invDrawerSku');
+    const currStockEl = document.getElementById('invDrawerCurrentStock');
+    const minBufferEl = document.getElementById('invDrawerMinBuffer');
+    const unitPriceEl = document.getElementById('invDrawerUnitPrice');
+    const statusWrap = document.getElementById('invDrawerStatusPill');
+    const qtyInput = document.getElementById('invDrawerQty');
+    const supplierInput = document.getElementById('invDrawerSupplier');
+    const notesInput = document.getElementById('invDrawerNotes');
+
+    if (titleEl) titleEl.textContent = p.name;
+    if (skuEl) skuEl.textContent = `${p.sku} • ${p.tenant} (${p.unit})`;
+    if (currStockEl) currStockEl.textContent = p.stock;
+    if (minBufferEl) minBufferEl.textContent = p.minBuffer;
+    if (unitPriceEl) unitPriceEl.textContent = `$${p.price.toFixed(2)}`;
+
+    const status = this.getProductStatus(p);
+    if (statusWrap) {
+      statusWrap.innerHTML = `
+        <span class="inv-status-pill ${status.pillClass}">
+          ${status.label} (${p.stock} in stock / ${p.minBuffer} min safety buffer)
+        </span>
+      `;
+    }
+
+    const defaultQty = Math.max(15, p.minBuffer * 2);
+    if (qtyInput) qtyInput.value = defaultQty;
+
+    if (supplierInput) {
+      supplierInput.value = `${p.tenant.split(' ')[0]} Direct Logistics Hub`;
+    }
+
+    if (notesInput) {
+      notesInput.value = `Expedited restocking requisition for SKU: ${p.sku}. Current inventory: ${p.stock} units.`;
+    }
+
+    this.updateDrawerCostPreview();
+
+    backdrop.classList.add('open');
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+
+    if (qtyInput) {
+      setTimeout(() => qtyInput.focus(), 180);
+    }
+  },
+
+  closeRestockDrawer() {
+    const drawer = document.getElementById('invRestockDrawer');
+    const backdrop = document.getElementById('invDrawerBackdrop');
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+    if (backdrop) {
+      backdrop.classList.remove('open');
+    }
+    this._activeRestockSku = null;
+  },
+
+  updateDrawerCostPreview() {
+    const p = MallState.products.find(item => item.sku === this._activeRestockSku);
+    const qtyInput = document.getElementById('invDrawerQty');
+    const costVal = document.getElementById('invDrawerCostVal');
+    if (!p || !qtyInput || !costVal) return;
+
+    const qty = parseInt(qtyInput.value, 10) || 0;
+    const total = Math.max(0, qty * p.price);
+    costVal.textContent = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  },
+
+  confirmRestockFromDrawer() {
+    if (!this._activeRestockSku) return;
+    const p = MallState.products.find(item => item.sku === this._activeRestockSku);
+    if (!p) return;
+
+    const qtyInput = document.getElementById('invDrawerQty');
+    const supplierInput = document.getElementById('invDrawerSupplier');
+    const qty = parseInt(qtyInput ? qtyInput.value : 0, 10);
+
+    if (isNaN(qty) || qty <= 0) {
+      this.showToast('Please enter a valid restock quantity (at least 1 unit).', 'info');
+      return;
+    }
+
+    p.stock += qty;
+    MallState.stockValuation += (qty * p.price);
+
+    // Record PO in Reordering system for cross-module orchestration
+    const supplier = (supplierInput && supplierInput.value.trim()) ? supplierInput.value.trim() : `${p.tenant} Logistics`;
+    MallState.purchaseOrders.unshift({
+      id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+      supplier: supplier,
+      items: `${qty}x ${p.name}`,
+      tenant: `${p.tenant} (${p.unit})`,
+      value: `$${(qty * p.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      status: 'Order Delivered'
+    });
+
+    this.closeRestockDrawer();
     this.renderAll();
-    this.showToast(`Reordered +${added} units for ${item.name}!`, 'success');
+    this.showToast(`Restock confirmed: +${qty} units added to ${p.name}!`, 'success');
   },
 
   generateBatchReorder() {
@@ -581,55 +748,340 @@ window.MallApp = {
     }
   },
 
-  renderInventoryTable(query = '', category = 'all') {
+  getProductStatus(p) {
+    if (p.stock < (p.minBuffer * 0.5)) {
+      return {
+        label: 'Critical',
+        level: 'critical',
+        pillClass: 'inv-pill-critical',
+        stockNumClass: 'stock-num-critical'
+      };
+    }
+    if (p.stock <= p.minBuffer) {
+      return {
+        label: 'Low',
+        level: 'low',
+        pillClass: 'inv-pill-low',
+        stockNumClass: 'stock-num-low'
+      };
+    }
+    return {
+      label: 'Healthy',
+      level: 'healthy',
+      pillClass: 'inv-pill-healthy',
+      stockNumClass: 'stock-num-healthy'
+    };
+  },
+
+  getCategoryIcon(category) {
+    const cat = (category || '').toLowerCase();
+    if (cat === 'fashion') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>`;
+    }
+    if (cat === 'electronics') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>`;
+    }
+    if (cat === 'footwear') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 17l4-2 6 2 8-3v4H2v-1z"/><path d="M8 15V9l3 2 4-2v6"/><circle cx="5" cy="8" r="1.5"/></svg>`;
+    }
+    if (cat === 'cosmetics') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>`;
+    }
+    if (cat === 'dining') {
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`;
+    }
+    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+  },
+
+  renderInventoryTable() {
     const tbody = document.getElementById('inventoryTableBody');
     if (!tbody) return;
 
-    let items = MallState.products;
+    const searchInput = document.getElementById('inventorySearchInput');
+    const catSelect = document.getElementById('invCategoryFilter');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const category = catSelect ? catSelect.value : 'all';
 
+    let items = [...MallState.products];
+
+    // Search filter across SKU, Name, Tenant
     if (query) {
-      items = items.filter(p => 
+      items = items.filter(p =>
         p.name.toLowerCase().includes(query) ||
         p.sku.toLowerCase().includes(query) ||
-        p.tenant.toLowerCase().includes(query)
+        p.tenant.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query)
       );
     }
 
+    // Department category filter
     if (category !== 'all') {
       items = items.filter(p => p.category === category);
     }
 
-    if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: #94A3B8;">No products found matching filters.</td></tr>`;
+    // "Low stock only" toggle filter
+    if (this._invLowStockOnly) {
+      items = items.filter(p => p.stock <= p.minBuffer);
+    }
+
+    // Sortable columns (Product, Stock Qty, Min Buffer, Unit Price)
+    if (this._invSort.col) {
+      const { col, dir } = this._invSort;
+      const mult = dir === 'asc' ? 1 : -1;
+      items.sort((a, b) => {
+        if (col === 'name') {
+          return mult * a.name.localeCompare(b.name);
+        }
+        if (col === 'stock') {
+          return mult * (a.stock - b.stock);
+        }
+        if (col === 'minBuffer') {
+          return mult * (a.minBuffer - b.minBuffer);
+        }
+        if (col === 'price') {
+          return mult * (a.price - b.price);
+        }
+        return 0;
+      });
+    }
+
+    // Update sort arrow icons
+    ['name', 'stock', 'minBuffer', 'price'].forEach(c => {
+      const icon = document.getElementById(`sort-icon-${c}`);
+      if (icon) {
+        if (this._invSort.col === c) {
+          icon.textContent = this._invSort.dir === 'asc' ? '↑' : '↓';
+          icon.classList.add('active');
+        } else {
+          icon.textContent = '↕';
+          icon.classList.remove('active');
+        }
+      }
+    });
+
+    // Pagination calculations
+    const totalItems = items.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / this._invRowsPerPage));
+    if (this._invPage > totalPages) {
+      this._invPage = totalPages;
+    }
+    const startIndex = (this._invPage - 1) * this._invRowsPerPage;
+    const endIndex = Math.min(startIndex + this._invRowsPerPage, totalItems);
+    const paginatedItems = items.slice(startIndex, endIndex);
+
+    if (paginatedItems.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 36px 16px; color: #94A3B8; font-weight: 500;">No products found matching filters.</td></tr>`;
+      this.renderPagination(totalItems, 0, 0);
+      this.updateBulkBar();
+      this.updateSelectAllCheckbox([]);
       return;
     }
 
-    tbody.innerHTML = items.map(p => {
-      const isLow = p.stock <= p.minBuffer;
-      const statusPill = isLow 
-        ? `<span class="status-pill pill-cancelled">Low Stock (${p.stock})</span>` 
-        : `<span class="status-pill pill-delivered">Healthy (${p.stock})</span>`;
+    tbody.innerHTML = paginatedItems.map(p => {
+      const status = this.getProductStatus(p);
+      const isSelected = this._invSelected.has(p.sku);
+      const isLowOrCritical = p.stock <= p.minBuffer;
+      const catClass = `inv-cat-${(p.category || '').toLowerCase()}`;
 
       return `
-        <tr>
-          <td>
-            <div class="prod-title">${this.escapeHTML(p.name)}</div>
-            <div class="prod-sub">${p.tenant} • ${p.unit}</div>
+        <tr class="inv-table-row ${isSelected ? 'row-selected' : ''}">
+          <td class="inv-td-check">
+            <input type="checkbox" class="inv-checkbox inv-row-check" data-sku="${p.sku}" ${isSelected ? 'checked' : ''} aria-label="Select ${this.escapeHTML(p.name)}">
           </td>
-          <td><code style="color: #475569; font-weight: 600;">${p.sku}</code></td>
+          <td class="inv-prod-cell">
+            <div class="inv-thumb-wrapper">
+              <div class="inv-thumb ${catClass}">
+                ${this.getCategoryIcon(p.category)}
+              </div>
+              <div class="inv-prod-meta">
+                <div class="prod-title">${this.escapeHTML(p.name)}</div>
+                <div class="prod-sub">${this.escapeHTML(p.tenant)} • ${this.escapeHTML(p.unit)}</div>
+              </div>
+            </div>
+          </td>
+          <td class="inv-sku-cell"><code>${p.sku}</code></td>
           <td>${this.escapeHTML(p.tenant)}</td>
-          <td>${this.escapeHTML(p.category)}</td>
-          <td><strong>${p.stock}</strong></td>
-          <td>${p.minBuffer} min</td>
-          <td>$${p.price.toFixed(2)}</td>
+          <td><span class="inv-cat-pill ${catClass}">${this.escapeHTML(p.category)}</span></td>
+          <td class="inv-stock-td">
+            <div class="inv-stock-cluster">
+              <strong class="inv-stock-num ${status.stockNumClass}">${p.stock}</strong>
+              <span class="inv-status-pill ${status.pillClass}">${status.label}</span>
+            </div>
+          </td>
+          <td><span class="inv-buffer-val">${p.minBuffer} min</span></td>
+          <td><span class="inv-price-val">$${p.price.toFixed(2)}</span></td>
           <td class="text-right">
-            <button class="btn-table-action" onclick="MallApp.reorderItem('${p.sku}')">
-              ${isLow ? 'Restock' : '+ Add Stock'}
+            <button class="btn-table-action ${isLowOrCritical ? 'btn-action-restock' : ''}" onclick="MallApp.openRestockDrawer('${p.sku}')">
+              ${isLowOrCritical ? 'Restock' : '+ Add Stock'}
             </button>
           </td>
         </tr>
       `;
     }).join('');
+
+    // Attach row checkbox handlers
+    tbody.querySelectorAll('.inv-row-check').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const sku = e.target.getAttribute('data-sku');
+        this.toggleRowSelection(sku, e.target.checked);
+      });
+    });
+
+    this.renderPagination(totalItems, startIndex, endIndex);
+    this.updateBulkBar();
+    this.updateSelectAllCheckbox(paginatedItems);
+  },
+
+  renderPagination(totalItems, start, end) {
+    const pageInfo = document.getElementById('invPageInfo');
+    const pageBtns = document.getElementById('invPageBtns');
+    if (!pageInfo || !pageBtns) return;
+
+    if (totalItems === 0) {
+      pageInfo.textContent = 'Showing 0 items';
+      pageBtns.innerHTML = '';
+      return;
+    }
+
+    pageInfo.textContent = `Showing ${start + 1} to ${end} of ${totalItems} products`;
+
+    const totalPages = Math.ceil(totalItems / this._invRowsPerPage);
+    if (totalPages <= 1) {
+      pageBtns.innerHTML = '';
+      return;
+    }
+
+    let buttonsHtml = '';
+    // Previous button
+    buttonsHtml += `
+      <button class="inv-page-btn" ${this._invPage === 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="MallApp.goToPage(${this._invPage - 1})" aria-label="Previous page">
+        ‹
+      </button>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+      buttonsHtml += `
+        <button class="inv-page-btn ${i === this._invPage ? 'active' : ''}" onclick="MallApp.goToPage(${i})" aria-label="Page ${i}">
+          ${i}
+        </button>
+      `;
+    }
+
+    // Next button
+    buttonsHtml += `
+      <button class="inv-page-btn" ${this._invPage === totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="MallApp.goToPage(${this._invPage + 1})" aria-label="Next page">
+        ›
+      </button>
+    `;
+
+    pageBtns.innerHTML = buttonsHtml;
+  },
+
+  goToPage(pageNum) {
+    const totalPages = Math.max(1, Math.ceil(MallState.products.length / this._invRowsPerPage));
+    if (pageNum < 1 || pageNum > totalPages) return;
+    this._invPage = pageNum;
+    this.renderInventoryTable();
+  },
+
+  toggleRowSelection(sku, isChecked) {
+    if (isChecked) {
+      this._invSelected.add(sku);
+    } else {
+      this._invSelected.delete(sku);
+    }
+    this.updateBulkBar();
+    this.updateSelectAllCheckbox();
+  },
+
+  toggleSelectAll(isChecked) {
+    const tbody = document.getElementById('inventoryTableBody');
+    if (!tbody) return;
+    tbody.querySelectorAll('.inv-row-check').forEach(chk => {
+      const sku = chk.getAttribute('data-sku');
+      chk.checked = isChecked;
+      if (isChecked) {
+        this._invSelected.add(sku);
+      } else {
+        this._invSelected.delete(sku);
+      }
+    });
+    this.updateBulkBar();
+  },
+
+  updateSelectAllCheckbox() {
+    const selectAllCheck = document.getElementById('invSelectAll');
+    if (!selectAllCheck) return;
+
+    const visibleChecks = document.querySelectorAll('.inv-row-check');
+    if (visibleChecks.length === 0) {
+      selectAllCheck.checked = false;
+      selectAllCheck.indeterminate = false;
+      return;
+    }
+
+    let checkedCount = 0;
+    visibleChecks.forEach(c => {
+      if (c.checked) checkedCount++;
+    });
+
+    if (checkedCount === 0) {
+      selectAllCheck.checked = false;
+      selectAllCheck.indeterminate = false;
+    } else if (checkedCount === visibleChecks.length) {
+      selectAllCheck.checked = true;
+      selectAllCheck.indeterminate = false;
+    } else {
+      selectAllCheck.checked = false;
+      selectAllCheck.indeterminate = true;
+    }
+  },
+
+  clearSelection() {
+    this._invSelected.clear();
+    const selectAllCheck = document.getElementById('invSelectAll');
+    if (selectAllCheck) {
+      selectAllCheck.checked = false;
+      selectAllCheck.indeterminate = false;
+    }
+    document.querySelectorAll('.inv-row-check').forEach(c => c.checked = false);
+    this.updateBulkBar();
+  },
+
+  updateBulkBar() {
+    const bar = document.getElementById('invBulkBar');
+    const badge = document.getElementById('invBulkBadge');
+    const label = document.getElementById('invBulkLabel');
+    const restockText = document.getElementById('invBulkRestockText');
+    if (!bar) return;
+
+    const count = this._invSelected.size;
+    if (count > 0) {
+      bar.style.display = 'flex';
+      if (badge) badge.textContent = count;
+      if (label) label.textContent = count === 1 ? 'row selected' : 'rows selected';
+      if (restockText) restockText.textContent = `Restock selected (${count})`;
+    } else {
+      bar.style.display = 'none';
+    }
+  },
+
+  bulkRestockSelected() {
+    const count = this._invSelected.size;
+    if (count === 0) return;
+
+    let restockedCount = 0;
+    MallState.products.forEach(p => {
+      if (this._invSelected.has(p.sku)) {
+        const addAmount = Math.max(20, p.minBuffer * 2);
+        p.stock += addAmount;
+        restockedCount++;
+      }
+    });
+
+    this.clearSelection();
+    this.renderAll();
+    this.showToast(`Batch restock complete! Replenished stock for ${restockedCount} selected products.`, 'success');
   },
 
   renderPurchaseOrders() {
