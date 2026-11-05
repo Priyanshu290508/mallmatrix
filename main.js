@@ -19,6 +19,11 @@ import {
 } from './src/utils/exportData.js';
 
 import {
+  ToastProvider,
+  useToast
+} from './src/utils/toast.js';
+
+import {
   initialStores,
   initialProducts,
   initialPurchaseOrders,
@@ -34,6 +39,8 @@ import {
 
 const MallState = {
   activeView: 'dashboard',
+  isLoading: false,
+  hasError: false,
   currency: localStorage.getItem('mallmatrix_currency') || 'USD',
   totalSKUs: 18450,
   salesAmount: 2500.00,
@@ -85,21 +92,44 @@ window.MallApp = {
     this.bindModals();
     this.bindInventoryFilters();
     this.bindCopilot();
+    this.bindCommandPalette();
+    this.updateNotificationBadge();
     this.renderAll();
     this.checkRoute();
 
+    window.addEventListener('popstate', (e) => {
+      const view = e.state?.view || 'dashboard';
+      this.switchView(view, false);
+    });
+
     window.addEventListener('hashchange', () => this.checkRoute());
+
+    // Initial 600ms load simulation with skeletons
+    this.simulateRefresh(600);
 
     // Ensure Copilot button is visible on initial dashboard load
     const copilotBtn = document.getElementById('floatingCopilotBtn');
     if (copilotBtn) {
-      copilotBtn.style.display = 'flex';
+      copilotBtn.style.display = MallState.activeView === 'copilot' ? 'none' : 'flex';
     }
   },
 
   loadStateFromStorage() {
     try {
       MallState.currency = localStorage.getItem('mallmatrix_currency') || 'USD';
+      
+      // Restore sidebar collapsed preference
+      const isCollapsed = localStorage.getItem('mallmatrix_sidebar_collapsed') === 'true';
+      if (isCollapsed) {
+        document.body.classList.add('sidebar-is-collapsed');
+        const btn = document.getElementById('sidebarCollapseBtn');
+        if (btn) {
+          const textSpan = btn.querySelector('.collapse-btn-text');
+          if (textSpan) textSpan.textContent = 'Expand Sidebar';
+          btn.title = 'Expand Sidebar';
+        }
+      }
+
       const savedPOs = localStorage.getItem('mallmatrix_purchase_orders');
       if (savedPOs) {
         const parsed = JSON.parse(savedPOs);
@@ -156,36 +186,36 @@ window.MallApp = {
     } catch (e) { }
   },
 
-  // 1. NAVIGATION
+  // 1. NAVIGATION & ROUTING
   bindNavigation() {
     const navItems = document.querySelectorAll('.sidebar-menu .menu-item');
     navItems.forEach(item => {
       item.addEventListener('click', () => {
         const targetView = item.getAttribute('data-view');
         if (targetView) {
-          this.switchView(targetView);
+          this.switchView(targetView, true);
         }
       });
     });
 
     // Mobile sidebar toggle
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const sidebar = document.getElementById('sidebar');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
-    if (mobileMenuBtn && sidebar && sidebarBackdrop) {
-      mobileMenuBtn.addEventListener('click', () => {
-        sidebar.classList.add('open');
-        sidebarBackdrop.classList.add('active');
-      });
-
-      const closeSidebar = () => {
-        sidebar.classList.remove('open');
-        sidebarBackdrop.classList.remove('active');
-      };
-
-      sidebarBackdrop.addEventListener('click', closeSidebar);
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', () => this.openMobileSidebar());
     }
+    if (sidebarBackdrop) {
+      sidebarBackdrop.addEventListener('click', () => this.closeMobileSidebar());
+    }
+
+    // Keyboard shortcut for sidebar toggle (Ctrl+[ or Cmd+[)
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === '[') {
+        e.preventDefault();
+        this.toggleSidebarCollapse();
+      }
+    });
 
     // Top Create Order button
     const sidebarCreateOrderBtn = document.getElementById('sidebarCreateOrderBtn');
@@ -194,8 +224,102 @@ window.MallApp = {
     }
   },
 
-  switchView(viewName) {
+  toggleSidebarCollapse() {
+    const isCollapsed = document.body.classList.toggle('sidebar-is-collapsed');
+    try {
+      localStorage.setItem('mallmatrix_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+    } catch (e) { }
+
+    const btn = document.getElementById('sidebarCollapseBtn');
+    if (btn) {
+      const textSpan = btn.querySelector('.collapse-btn-text');
+      if (textSpan) textSpan.textContent = isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar';
+      btn.title = isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar';
+    }
+    this.showToast(isCollapsed ? 'Sidebar collapsed (icons mode)' : 'Sidebar expanded', 'info');
+  },
+
+  openMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar) sidebar.classList.add('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+  },
+
+  closeMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+  },
+
+  navigateRoute(pathOrView, event) {
+    if (event) event.preventDefault();
+    let view = String(pathOrView).replace(/^\//, '').toLowerCase();
+    if (view === 'reordering') view = 'reorder';
+    if (!view || view === 'dashboard') view = 'dashboard';
+    this.switchView(view, true);
+  },
+
+  checkRoute() {
+    const hash = (window.location.hash || '').toLowerCase().replace('#', '').replace(/^\//, '');
+    let path = (window.location.pathname || '').toLowerCase().replace(/^\//, '');
+
+    const target = hash || path;
+    const ROUTE_MAP = {
+      '': 'dashboard',
+      'dashboard': 'dashboard',
+      'inventory': 'inventory',
+      'reordering': 'reorder',
+      'reorder': 'reorder',
+      'sales': 'sales',
+      'staff': 'staff',
+      'tenants': 'tenants',
+      'export': 'export',
+      'copilot': 'copilot'
+    };
+
+    const resolved = ROUTE_MAP[target] || 'dashboard';
+    this.switchView(resolved, false);
+  },
+
+  updateBreadcrumbs(viewName) {
+    const catEl = document.getElementById('breadcrumbCategory');
+    const currEl = document.getElementById('breadcrumbCurrent');
+    if (!catEl || !currEl) return;
+
+    const BREADCRUMB_MAP = {
+      dashboard: { category: 'Overview', current: 'Dashboard' },
+      inventory: { category: 'Operations', current: 'Stock Management' },
+      reorder: { category: 'Procurement', current: 'Automated Reordering' },
+      sales: { category: 'Analytics', current: 'Manage Sales Feed' },
+      staff: { category: 'Operations', current: 'Staff & Shift Roster' },
+      tenants: { category: 'Directory', current: 'Tenant Retail Stores' },
+      export: { category: 'Reports', current: 'Data Export Center' },
+      copilot: { category: 'Intelligence', current: 'MallMatrix AI' }
+    };
+
+    const breadcrumb = BREADCRUMB_MAP[viewName] || { category: 'Overview', current: 'Dashboard' };
+    catEl.textContent = breadcrumb.category;
+    currEl.textContent = breadcrumb.current;
+  },
+
+  switchView(viewName, pushHistory = true) {
+    if (!viewName) viewName = 'dashboard';
+    if (viewName === 'reordering') viewName = 'reorder';
     MallState.activeView = viewName;
+
+    // Push state to browser history for native back/forward buttons and bookmarks
+    if (pushHistory) {
+      const routePath = '/' + (viewName === 'reorder' ? 'reordering' : viewName);
+      if (window.location.pathname !== routePath) {
+        try {
+          window.history.pushState({ view: viewName }, '', routePath);
+        } catch (e) {
+          window.location.hash = '#' + routePath.replace(/^\//, '');
+        }
+      }
+    }
 
     // Update active menu item
     document.querySelectorAll('.sidebar-menu .menu-item').forEach(item => {
@@ -207,6 +331,9 @@ window.MallApp = {
       panel.classList.toggle('active', panel.id === `view-${viewName}`);
     });
 
+    // Update Breadcrumbs
+    this.updateBreadcrumbs(viewName);
+
     // Ensure view tables refresh when navigated to
     if (viewName === 'reorder') {
       this.renderPurchaseOrders();
@@ -217,6 +344,10 @@ window.MallApp = {
       this.renderRevenueBarChart();
     } else if (viewName === 'export') {
       this.renderExportCenter();
+    } else if (viewName === 'staff') {
+      this.renderStaffTable();
+    } else if (viewName === 'tenants') {
+      this.renderTenantCards();
     }
 
     // Keep bottom-right Copilot button visible on all views except the copilot view itself
@@ -263,12 +394,7 @@ window.MallApp = {
     }
 
     // Close mobile sidebar if open
-    const sidebar = document.getElementById('sidebar');
-    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-    if (sidebar && sidebarBackdrop) {
-      sidebar.classList.remove('open');
-      sidebarBackdrop.classList.remove('active');
-    }
+    this.closeMobileSidebar();
   },
 
   // OVERLAY & FLOATING COPILOT SHARED STATE
@@ -376,7 +502,7 @@ window.MallApp = {
     });
   },
 
-  // 3. MODALS
+  // 3. CREATE ORDER / ADD PRODUCT MODAL WITH INLINE VALIDATION
   bindModals() {
     const modal = document.getElementById('newProductModal');
     const closeBtn = document.getElementById('closeProductModalBtn');
@@ -396,8 +522,24 @@ window.MallApp = {
     }
 
     if (form) {
+      // Attach real-time validation to all inputs
+      const inputs = ['prodName', 'prodSKU', 'prodTenant', 'prodCategory', 'prodQty', 'prodMinBuffer', 'prodPrice'];
+      inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', () => this.validateProductForm());
+          el.addEventListener('blur', () => this.validateProductForm());
+          el.addEventListener('change', () => this.validateProductForm());
+        }
+      });
+
       form.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (!this.validateProductForm()) {
+          this.showToast('Please fix validation errors before submitting', 'error');
+          return;
+        }
+
         const name = document.getElementById('prodName').value.trim();
         const sku = document.getElementById('prodSKU').value.trim().toUpperCase();
         const tenant = document.getElementById('prodTenant').value;
@@ -420,16 +562,151 @@ window.MallApp = {
 
         MallState.products.unshift(newProd);
         MallState.stockValuation += (stock * price);
+        this.saveProducts();
         this.renderAll();
         closeModal();
         form.reset();
+        this.validateProductForm();
         this.showToast(`Order created for ${name} (${sku}) at ${tenant}!`, 'success');
       });
     }
   },
 
+  validateProductForm() {
+    const nameInput = document.getElementById('prodName');
+    const skuInput = document.getElementById('prodSKU');
+    const tenantInput = document.getElementById('prodTenant');
+    const catInput = document.getElementById('prodCategory');
+    const qtyInput = document.getElementById('prodQty');
+    const minBufferInput = document.getElementById('prodMinBuffer');
+    const priceInput = document.getElementById('prodPrice');
+    const submitBtn = document.getElementById('submitProductBtn');
+
+    if (!nameInput || !skuInput || !qtyInput || !minBufferInput || !priceInput || !submitBtn) {
+      return false;
+    }
+
+    const nameErr = document.getElementById('prodNameError');
+    const skuErr = document.getElementById('prodSKUError');
+    const tenantErr = document.getElementById('prodTenantError');
+    const catErr = document.getElementById('prodCategoryError');
+    const qtyErr = document.getElementById('prodQtyError');
+    const minBufferErr = document.getElementById('prodMinBufferError');
+    const priceErr = document.getElementById('prodPriceError');
+
+    let isValid = true;
+
+    const setFieldError = (input, errEl, msg) => {
+      if (msg) {
+        isValid = false;
+        if (input) input.classList.add('has-error');
+        if (errEl) {
+          errEl.textContent = msg;
+          errEl.style.display = 'block';
+        }
+      } else {
+        if (input) input.classList.remove('has-error');
+        if (errEl) {
+          errEl.textContent = '';
+          errEl.style.display = 'none';
+        }
+      }
+    };
+
+    // 1. Name validation
+    const nameVal = nameInput.value.trim();
+    if (!nameVal) {
+      setFieldError(nameInput, nameErr, 'Product / order title is required');
+    } else if (nameVal.length < 2) {
+      setFieldError(nameInput, nameErr, 'Title must be at least 2 characters');
+    } else {
+      setFieldError(nameInput, nameErr, null);
+    }
+
+    // 2. SKU validation (Required, min 3 chars, and UNIQUE SKU check)
+    const skuVal = skuInput.value.trim().toUpperCase();
+    if (!skuVal) {
+      setFieldError(skuInput, skuErr, 'SKU identifier is required');
+    } else if (skuVal.length < 3) {
+      setFieldError(skuInput, skuErr, 'SKU must be at least 3 characters');
+    } else {
+      const duplicate = MallState.products.find(p => p.sku.toUpperCase() === skuVal);
+      if (duplicate) {
+        setFieldError(skuInput, skuErr, `SKU "${skuVal}" already assigned to ${duplicate.name}. Must be unique.`);
+      } else {
+        setFieldError(skuInput, skuErr, null);
+      }
+    }
+
+    // 3. Tenant validation
+    if (!tenantInput.value) {
+      setFieldError(tenantInput, tenantErr, 'Please select a tenant store');
+    } else {
+      setFieldError(tenantInput, tenantErr, null);
+    }
+
+    // 4. Category validation
+    if (!catInput.value) {
+      setFieldError(catInput, catErr, 'Please select a department');
+    } else {
+      setFieldError(catInput, catErr, null);
+    }
+
+    // 5. Quantity validation (quantity > 0)
+    const qtyVal = parseInt(qtyInput.value, 10);
+    if (isNaN(qtyVal) || qtyInput.value === '') {
+      setFieldError(qtyInput, qtyErr, 'Quantity is required');
+    } else if (qtyVal <= 0) {
+      setFieldError(qtyInput, qtyErr, 'Quantity must be greater than 0');
+    } else {
+      setFieldError(qtyInput, qtyErr, null);
+    }
+
+    // 6. Safety Buffer validation (buffer > 0)
+    const minBufferVal = parseInt(minBufferInput.value, 10);
+    if (isNaN(minBufferVal) || minBufferInput.value === '') {
+      setFieldError(minBufferInput, minBufferErr, 'Safety buffer is required');
+    } else if (minBufferVal <= 0) {
+      setFieldError(minBufferInput, minBufferErr, 'Safety buffer must be greater than 0');
+    } else {
+      setFieldError(minBufferInput, minBufferErr, null);
+    }
+
+    // 7. Price validation (price > 0)
+    const priceVal = parseFloat(priceInput.value);
+    if (isNaN(priceVal) || priceInput.value === '') {
+      setFieldError(priceInput, priceErr, 'Unit price is required');
+    } else if (priceVal <= 0) {
+      setFieldError(priceInput, priceErr, 'Unit price must be greater than 0');
+    } else {
+      setFieldError(priceInput, priceErr, null);
+    }
+
+    // Toggle submit button
+    submitBtn.disabled = !isValid;
+    submitBtn.style.opacity = isValid ? '1' : '0.5';
+    submitBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+
+    return isValid;
+  },
+
   openProductModal() {
     const modal = document.getElementById('newProductModal');
+    const form = document.getElementById('newProductForm');
+    if (form) {
+      form.reset();
+      // Clear errors
+      ['prodName', 'prodSKU', 'prodTenant', 'prodCategory', 'prodQty', 'prodMinBuffer', 'prodPrice'].forEach(id => {
+        const inp = document.getElementById(id);
+        const err = document.getElementById(`${id}Error`);
+        if (inp) inp.classList.remove('has-error');
+        if (err) {
+          err.textContent = '';
+          err.style.display = 'none';
+        }
+      });
+      this.validateProductForm();
+    }
     if (modal) {
       modal.classList.add('open');
       this.setOverlayOpen(true);
@@ -1185,6 +1462,31 @@ window.MallApp = {
     const tbody = document.getElementById('inventoryTableBody');
     if (!tbody) return;
 
+    if (MallState.isLoading) {
+      tbody.innerHTML = Array(6).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 18px; height: 18px; border-radius: 4px;"></div></td>
+          <td>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div class="skeleton-shimmer skeleton-circle"></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 13px;"></div>
+                <div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 10px;"></div>
+              </div>
+            </div>
+          </td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 110px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill" style="width: 80px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 50px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 40px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 65px;"></div></td>
+          <td style="text-align: right;"><div class="skeleton-shimmer skeleton-pill" style="width: 75px; margin-left: auto;"></div></td>
+        </tr>
+      `).join('');
+      return;
+    }
+
     const searchInput = document.getElementById('inventorySearchInput');
     const catSelect = document.getElementById('invCategoryFilter');
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -1262,7 +1564,32 @@ window.MallApp = {
     const paginatedItems = items.slice(startIndex, endIndex);
 
     if (paginatedItems.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 36px 16px; color: #94A3B8; font-weight: 500;">No products found matching filters.</td></tr>`;
+      const q = (searchInput?.value || '').trim();
+      const title = q ? `No results found for "${this.escapeHTML(q)}"` : 'No products found matching active filters';
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="padding: 20px 0;">
+            <div class="empty-state-wrap">
+              <div class="empty-state-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+              </div>
+              <h4 class="empty-state-title">${title}</h4>
+              <p class="empty-state-desc">Try clearing the search query or resetting department and buffer filters to view available SKUs.</p>
+              <button type="button" class="empty-state-btn" onclick="MallApp.clearInventoryFilters()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                <span>Clear filters</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
       this.renderPagination(totalItems, 0, 0);
       this.updateBulkBar();
       this.updateSelectAllCheckbox([]);
@@ -1498,6 +1825,23 @@ window.MallApp = {
     const tbody = document.getElementById('purchaseOrdersTableBody');
     if (!tbody) return;
 
+    if (MallState.isLoading) {
+      tbody.innerHTML = Array(4).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 85px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 130px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 120px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 100px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 12px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 12px;"></div></td>
+          <td style="text-align: right;"><div class="skeleton-shimmer skeleton-pill" style="width: 70px; margin-left: auto;"></div></td>
+        </tr>
+      `).join('');
+      return;
+    }
+
     const searchInput = document.getElementById('reorderSearchInput');
     const statusFilter = document.getElementById('reorderStatusFilter');
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -1551,7 +1895,30 @@ window.MallApp = {
     if (totalBadgeEl) totalBadgeEl.textContent = `${MallState.purchaseOrders.length} Requisitions Tracked`;
 
     if (orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 36px 16px; color: #94A3B8; font-weight: 500;">No purchase orders match your filter criteria.</td></tr>`;
+      const q = (searchInput?.value || '').trim();
+      const title = q ? `No purchase orders found for "${this.escapeHTML(q)}"` : 'No purchase orders match active status filter';
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="padding: 20px 0;">
+            <div class="empty-state-wrap">
+              <div class="empty-state-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                </svg>
+              </div>
+              <h4 class="empty-state-title">${title}</h4>
+              <p class="empty-state-desc">Try clearing your search query or selecting "All Statuses" from the filter dropdown.</p>
+              <button type="button" class="empty-state-btn" onclick="MallApp.clearReorderFilters()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                <span>Clear filters</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
       return;
     }
 
@@ -2318,6 +2685,21 @@ window.MallApp = {
     const tbody = document.getElementById('salesLeaderboardBody');
     if (!tbody) return;
 
+    if (MallState.isLoading) {
+      tbody.innerHTML = Array(6).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 32px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 120px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 12px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 60px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 50px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+        </tr>
+      `).join('');
+      return;
+    }
+
     const mult = this._salesDateMultiplier || 1.0;
     const sortCol = this._salesSort.col || 'salesAmount';
     const sortDir = this._salesSort.dir || 'desc';
@@ -2447,6 +2829,42 @@ window.MallApp = {
     const tbody = document.getElementById('staffTableBody');
     if (!tbody) return;
 
+    if (MallState.isLoading) {
+      tbody.innerHTML = Array(6).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 130px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 12px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 120px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill" style="width: 80px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 40px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 12px;"></div></td>
+        </tr>
+      `).join('');
+      return;
+    }
+
+    if (!MallState.staff.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="padding: 20px 0;">
+            <div class="empty-state-wrap">
+              <div class="empty-state-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <h4 class="empty-state-title">No staff members found</h4>
+              <p class="empty-state-desc">The duty roster has no active auditors logged for this floor zone.</p>
+              <button type="button" class="empty-state-btn" onclick="MallApp.clearStaffFilters()">Clear filters</button>
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     tbody.innerHTML = MallState.staff.map(s => `
       <tr>
         <td>
@@ -2467,6 +2885,41 @@ window.MallApp = {
   renderTenantCards() {
     const grid = document.getElementById('tenantCardsGrid');
     if (!grid) return;
+
+    if (MallState.isLoading) {
+      grid.innerHTML = Array(6).fill(0).map(() => `
+        <div class="tenant-clean-card" style="pointer-events: none;">
+          <div class="tenant-card-top" style="justify-content: space-between;">
+            <div class="skeleton-shimmer skeleton-circle" style="width: 36px; height: 36px;"></div>
+            <div class="skeleton-shimmer skeleton-pill" style="width: 70px;"></div>
+          </div>
+          <div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 16px; margin: 12px 0 6px 0;"></div>
+          <div class="skeleton-shimmer skeleton-bar" style="width: 190px; height: 12px; margin-bottom: 16px;"></div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-light); padding-top: 10px;">
+            <div class="skeleton-shimmer skeleton-bar" style="width: 60px; height: 20px;"></div>
+            <div class="skeleton-shimmer skeleton-bar" style="width: 60px; height: 20px;"></div>
+          </div>
+        </div>
+      `).join('');
+      return;
+    }
+
+    if (!MallState.tenants.length) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1;">
+          <div class="empty-state-wrap">
+            <div class="empty-state-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              </svg>
+            </div>
+            <h4 class="empty-state-title">No tenant stores found</h4>
+            <p class="empty-state-desc">No stores match the active tenant filter criteria.</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
 
     grid.innerHTML = MallState.tenants.map(t => `
       <div class="tenant-clean-card">
@@ -3351,26 +3804,577 @@ window.MallApp = {
     this.showToast(`Summary totals row ${checked ? 'enabled' : 'disabled'} for exports`, 'info');
   },
 
-  showToast(msg, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    if (!container) return;
+  showToast(msg, type = 'info', opts = {}) {
+    return ToastProvider.show(msg, type, opts);
+  },
 
-    let icon = 'ℹ';
-    if (type === 'success') icon = '✓';
-    else if (type === 'warning') icon = '⚠️';
-    else if (type === 'danger' || type === 'error') icon = '✕';
+  // ========================================================
+  // GLOBAL UX: LOADING STATES, SKELETONS & ERROR BANNER
+  // ========================================================
+  simulateRefresh(duration = 600, callback) {
+    MallState.isLoading = true;
+    this.renderSkeletons();
 
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${this.escapeHTML(msg)}</span>`;
-    container.appendChild(toast);
+    const refreshBtn = document.getElementById('headerRefreshDataBtn');
+    if (refreshBtn) refreshBtn.classList.add('is-refreshing');
 
     setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(10px)';
-      toast.style.transition = 'all 0.25s ease';
-      setTimeout(() => toast.remove(), 250);
-    }, 3500);
+      MallState.isLoading = false;
+      if (refreshBtn) refreshBtn.classList.remove('is-refreshing');
+      this.renderAll();
+      if (callback) {
+        callback();
+      } else {
+        this.showToast('Telemetry synchronized (600ms latency)', 'success');
+      }
+    }, duration);
+  },
+
+  renderSkeletons() {
+    const invBody = document.getElementById('inventoryTableBody');
+    if (invBody) {
+      invBody.innerHTML = Array(6).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 18px; height: 18px; border-radius: 4px;"></div></td>
+          <td>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div class="skeleton-shimmer skeleton-circle"></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 13px;"></div>
+                <div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 10px;"></div>
+              </div>
+            </div>
+          </td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 110px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill" style="width: 80px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 50px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 40px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 65px;"></div></td>
+          <td style="text-align: right;"><div class="skeleton-shimmer skeleton-pill" style="width: 75px; margin-left: auto;"></div></td>
+        </tr>
+      `).join('');
+    }
+
+    const reorderBody = document.getElementById('purchaseOrdersTableBody');
+    if (reorderBody) {
+      reorderBody.innerHTML = Array(4).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 85px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 130px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 120px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 100px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 12px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 12px;"></div></td>
+          <td style="text-align: right;"><div class="skeleton-shimmer skeleton-pill" style="width: 70px; margin-left: auto;"></div></td>
+        </tr>
+      `).join('');
+    }
+
+    const salesBody = document.getElementById('salesLeaderboardBody');
+    if (salesBody) {
+      salesBody.innerHTML = Array(6).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 32px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 120px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 12px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 60px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 16px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 50px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+        </tr>
+      `).join('');
+    }
+
+    const staffBody = document.getElementById('staffTableBody');
+    if (staffBody) {
+      staffBody.innerHTML = Array(6).fill(0).map(() => `
+        <tr class="skeleton-row">
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 130px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 12px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 120px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill"></div></td>
+          <td><div class="skeleton-shimmer skeleton-pill" style="width: 80px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 40px; height: 14px;"></div></td>
+          <td><div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 12px;"></div></td>
+        </tr>
+      `).join('');
+    }
+  },
+
+  showErrorBanner(message) {
+    MallState.hasError = true;
+    const container = document.getElementById('globalErrorContainer');
+    if (!container) return;
+
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="inline-error-banner" role="alert">
+        <div class="inline-error-left">
+          <div class="inline-error-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <div class="inline-error-content">
+            <strong class="inline-error-title">Data Synchronization Error</strong>
+            <p class="inline-error-msg">${this.escapeHTML(message || 'Failed to stream live retail telemetry and POS transactions.')}</p>
+          </div>
+        </div>
+        <button type="button" class="btn-error-retry" onclick="MallApp.retryDataLoad()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>Retry</span>
+        </button>
+      </div>
+    `;
+  },
+
+  hideErrorBanner() {
+    MallState.hasError = false;
+    const container = document.getElementById('globalErrorContainer');
+    if (container) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+    }
+  },
+
+  retryDataLoad() {
+    this.hideErrorBanner();
+    this.simulateRefresh(600, () => {
+      this.showToast('Connected: Telemetry stream re-established', 'success');
+    });
+  },
+
+  simulateError() {
+    this.showErrorBanner('Failed to fetch real-time POS transaction telemetry from tenant gateways (Network timeout).');
+    this.showToast('Simulated data error triggered. Click "Retry" on the banner to reconnect.', 'error');
+  },
+
+  // ========================================================
+  // GLOBAL SEARCH (CTRL/CMD+K) & COMMAND PALETTE
+  // ========================================================
+  bindCommandPalette() {
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        this.openCommandPalette();
+      }
+      if (e.key === 'Escape' && document.getElementById('commandPaletteModal')?.classList.contains('open')) {
+        this.closeCommandPalette();
+      }
+    });
+
+    const input = document.getElementById('commandPaletteInput');
+    if (input) {
+      input.addEventListener('input', (e) => {
+        this.renderCommandPaletteResults(e.target.value.trim());
+      });
+
+      input.addEventListener('keydown', (e) => {
+        const items = document.querySelectorAll('.cmd-result-item');
+        if (!items.length) return;
+
+        let activeIdx = -1;
+        items.forEach((item, idx) => {
+          if (item.classList.contains('selected')) activeIdx = idx;
+        });
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextIdx = (activeIdx + 1) % items.length;
+          items.forEach(i => i.classList.remove('selected'));
+          items[nextIdx].classList.add('selected');
+          items[nextIdx].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prevIdx = activeIdx <= 0 ? items.length - 1 : activeIdx - 1;
+          items.forEach(i => i.classList.remove('selected'));
+          items[prevIdx].classList.add('selected');
+          items[prevIdx].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const selected = document.querySelector('.cmd-result-item.selected') || items[0];
+          if (selected) selected.click();
+        }
+      });
+    }
+  },
+
+  openCommandPalette() {
+    const modal = document.getElementById('commandPaletteModal');
+    const input = document.getElementById('commandPaletteInput');
+    if (modal && input) {
+      modal.classList.add('open');
+      this.setOverlayOpen(true);
+      input.value = '';
+      this.renderCommandPaletteResults('');
+      setTimeout(() => input.focus(), 60);
+    }
+  },
+
+  closeCommandPalette() {
+    const modal = document.getElementById('commandPaletteModal');
+    if (modal) {
+      modal.classList.remove('open');
+      this.setOverlayOpen(false);
+    }
+  },
+
+  renderCommandPaletteResults(query) {
+    const resultsContainer = document.getElementById('commandPaletteResults');
+    if (!resultsContainer) return;
+
+    const lowerQ = query.toLowerCase().trim();
+    let sectionsHtml = '';
+
+    // 1. Navigation & Quick Actions
+    const navActions = [
+      { id: 'nav-dash', label: 'Go to Dashboard', sub: 'Overview, KPIs & telemetry stream', view: 'dashboard', icon: '📊' },
+      { id: 'nav-inv', label: 'Go to Inventory', sub: 'Browse SKUs, buffer thresholds & stock levels', view: 'inventory', icon: '📦' },
+      { id: 'nav-reorder', label: 'Go to Reordering System', sub: 'Automated POs & procurement engine', view: 'reorder', icon: '🔄' },
+      { id: 'nav-sales', label: 'Go to Manage Sales', sub: 'Retail POS velocity & turnover analytics', view: 'sales', icon: '💰' },
+      { id: 'nav-staff', label: 'Go to Staff Management', sub: 'Floor auditors & shift rosters', view: 'staff', icon: '👥' },
+      { id: 'nav-tenants', label: 'Go to Tenant Stores', sub: 'Mall directory & lease tracking', view: 'tenants', icon: '🏬' },
+      { id: 'nav-export', label: 'Open Data Export Center', sub: 'Generate Excel, PDF & CSV datasets', view: 'export', icon: '📥' },
+      { id: 'nav-copilot', label: 'Ask MallMatrix AI Copilot', sub: 'Autonomous inventory AI assistant', view: 'copilot', icon: '✨' },
+      { id: 'act-currency', label: 'Toggle Currency (USD / INR)', sub: `Current: ${MallState.currency}`, customAction: () => { this.setCurrency(MallState.currency === 'USD' ? 'INR' : 'USD'); this.closeCommandPalette(); }, icon: '💱' },
+      { id: 'act-sync', label: 'Sync Telemetry (600ms latency)', sub: 'Simulate data reload with skeleton states', customAction: () => { this.simulateRefresh(600); this.closeCommandPalette(); }, icon: '⚡' },
+      { id: 'act-err', label: 'Simulate Telemetry Error', sub: 'Demonstrate inline error banner and retry', customAction: () => { this.simulateError(); this.closeCommandPalette(); }, icon: '⚠️' }
+    ];
+
+    const matchedNav = navActions.filter(a => !lowerQ || a.label.toLowerCase().includes(lowerQ) || a.sub.toLowerCase().includes(lowerQ));
+    if (matchedNav.length) {
+      sectionsHtml += `<div class="cmd-section-label">Navigation & Actions</div>`;
+      matchedNav.slice(0, 4).forEach((a, idx) => {
+        sectionsHtml += `
+          <div class="cmd-result-item ${idx === 0 && !lowerQ ? 'selected' : ''}" onclick="(${a.customAction ? a.customAction.toString() : `() => { MallApp.navigateRoute('/${a.view}'); MallApp.closeCommandPalette(); }`})()">
+            <div class="cmd-item-left">
+              <span class="cmd-item-icon">${a.icon}</span>
+              <div>
+                <div class="cmd-item-title">${this.escapeHTML(a.label)}</div>
+                <div class="cmd-item-sub">${this.escapeHTML(a.sub)}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">Action</span>
+          </div>
+        `;
+      });
+    }
+
+    // 2. SKUs & Products
+    const matchedProducts = MallState.products.filter(p =>
+      !lowerQ ? false : (
+        p.name.toLowerCase().includes(lowerQ) ||
+        p.sku.toLowerCase().includes(lowerQ) ||
+        p.tenant.toLowerCase().includes(lowerQ) ||
+        p.category.toLowerCase().includes(lowerQ)
+      )
+    );
+    if (matchedProducts.length) {
+      sectionsHtml += `<div class="cmd-section-label">Products & SKUs (${matchedProducts.length})</div>`;
+      matchedProducts.slice(0, 4).forEach(p => {
+        sectionsHtml += `
+          <div class="cmd-result-item" onclick="MallApp.navigateRoute('/inventory'); MallApp.openRestockDrawer('${p.sku}'); MallApp.closeCommandPalette();">
+            <div class="cmd-item-left">
+              <span class="cmd-item-icon">🏷️</span>
+              <div>
+                <div class="cmd-item-title">${this.escapeHTML(p.name)} <span style="font-family: monospace; font-size: 0.74rem; color: #64748B;">[${p.sku}]</span></div>
+                <div class="cmd-item-sub">${this.escapeHTML(p.tenant)} • Stock: ${p.stock} units • ${this.formatCurrency(p.price)}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">SKU</span>
+          </div>
+        `;
+      });
+    }
+
+    // 3. Tenant Stores
+    const matchedTenants = MallState.tenants.filter(t =>
+      !lowerQ ? false : (
+        t.name.toLowerCase().includes(lowerQ) ||
+        t.unit.toLowerCase().includes(lowerQ) ||
+        t.category.toLowerCase().includes(lowerQ)
+      )
+    );
+    if (matchedTenants.length) {
+      sectionsHtml += `<div class="cmd-section-label">Tenant Stores (${matchedTenants.length})</div>`;
+      matchedTenants.slice(0, 3).forEach(t => {
+        sectionsHtml += `
+          <div class="cmd-result-item" onclick="MallApp.navigateRoute('/tenants'); MallApp.closeCommandPalette();">
+            <div class="cmd-item-left">
+              <span class="cmd-item-icon">🏬</span>
+              <div>
+                <div class="cmd-item-title">${this.escapeHTML(t.name)}</div>
+                <div class="cmd-item-sub">${this.escapeHTML(t.unit)} • ${this.escapeHTML(t.category)}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">Store</span>
+          </div>
+        `;
+      });
+    }
+
+    // 4. Purchase Orders
+    const matchedPOs = MallState.purchaseOrders.filter(po =>
+      !lowerQ ? false : (
+        po.id.toLowerCase().includes(lowerQ) ||
+        po.supplier.toLowerCase().includes(lowerQ) ||
+        po.items.toLowerCase().includes(lowerQ) ||
+        po.status.toLowerCase().includes(lowerQ)
+      )
+    );
+    if (matchedPOs.length) {
+      sectionsHtml += `<div class="cmd-section-label">Purchase Orders (${matchedPOs.length})</div>`;
+      matchedPOs.slice(0, 3).forEach(po => {
+        sectionsHtml += `
+          <div class="cmd-result-item" onclick="MallApp.navigateRoute('/reordering'); MallApp.openPODetailDrawer('${po.id}'); MallApp.closeCommandPalette();">
+            <div class="cmd-item-left">
+              <span class="cmd-item-icon">📋</span>
+              <div>
+                <div class="cmd-item-title">${this.escapeHTML(po.id)}: ${this.escapeHTML(po.supplier)}</div>
+                <div class="cmd-item-sub">${this.escapeHTML(po.items)} • ${this.formatCurrency(po.value)} • ${po.status}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">${po.status}</span>
+          </div>
+        `;
+      });
+    }
+
+    // 5. Staff
+    const matchedStaff = MallState.staff.filter(s =>
+      !lowerQ ? false : (
+        s.name.toLowerCase().includes(lowerQ) ||
+        s.id.toLowerCase().includes(lowerQ) ||
+        s.role.toLowerCase().includes(lowerQ) ||
+        s.zone.toLowerCase().includes(lowerQ)
+      )
+    );
+    if (matchedStaff.length) {
+      sectionsHtml += `<div class="cmd-section-label">Staff Officers (${matchedStaff.length})</div>`;
+      matchedStaff.slice(0, 3).forEach(s => {
+        sectionsHtml += `
+          <div class="cmd-result-item" onclick="MallApp.navigateRoute('/staff'); MallApp.closeCommandPalette();">
+            <div class="cmd-item-left">
+              <span class="cmd-item-icon">👤</span>
+              <div>
+                <div class="cmd-item-title">${this.escapeHTML(s.name)} [${s.id}]</div>
+                <div class="cmd-item-sub">${this.escapeHTML(s.role)} • Zone: ${this.escapeHTML(s.zone)} • ${s.status}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">Staff</span>
+          </div>
+        `;
+      });
+    }
+
+    if (!sectionsHtml) {
+      sectionsHtml = `
+        <div style="text-align: center; padding: 42px 16px; color: #94A3B8;">
+          <div style="font-size: 1.8rem; margin-bottom: 8px;">🔍</div>
+          <div style="font-weight: 700; color: #1E293B; margin-bottom: 4px;">No results found for "${this.escapeHTML(query)}"</div>
+          <div style="font-size: 0.8rem;">Try searching for a SKU (e.g. SKU-ZAR-882), store, PO ID, or staff officer.</div>
+        </div>
+      `;
+    }
+
+    resultsContainer.innerHTML = sectionsHtml;
+
+    // Default select first item
+    const firstItem = resultsContainer.querySelector('.cmd-result-item');
+    if (firstItem && !resultsContainer.querySelector('.cmd-result-item.selected')) {
+      firstItem.classList.add('selected');
+    }
+  },
+
+  // ========================================================
+  // NOTIFICATIONS BELL & DROPDOWN
+  // ========================================================
+  getNotifications() {
+    const list = [];
+
+    // Critical stock breaches
+    const critItems = MallState.products.filter(p => p.stock < (p.minBuffer * 0.5));
+    critItems.forEach(p => {
+      list.push({
+        id: `notif-crit-${p.sku}`,
+        type: 'alert',
+        title: `Critical Stock: ${p.name}`,
+        desc: `Only ${p.stock} units remaining at ${p.tenant} (Buffer: ${p.minBuffer}). Immediate restock advised.`,
+        time: 'Just now',
+        unread: !this._readNotifications?.has(`notif-crit-${p.sku}`),
+        action: () => {
+          this.switchView('inventory');
+          this.openRestockDrawer(p.sku);
+        }
+      });
+    });
+
+    // Rent overdue
+    list.push({
+      id: 'notif-rent-1',
+      type: 'rent',
+      title: 'Rent Overdue: Zara Flagship',
+      desc: `${this.formatCurrency(14500.00)} overdue on Unit #204. Automated grace advisory dispatched.`,
+      time: '18m ago',
+      unread: !this._readNotifications?.has('notif-rent-1'),
+      action: () => {
+        this.switchView('tenants');
+      }
+    });
+
+    // Pending PO Approvals
+    const pendingPOs = MallState.purchaseOrders.filter(po => po.status === 'Pending');
+    pendingPOs.forEach(po => {
+      list.push({
+        id: `notif-po-${po.id}`,
+        type: 'po',
+        title: `PO Awaiting Approval: ${po.id}`,
+        desc: `${po.supplier} (${po.items}) totaling ${this.formatCurrency(po.value)}. Sign-off required.`,
+        time: '45m ago',
+        unread: !this._readNotifications?.has(`notif-po-${po.id}`),
+        action: () => {
+          this.switchView('reorder');
+          this.openPODetailDrawer(po.id);
+        }
+      });
+    });
+
+    return list;
+  },
+
+  toggleNotificationDropdown(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+
+    const isVisible = dropdown.style.display !== 'none';
+    if (isVisible) {
+      dropdown.style.display = 'none';
+    } else {
+      this.renderNotificationDropdown();
+      dropdown.style.display = 'flex';
+
+      const closeHandler = (evt) => {
+        if (!dropdown.contains(evt.target) && !evt.target.closest('#headerNotificationBtn')) {
+          dropdown.style.display = 'none';
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', closeHandler), 10);
+    }
+  },
+
+  renderNotificationDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+
+    const notifs = this.getNotifications();
+    const unreadCount = notifs.filter(n => n.unread).length;
+
+    let itemsHtml = notifs.map(n => {
+      let iconSvg = '';
+      let iconClass = '';
+      if (n.type === 'alert') {
+        iconClass = 'notification-icon-alert';
+        iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      } else if (n.type === 'rent') {
+        iconClass = 'notification-icon-rent';
+        iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+      } else {
+        iconClass = 'notification-icon-po';
+        iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+      }
+
+      return `
+        <div class="notification-item ${n.unread ? 'unread' : ''}" onclick="(${n.action.toString()})(); document.getElementById('notificationDropdown').style.display='none';">
+          <div class="notification-icon-wrap ${iconClass}">
+            ${iconSvg}
+          </div>
+          <div class="notification-content">
+            <div class="notification-item-title">${this.escapeHTML(n.title)}</div>
+            <div class="notification-item-desc">${this.escapeHTML(n.desc)}</div>
+            <div class="notification-item-time">${n.time}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    dropdown.innerHTML = `
+      <div class="notification-header">
+        <h4 class="notification-title">Notifications (${unreadCount} new)</h4>
+        <button type="button" class="notification-mark-all-btn" onclick="MallApp.markAllNotificationsRead()">Mark all as read</button>
+      </div>
+      <div class="notification-list">
+        ${itemsHtml}
+      </div>
+    `;
+  },
+
+  updateNotificationBadge() {
+    const notifs = this.getNotifications();
+    const unreadCount = notifs.filter(n => n.unread).length;
+    const badge = document.getElementById('notificationBadge');
+    if (badge) {
+      if (unreadCount > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  },
+
+  markAllNotificationsRead() {
+    if (!this._readNotifications) this._readNotifications = new Set();
+    const notifs = this.getNotifications();
+    notifs.forEach(n => this._readNotifications.add(n.id));
+    this.updateNotificationBadge();
+    this.renderNotificationDropdown();
+    this.showToast('All notifications marked as read', 'info');
+  },
+
+  // ========================================================
+  // CLEAR FILTER HELPERS
+  // ========================================================
+  clearInventoryFilters() {
+    const searchInput = document.getElementById('inventorySearchInput');
+    const catSelect = document.getElementById('invCategoryFilter');
+    const lowStockToggle = document.getElementById('invLowStockToggle');
+    if (searchInput) searchInput.value = '';
+    if (catSelect) catSelect.value = 'all';
+    if (lowStockToggle) lowStockToggle.checked = false;
+    this._invLowStockOnly = false;
+    this._invPage = 1;
+    this.renderInventoryTable();
+    this.showToast('Inventory filters cleared', 'info');
+  },
+
+  clearReorderFilters() {
+    const searchInput = document.getElementById('reorderSearchInput');
+    const statusFilter = document.getElementById('reorderStatusFilter');
+    if (searchInput) searchInput.value = '';
+    if (statusFilter) statusFilter.value = 'all';
+    this.renderPurchaseOrders();
+    this.showToast('Reorder filters cleared', 'info');
+  },
+
+  clearSalesFilters() {
+    this.setSalesDateRange('today');
+    this.renderSalesLeaderboard();
+    this.showToast('Sales filters reset to Today', 'info');
+  },
+
+  clearStaffFilters() {
+    this.renderStaffTable();
+    this.showToast('Staff filters reset', 'info');
   },
 
   escapeHTML(str) {
