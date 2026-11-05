@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MallMatrix — Mall Inventory & Stock Management Platform</title>
-  <meta name="description" content="MallMatrix: Enterprise Mall Inventory Management System with automated reordering, AI Copilot, POS sales analytics, staff duty rosters, and tenant store management.">
+  <meta name="description"
+    content="MallMatrix: Enterprise Mall Inventory Management System with automated reordering, AI Copilot, POS sales analytics, staff duty rosters, and tenant store management.">
   <link rel="icon" type="image/jpeg" href="/mallmatrix_logo.jpg">
   <link rel="apple-touch-icon" href="/mallmatrix_logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
   <div class="app-layout">
     <!-- MOBILE OVERLAY BACKDROP -->
@@ -31,7 +36,10 @@
       <div class="sidebar-action-wrap">
         <button class="btn-create-order" id="sidebarCreateOrderBtn">
           <span class="create-order-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </span>
           <span>Create New Order</span>
         </button>
@@ -42,7 +50,11 @@
         <!-- 1. Dashboard (Active Solid Green Pill) -->
         <button class="menu-item active" data-view="dashboard" id="nav-dashboard">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="12" width="4" height="9" rx="1" />
+              <rect x="10" y="7" width="4" height="14" rx="1" />
+              <rect x="17" y="3" width="4" height="18" rx="1" />
+            </svg>
           </div>
           <span class="menu-label">Dashboard</span>
         </button>
@@ -50,7 +62,12 @@
         <!-- 2. Inventory -->
         <button class="menu-item" data-view="inventory" id="nav-inventory">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
           </div>
           <span class="menu-label">Inventory</span>
         </button>
@@ -58,7 +75,10 @@
         <!-- 3. Reordering System -->
         <button class="menu-item" data-view="reorder" id="nav-reorder">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/><path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              <path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3" />
+            </svg>
           </div>
           <span class="menu-label">Reordering System</span>
         </button>
@@ -66,7 +86,10 @@
         <!-- 4. Sales Manage -->
         <button class="menu-item" data-view="sales" id="nav-sales">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
           </div>
           <span class="menu-label">Manage Sales</span>
         </button>
@@ -74,7 +97,12 @@
         <!-- 5. Staff Management -->
         <button class="menu-item" data-view="staff" id="nav-staff">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
           </div>
           <span class="menu-label">Staff Management</span>
         </button>
@@ -82,7 +110,10 @@
         <!-- 6. Tenant Stores -->
         <button class="menu-item" data-view="tenants" id="nav-tenants">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
           </div>
           <span class="menu-label">Tenant Stores</span>
         </button>
@@ -90,16 +121,25 @@
         <!-- 7. AI Copilot -->
         <button class="menu-item copilot-item" data-view="copilot" id="nav-copilot">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+              <path d="M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" />
+            </svg>
           </div>
           <span class="menu-label">AI Copilot</span>
           <span class="badge-copilot">Smart</span>
         </button>
 
         <!-- Inventory Settings -->
-        <button class="menu-item" id="nav-settings" onclick="MallApp.showToast('MallMatrix Settings: 48 Stores Integrated & Active', 'info')">
+        <button class="menu-item" id="nav-settings"
+          onclick="MallApp.showToast('MallMatrix Settings: 48 Stores Integrated & Active', 'info')">
           <div class="menu-icon">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
           </div>
           <span class="menu-label">Inventory Settings</span>
         </button>
@@ -107,15 +147,21 @@
         <!-- User Details at the Bottom of Sidebar -->
         <div class="sidebar-user-footer">
           <div class="user-footer-avatar-wrap">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80" alt="Alex Rivera" class="user-footer-avatar">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80"
+              alt="Alex Rivera" class="user-footer-avatar">
             <span class="user-footer-online-dot"></span>
           </div>
           <div class="user-footer-info">
             <div class="user-footer-name">Alex Rivera</div>
             <div class="user-footer-role">Mall Operations Lead</div>
           </div>
-          <button class="user-footer-logout-btn" title="Log Out" onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <button class="user-footer-logout-btn" title="Log Out"
+            onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
           </button>
         </div>
       </nav>
@@ -127,12 +173,19 @@
       <header class="dashboard-header">
         <div class="header-left">
           <button class="mobile-toggle-btn" id="mobileMenuBtn" aria-label="Open Navigation">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
           </button>
           <div class="welcome-title-wrap">
             <h1 class="welcome-title" id="pageMainTitle">Welcome To Stock Management</h1>
             <button class="icon-edit-btn title-edit-btn" title="Edit View Title" aria-label="Edit title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
             </button>
           </div>
         </div>
@@ -140,13 +193,23 @@
         <div class="header-right">
           <!-- Calendar Date Pill -->
           <div class="header-date-pill">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
             <span id="headerLiveDate">24th March 2026</span>
           </div>
 
           <!-- Log out Button -->
-          <button class="header-logout-btn" id="headerLogoutBtn" onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <button class="header-logout-btn" id="headerLogoutBtn"
+            onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
             <span>Log out</span>
           </button>
         </div>
@@ -165,11 +228,15 @@
                 <span>AUTONOMOUS AGENT MESH ACTIVE</span>
               </div>
               <h2 class="orch-card-title">ORCHESTRATOR SUMMARY</h2>
-              <p class="orch-description">Central intelligence core orchestrating inventory buffers, POS telemetry streams, automated PO reorders, and tenant compliance.</p>
+              <p class="orch-description">Central intelligence core orchestrating inventory buffers, POS telemetry
+                streams, automated PO reorders, and tenant compliance.</p>
             </div>
             <div class="orch-action-btns">
-              <button class="btn-orch-secondary" onclick="MallApp.showToast('Full Mesh Diagnostic Passed: 48 Stores in Sync', 'success')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <button class="btn-orch-secondary"
+                onclick="MallApp.showToast('Full Mesh Diagnostic Passed: 48 Stores in Sync', 'success')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
                 <span>Run System Health Audit</span>
               </button>
             </div>
@@ -212,7 +279,11 @@
               <div class="dash-card kpi-item-card kpi-revenue">
                 <div class="kpi-card-header">
                   <div class="kpi-icon-wrap icon-rev">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
                   </div>
                   <div class="kpi-title-meta">
                     <span class="kpi-label">Revenue</span>
@@ -232,7 +303,13 @@
               <div class="dash-card kpi-item-card kpi-stockout">
                 <div class="kpi-card-header">
                   <div class="kpi-icon-wrap icon-alert">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      <line x1="12" y1="9" x2="12" y2="13" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
                   </div>
                   <div class="kpi-title-meta">
                     <span class="kpi-label">Stock-out</span>
@@ -253,7 +330,13 @@
               <div class="dash-card kpi-item-card kpi-rent">
                 <div class="kpi-card-header">
                   <div class="kpi-icon-wrap icon-rent">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
                   </div>
                   <div class="kpi-title-meta">
                     <span class="kpi-label">Rent Overdue</span>
@@ -279,7 +362,10 @@
                   <div class="trend-value-wrap">
                     <span class="trend-main-amount">$30,000</span>
                     <span class="badge-growth">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="3">
+                        <polyline points="18 15 12 9 6 15" />
+                      </svg>
                       +53.57%
                     </span>
                     <span class="trend-timeframe">Today vs 7-day baseline</span>
@@ -309,12 +395,12 @@
                   <svg viewBox="0 0 540 180" class="smooth-wave-chart" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="waveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#5429FF" stop-opacity="0.28"/>
-                        <stop offset="100%" stop-color="#5429FF" stop-opacity="0.0"/>
+                        <stop offset="0%" stop-color="#5429FF" stop-opacity="0.28" />
+                        <stop offset="100%" stop-color="#5429FF" stop-opacity="0.0" />
                       </linearGradient>
                       <filter id="glowCircle" x="-20%" y="-20%" width="140%" height="140%">
                         <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
                       </filter>
                     </defs>
 
@@ -335,8 +421,8 @@
                              C 235 130, 260 75, 290 100 
                              C 320 125, 345 55, 380 55 
                              C 410 55, 435 135, 470 135 
-                             C 495 135, 520 120, 540 120" 
-                          fill="none" stroke="#5429FF" stroke-width="3.2" stroke-linecap="round" />
+                             C 495 135, 520 120, 540 120" fill="none" stroke="#5429FF" stroke-width="3.2"
+                      stroke-linecap="round" />
 
                     <!-- Peak Points -->
                     <circle cx="120" cy="45" r="7" fill="#0090B5" filter="url(#glowCircle)" />
@@ -384,7 +470,12 @@
             <div class="dash-card agent-module-card" onclick="MallApp.switchView('inventory')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-inv">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                      d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                  </svg>
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Inventory</h4>
@@ -416,7 +507,10 @@
             <div class="dash-card agent-module-card" onclick="MallApp.switchView('sales')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-sales">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Sales</h4>
@@ -448,7 +542,10 @@
             <div class="dash-card agent-module-card" onclick="MallApp.switchView('tenants')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-tenants">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Tenants</h4>
@@ -480,7 +577,12 @@
             <div class="dash-card agent-module-card" onclick="MallApp.switchView('staff')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-staff">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Staff</h4>
@@ -512,7 +614,10 @@
             <div class="dash-card agent-module-card" onclick="MallApp.switchView('reorder')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-reorder">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/><path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    <path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3" />
+                  </svg>
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Reorder</h4>
@@ -551,7 +656,8 @@
         <div class="panel-section-head">
           <div>
             <h2 class="section-title">Mall Multi-Tenant Stock Management</h2>
-            <p class="section-desc">Manage store SKUs, buffer thresholds, and live stock levels across all mall departments.</p>
+            <p class="section-desc">Manage store SKUs, buffer thresholds, and live stock levels across all mall
+              departments.</p>
           </div>
           <div class="panel-actions">
             <button class="btn-create-order" onclick="MallApp.openProductModal()">
@@ -567,12 +673,18 @@
             <span class="inv-bulk-label" id="invBulkLabel">rows selected</span>
           </div>
           <div class="inv-bulk-actions">
-            <button class="inv-bulk-btn inv-bulk-restock" id="invBulkRestockBtn" onclick="MallApp.bulkRestockSelected()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <button class="inv-bulk-btn inv-bulk-restock" id="invBulkRestockBtn"
+              onclick="MallApp.bulkRestockSelected()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
               <span id="invBulkRestockText">Restock selected (0)</span>
             </button>
             <button class="inv-bulk-btn inv-bulk-clear" onclick="MallApp.clearSelection()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
               Clear selection
             </button>
           </div>
@@ -581,7 +693,8 @@
         <div class="dash-card">
           <div class="table-filter-bar inv-filter-bar">
             <div class="inv-filter-left">
-              <input type="text" id="inventorySearchInput" class="clean-search-input" placeholder="Search by SKU, product name, or tenant store...">
+              <input type="text" id="inventorySearchInput" class="clean-search-input"
+                placeholder="Search by SKU, product name, or tenant store...">
               <select id="invCategoryFilter" class="clean-select">
                 <option value="all">All Departments</option>
                 <option value="Fashion">Fashion & Apparel</option>
@@ -659,7 +772,8 @@
         <div class="panel-section-head">
           <div>
             <h2 class="section-title">Automated Reordering System</h2>
-            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.</p>
+            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.
+            </p>
           </div>
           <button class="btn-create-order" onclick="MallApp.generateBatchReorder()">
             <span>Batch Reorder All Low Stock</span>
@@ -728,7 +842,8 @@
         <div class="panel-section-head">
           <div>
             <h2 class="section-title">Mall Operations Staff & Shift Roster</h2>
-            <p class="section-desc">Floor inventory auditors, dock receiving supervisors, and tenant compliance teams.</p>
+            <p class="section-desc">Floor inventory auditors, dock receiving supervisors, and tenant compliance teams.
+            </p>
           </div>
         </div>
 
@@ -781,32 +896,37 @@
               <svg class="copilot-ribbon-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="copilotRibbonGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#00E5FF"/>
-                    <stop offset="40%" stop-color="#0090B5"/>
-                    <stop offset="75%" stop-color="#6366F1"/>
-                    <stop offset="100%" stop-color="#5429FF"/>
+                    <stop offset="0%" stop-color="#00E5FF" />
+                    <stop offset="40%" stop-color="#0090B5" />
+                    <stop offset="75%" stop-color="#6366F1" />
+                    <stop offset="100%" stop-color="#5429FF" />
                   </linearGradient>
                   <linearGradient id="copilotRibbonGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#5429FF"/>
-                    <stop offset="35%" stop-color="#7C3AED"/>
-                    <stop offset="70%" stop-color="#9333EA"/>
-                    <stop offset="100%" stop-color="#C084FC"/>
+                    <stop offset="0%" stop-color="#5429FF" />
+                    <stop offset="35%" stop-color="#7C3AED" />
+                    <stop offset="70%" stop-color="#9333EA" />
+                    <stop offset="100%" stop-color="#C084FC" />
                   </linearGradient>
                   <linearGradient id="copilotRibbonOverlap" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#3D1EB8"/>
-                    <stop offset="100%" stop-color="#6366F1"/>
+                    <stop offset="0%" stop-color="#3D1EB8" />
+                    <stop offset="100%" stop-color="#6366F1" />
                   </linearGradient>
                   <filter id="copilotRibbonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(84, 41, 255, 0.35)"/>
+                    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(84, 41, 255, 0.35)" />
                   </filter>
                 </defs>
                 <g filter="url(#copilotRibbonGlow)">
                   <!-- Ribbon Loop Left/Top (Cyan -> Green -> Yellow) -->
-                  <path d="M34 65C23 65 15 57 15 45C15 32 23 21 37 21C48 21 57 28 62 36L74 24C65 14 52 9 37 9C17 9 3 24 3 45C3 64 16 78 34 78C46 78 57 71 64 62L52 51C47 60 41 65 34 65Z" fill="url(#copilotRibbonGrad1)"/>
+                  <path
+                    d="M34 65C23 65 15 57 15 45C15 32 23 21 37 21C48 21 57 28 62 36L74 24C65 14 52 9 37 9C17 9 3 24 3 45C3 64 16 78 34 78C46 78 57 71 64 62L52 51C47 60 41 65 34 65Z"
+                    fill="url(#copilotRibbonGrad1)" />
                   <!-- Ribbon Loop Right/Bottom (Yellow -> Orange -> Magenta -> Purple) -->
-                  <path d="M66 35C77 35 85 43 85 55C85 68 77 79 63 79C52 79 43 72 38 64L26 76C35 86 48 91 63 91C83 91 97 76 97 55C97 36 84 22 66 22C54 22 43 29 36 38L48 49C53 40 59 35 66 35Z" fill="url(#copilotRibbonGrad2)"/>
+                  <path
+                    d="M66 35C77 35 85 43 85 55C85 68 77 79 63 79C52 79 43 72 38 64L26 76C35 86 48 91 63 91C83 91 97 76 97 55C97 36 84 22 66 22C54 22 43 29 36 38L48 49C53 40 59 35 66 35Z"
+                    fill="url(#copilotRibbonGrad2)" />
                   <!-- Center Twisted Knot Shading -->
-                  <path d="M48 49L62 36C57 28 48 21 37 21C34 21 31 22 28 23L40 37C43 40 46 44 48 49Z" fill="url(#copilotRibbonOverlap)" opacity="0.9"/>
+                  <path d="M48 49L62 36C57 28 48 21 37 21C34 21 31 22 28 23L40 37C43 40 46 44 48 49Z"
+                    fill="url(#copilotRibbonOverlap)" opacity="0.9" />
                 </g>
               </svg>
             </div>
@@ -819,30 +939,48 @@
           <div class="copilot-input-container">
             <form id="copilotChatForm" class="copilot-m365-form">
               <div class="copilot-input-inner">
-                <textarea 
-                  id="copilotInput" 
-                  class="copilot-textarea" 
-                  rows="1" 
+                <textarea id="copilotInput" class="copilot-textarea" rows="1"
                   placeholder="Use everyday words to describe what your agent should do..."
-                  aria-label="Ask Copilot"
-                ></textarea>
+                  aria-label="Ask Copilot"></textarea>
 
                 <div class="copilot-toolbar-row">
                   <div class="toolbar-left-group">
-                    <button type="button" class="copilot-tool-btn" id="copilotAddBtn" title="Add data source" onclick="MallApp.showToast('Select local file, inventory catalog, or tenant CSV to attach', 'info')">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <button type="button" class="copilot-tool-btn" id="copilotAddBtn" title="Add data source"
+                      onclick="MallApp.showToast('Select local file, inventory catalog, or tenant CSV to attach', 'info')">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.4">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
                     </button>
-                    <button type="button" class="copilot-tool-btn" id="copilotImgBtn" title="Attach image" onclick="MallApp.showToast('Image recognition: upload product label or receipt', 'info')">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <button type="button" class="copilot-tool-btn" id="copilotImgBtn" title="Attach image"
+                      onclick="MallApp.showToast('Image recognition: upload product label or receipt', 'info')">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
                     </button>
                   </div>
 
                   <div class="toolbar-right-group">
-                    <button type="button" class="copilot-tool-btn mic-btn" id="copilotMicBtn" title="Voice dictation" onclick="MallApp.showToast('Voice listening active: speak query...', 'info')">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    <button type="button" class="copilot-tool-btn mic-btn" id="copilotMicBtn" title="Voice dictation"
+                      onclick="MallApp.showToast('Voice listening active: speak query...', 'info')">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
+                      </svg>
                     </button>
                     <button type="submit" class="copilot-send-pill-btn" id="copilotSendBtn" aria-label="Send query">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -853,9 +991,13 @@
           <!-- 3 SUGGESTION PROMPT CARDS (Matches Reference Image) -->
           <div class="copilot-prompt-cards-grid" id="copilotCardsGrid">
             <!-- Card 1: Analyze data trends -->
-            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Analyze data trends: Review quarterly performance and identify key insights across mall stores')">
+            <div class="copilot-action-card"
+              onclick="MallApp.askCopilotDirect('Analyze data trends: Review quarterly performance and identify key insights across mall stores')">
               <div class="action-card-sparkle">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
+                  <path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" />
+                </svg>
               </div>
               <div class="action-card-content">
                 <h3 class="action-card-title">Analyze data trends</h3>
@@ -864,9 +1006,13 @@
             </div>
 
             <!-- Card 2: Draft a proposal -->
-            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Draft a proposal: Create a professional business proposal for tenant inventory reordering')">
+            <div class="copilot-action-card"
+              onclick="MallApp.askCopilotDirect('Draft a proposal: Create a professional business proposal for tenant inventory reordering')">
               <div class="action-card-sparkle">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
+                  <path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" />
+                </svg>
               </div>
               <div class="action-card-content">
                 <h3 class="action-card-title">Draft a proposal</h3>
@@ -875,9 +1021,13 @@
             </div>
 
             <!-- Card 3: Summarize documents -->
-            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Summarize documents: Get concise summaries of lengthy reports and retail stock files')">
+            <div class="copilot-action-card"
+              onclick="MallApp.askCopilotDirect('Summarize documents: Get concise summaries of lengthy reports and retail stock files')">
               <div class="action-card-sparkle">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
+                  <path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" />
+                </svg>
               </div>
               <div class="action-card-content">
                 <h3 class="action-card-title">Summarize documents</h3>
@@ -894,7 +1044,10 @@
           <!-- RESET / NEW TOPIC BUTTON -->
           <div class="copilot-thread-footer" id="copilotThreadFooter" style="display: none;">
             <button type="button" class="btn-new-topic" onclick="MallApp.resetCopilotChat()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
               <span>New Topic</span>
             </button>
           </div>
@@ -902,10 +1055,14 @@
       </div>
 
       <!-- FIXED AI COPILOT ACTION BUTTON (Fixed in bottom right corner of screen on Dashboard) -->
-      <button class="floating-copilot-pill" id="floatingCopilotBtn" onclick="MallApp.switchView('copilot')" title="Consult MallMatrix AI Copilot">
+      <button class="floating-copilot-pill" id="floatingCopilotBtn" onclick="MallApp.switchView('copilot')"
+        title="Consult MallMatrix AI Copilot">
         <span class="copilot-glow-ring"></span>
         <span class="copilot-sparkle-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/><path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
+            <path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" />
+          </svg>
         </span>
         <span class="copilot-floating-text">AI Copilot</span>
       </button>
@@ -985,7 +1142,10 @@
           <p class="inv-drawer-sku" id="invDrawerSku">SKU-XXX-000</p>
         </div>
         <button class="inv-drawer-close" onclick="MallApp.closeRestockDrawer()" aria-label="Close restock drawer">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
 
@@ -1018,12 +1178,14 @@
 
         <div class="inv-drawer-field">
           <label class="inv-drawer-label" for="invDrawerSupplier">Target Supplier / Logistics Partner</label>
-          <input type="text" id="invDrawerSupplier" class="inv-drawer-input" placeholder="e.g. Inditex Global Logistics">
+          <input type="text" id="invDrawerSupplier" class="inv-drawer-input"
+            placeholder="e.g. Inditex Global Logistics">
         </div>
 
         <div class="inv-drawer-field">
           <label class="inv-drawer-label" for="invDrawerNotes">Purchase Order Notes & Delivery Instructions</label>
-          <textarea id="invDrawerNotes" class="inv-drawer-input inv-drawer-textarea" rows="3" placeholder="Priority loading dock 3 delivery with security sign-off..."></textarea>
+          <textarea id="invDrawerNotes" class="inv-drawer-input inv-drawer-textarea" rows="3"
+            placeholder="Priority loading dock 3 delivery with security sign-off..."></textarea>
         </div>
 
         <div class="inv-drawer-cost-card">
@@ -1034,7 +1196,9 @@
         </div>
 
         <button class="inv-drawer-submit" id="invDrawerSubmitBtn" onclick="MallApp.confirmRestockFromDrawer()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
           Confirm & Restock Stock
         </button>
       </div>
@@ -1046,4 +1210,5 @@
 
   <script type="module" src="/main.js"></script>
 </body>
+
 </html>
