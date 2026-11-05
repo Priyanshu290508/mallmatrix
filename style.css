@@ -1163,9 +1163,9 @@ body {
   cursor: pointer;
   box-shadow: 0 8px 25px rgba(84, 41, 255, 0.42);
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.22s ease;
+              transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.22s ease;
 }
 
 /* Hidden state when any drawer or modal is open */
@@ -3397,8 +3397,7 @@ body.has-overlay-open .floating-copilot-pill {
   min-height: 0 !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  padding: 22px 24px 32px 24px !important;
-  /* pb-6 so last row is never clipped behind footer */
+  padding: 22px 24px 32px 24px !important; /* pb-6 so last row is never clipped behind footer */
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
@@ -3419,7 +3418,6 @@ body.has-overlay-open .floating-copilot-pill {
 
 /* Mobile full width under 640px */
 @media (max-width: 640px) {
-
   #poDetailDrawer,
   .po-detail-drawer,
   #invRestockDrawer,
@@ -4128,53 +4126,6 @@ body.has-overlay-open .floating-copilot-pill {
    ======================================================== */
 
 /* 1. Reusable Export Button Dropdown */
-.header-export-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
-  background: #EEF2FF;
-  border: 1.5px solid #E0E7FF;
-  border-radius: 10px;
-  color: var(--solar-primary, #5429FF);
-  font-size: 0.83rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  white-space: nowrap;
-}
-
-.header-export-btn:hover {
-  background: var(--solar-primary, #5429FF);
-  border-color: var(--solar-primary, #5429FF);
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(84, 41, 255, 0.25);
-  transform: translateY(-1px);
-}
-
-.header-export-btn svg {
-  transition: transform 0.15s ease;
-}
-
-.header-export-btn:hover svg {
-  transform: translateY(1px);
-}
-
-.badge-export {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: #EEF2FF;
-  color: #5429FF;
-  margin-left: auto;
-}
-
-.menu-item.active .badge-export {
-  background: #FFFFFF;
-  color: #5429FF;
-}
-
 .export-dropdown-wrap {
   position: relative;
   display: inline-flex;
@@ -4245,7 +4196,6 @@ body.has-overlay-open .floating-copilot-pill {
     opacity: 0;
     transform: translateY(-4px) scale(0.98);
   }
-
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -4366,9 +4316,7 @@ body.has-overlay-open .floating-copilot-pill {
 }
 
 @keyframes exportSpin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 /* 2. PO Detail Drawer Export Button */
@@ -4582,11 +4530,11 @@ body.has-overlay-open .floating-copilot-pill {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.export-toggle-input:checked+.export-toggle-switch {
+.export-toggle-input:checked + .export-toggle-switch {
   background: #5429FF;
 }
 
-.export-toggle-input:checked+.export-toggle-switch::after {
+.export-toggle-input:checked + .export-toggle-switch::after {
   transform: translateX(16px);
 }
 
