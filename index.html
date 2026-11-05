@@ -216,105 +216,24 @@
       </header>
 
       <!-- ======================================================= -->
-      <!-- VIEW 1: DASHBOARD (Overview, Alerts, KPI Cards, Sales Trend & Modules) -->
+      <!-- VIEW 1: DASHBOARD (Orchestrator Summary, KPI Cards, Sales Trend & Agents) -->
       <!-- ======================================================= -->
       <div class="view-panel active" id="view-dashboard">
-        <!-- 0. NEEDS YOUR ATTENTION ACTIONABLE STRIP -->
-        <div class="dash-attention-strip">
-          <div class="attention-header-row">
-            <div class="attention-title-wrap">
-              <span class="attention-indicator-pulse"></span>
-              <h3 class="attention-section-title">Needs your attention</h3>
-            </div>
-            <span class="attention-pill-count">3 urgent actions</span>
-          </div>
-
-          <div class="attention-cards-grid">
-            <!-- Alert 1: Critical Stock Items -->
-            <div class="attention-alert-card alert-card-critical" onclick="MallApp.navigateAttention('inventory')"
-              role="button" tabindex="0" aria-label="Review 4 critical stock items"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.navigateAttention('inventory');}">
-              <div class="attention-card-main">
-                <div class="attention-icon-box icon-critical">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                </div>
-                <div class="attention-info">
-                  <h4 class="attention-headline">4 critical stock items</h4>
-                  <p class="attention-sub">Stock below 50% safety buffer</p>
-                </div>
-              </div>
-              <button type="button" class="btn-attention-action btn-review"
-                onclick="event.stopPropagation(); MallApp.navigateAttention('inventory')">
-                Review
-              </button>
-            </div>
-
-            <!-- Alert 2: Overdue Rents -->
-            <div class="attention-alert-card alert-card-overdue" onclick="MallApp.navigateAttention('tenants', 'reminder')"
-              role="button" tabindex="0" aria-label="Send reminder for 2 overdue rents"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.navigateAttention('tenants', 'reminder');}">
-              <div class="attention-card-main">
-                <div class="attention-icon-box icon-overdue">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                </div>
-                <div class="attention-info">
-                  <h4 class="attention-headline">2 overdue rents</h4>
-                  <p class="attention-sub">Zara & Nike overdue 5+ days ($14.5K)</p>
-                </div>
-              </div>
-              <button type="button" class="btn-attention-action btn-reminder"
-                onclick="event.stopPropagation(); MallApp.navigateAttention('tenants', 'reminder')">
-                Send reminder
-              </button>
-            </div>
-
-            <!-- Alert 3: POs Awaiting Approval -->
-            <div class="attention-alert-card alert-card-approval" onclick="MallApp.navigateAttention('reorder')"
-              role="button" tabindex="0" aria-label="Approve 3 purchase orders"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.navigateAttention('reorder');}">
-              <div class="attention-card-main">
-                <div class="attention-icon-box icon-approval">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 14 14" />
-                  </svg>
-                </div>
-                <div class="attention-info">
-                  <h4 class="attention-headline">3 POs awaiting approval</h4>
-                  <p class="attention-sub">Restock orders ready for sign-off</p>
-                </div>
-              </div>
-              <button type="button" class="btn-attention-action btn-approve"
-                onclick="event.stopPropagation(); MallApp.navigateAttention('reorder')">
-                Approve
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 1. TODAY'S OVERVIEW SUMMARY BANNER -->
+        <!-- 1. ORCHESTRATOR SUMMARY BANNER -->
         <div class="dash-card orchestrator-summary-card">
           <div class="orch-header-row">
             <div class="orch-title-wrap">
               <div class="orch-status-pill">
                 <span class="orch-pulse-indicator"></span>
-                <span>Automation active</span>
+                <span>AUTONOMOUS AGENT MESH ACTIVE</span>
               </div>
-              <h2 class="orch-card-title">Today's overview</h2>
-              <p class="orch-description">Live operational status across stock levels, store sales, reorders, and tenant compliance.</p>
+              <h2 class="orch-card-title">ORCHESTRATOR SUMMARY</h2>
+              <p class="orch-description">Central intelligence core orchestrating inventory buffers, POS telemetry
+                streams, automated PO reorders, and tenant compliance.</p>
             </div>
             <div class="orch-action-btns">
               <button class="btn-orch-secondary"
-                onclick="MallApp.showToast('System health audit passed: all 48 stores online', 'success')">
+                onclick="MallApp.showToast('Full Mesh Diagnostic Passed: 48 Stores in Sync', 'success')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
@@ -325,24 +244,24 @@
 
           <div class="orch-metrics-strip">
             <div class="orch-metric-box">
-              <span class="orch-metric-label">System health</span>
+              <span class="orch-metric-label">System Synchronicity</span>
               <div class="orch-metric-val">99.8% <span class="tag-badge tag-green">Optimal</span></div>
-              <span class="orch-metric-sub">All 48 stores online and syncing</span>
+              <span class="orch-metric-sub">Zero telemetry drops across 48 stores</span>
             </div>
             <div class="orch-metric-box">
-              <span class="orch-metric-label">Automations running</span>
-              <div class="orch-metric-val">5 Active <span class="tag-badge tag-cyan">Running</span></div>
-              <span class="orch-metric-sub">Inventory, sales, tenants, staff, reorders</span>
+              <span class="orch-metric-label">Autonomous Sub-Agents</span>
+              <div class="orch-metric-val">5 Active <span class="tag-badge tag-cyan">Connected</span></div>
+              <span class="orch-metric-sub">Inventory, Sales, Tenants, Staff, Reorder</span>
             </div>
             <div class="orch-metric-box">
-              <span class="orch-metric-label">Stock replenishment</span>
+              <span class="orch-metric-label">Stock Replenishment Triggers</span>
               <div class="orch-metric-val">12 Auto-POs <span class="tag-badge tag-purple">In-Flight</span></div>
-              <span class="orch-metric-sub">Auto-restocking buffer shortages</span>
+              <span class="orch-metric-sub">Auto-replenishing 14 buffer breaches</span>
             </div>
             <div class="orch-metric-box">
-              <span class="orch-metric-label">Predicted footfall</span>
+              <span class="orch-metric-label">Predicted Day Footfall</span>
               <div class="orch-metric-val">38,420 <span class="tag-badge tag-amber">+14.2% Peak</span></div>
-              <span class="orch-metric-sub">Estimated visitor traffic today</span>
+              <span class="orch-metric-sub">Estimated retail spending: $240K+</span>
             </div>
           </div>
         </div>
@@ -540,17 +459,15 @@
           </div>
         </div>
 
-        <!-- 3. MANAGEMENT MODULES CARDS SECTION -->
+        <!-- 3. AGENTS CARDS SECTION -->
         <div class="dashboard-section-block">
           <div class="section-badge-header">
-            <h3 class="section-label-text">Management modules</h3>
+            <h3 class="section-label-text">Agents cards</h3>
           </div>
 
           <div class="agents-cards-grid">
-            <!-- Module 1: Inventory -->
-            <div class="dash-card agent-module-card" onclick="MallApp.switchView('inventory')" role="button"
-              tabindex="0" aria-label="Open Inventory module"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.switchView('inventory');}">
+            <!-- Agent 1: Inventory Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('inventory')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-inv">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -562,7 +479,7 @@
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Inventory</h4>
-                  <span class="agent-tagline">Stock buffer & SKU tracking</span>
+                  <span class="agent-tagline">Autonomous SKU & Buffer Monitor</span>
                 </div>
                 <span class="agent-status-badge status-active">Active</span>
               </div>
@@ -576,7 +493,7 @@
                   <span class="agent-metric-name">In-Stock Ratio</span>
                 </div>
                 <div class="agent-metric-pair">
-                  <span class="agent-metric-num" style="color: #DC2626;">4 Critical</span>
+                  <span class="agent-metric-num">14</span>
                   <span class="agent-metric-name">Buffer Alerts</span>
                 </div>
               </div>
@@ -586,10 +503,8 @@
               </div>
             </div>
 
-            <!-- Module 2: Sales -->
-            <div class="dash-card agent-module-card" onclick="MallApp.switchView('sales')" role="button" tabindex="0"
-              aria-label="Open Sales module"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.switchView('sales');}">
+            <!-- Agent 2: Sales Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('sales')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-sales">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -599,34 +514,32 @@
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Sales</h4>
-                  <span class="agent-tagline">POS sync & store analytics</span>
+                  <span class="agent-tagline">Live POS Stream & Revenue Engine</span>
                 </div>
                 <span class="agent-status-badge status-active">Active</span>
               </div>
               <div class="agent-body-metrics">
                 <div class="agent-metric-pair">
-                  <span class="agent-metric-num">48 / 48</span>
-                  <span class="agent-metric-name">Active Terminals</span>
+                  <span class="agent-metric-num">$148.2K</span>
+                  <span class="agent-metric-name">Gross Volume</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num">342/hr</span>
+                  <span class="agent-metric-name">POS Velocity</span>
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">99.8%</span>
-                  <span class="agent-metric-name">Sync Reliability</span>
-                </div>
-                <div class="agent-metric-pair">
-                  <span class="agent-metric-num" style="color: #0090B5;">Live</span>
-                  <span class="agent-metric-name">Feed Status</span>
+                  <span class="agent-metric-name">Gateway Health</span>
                 </div>
               </div>
               <div class="agent-card-footer">
-                <span class="agent-cta-text">Open Sales</span>
+                <span class="agent-cta-text">Manage Sales Feed</span>
                 <span class="agent-arrow-icon">→</span>
               </div>
             </div>
 
-            <!-- Module 3: Tenants -->
-            <div class="dash-card agent-module-card" onclick="MallApp.switchView('tenants')" role="button" tabindex="0"
-              aria-label="Open Tenants module"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.switchView('tenants');}">
+            <!-- Agent 3: Tenants Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('tenants')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-tenants">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -636,7 +549,7 @@
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Tenants</h4>
-                  <span class="agent-tagline">Store directory & lease terms</span>
+                  <span class="agent-tagline">Retail Stores & Lease Compliance</span>
                 </div>
                 <span class="agent-status-badge status-active">Active</span>
               </div>
@@ -647,23 +560,21 @@
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">100%</span>
-                  <span class="agent-metric-name">Occupancy Rate</span>
+                  <span class="agent-metric-name">Lease Occupancy</span>
                 </div>
                 <div class="agent-metric-pair">
-                  <span class="agent-metric-num" style="color: #D97706;">2 Overdue</span>
-                  <span class="agent-metric-name">Lease Notices</span>
+                  <span class="agent-metric-num">Zara / Apple</span>
+                  <span class="agent-metric-name">Top Footfall</span>
                 </div>
               </div>
               <div class="agent-card-footer">
-                <span class="agent-cta-text">Open Tenants</span>
+                <span class="agent-cta-text">Store Directory</span>
                 <span class="agent-arrow-icon">→</span>
               </div>
             </div>
 
-            <!-- Module 4: Staff -->
-            <div class="dash-card agent-module-card" onclick="MallApp.switchView('staff')" role="button" tabindex="0"
-              aria-label="Open Staff module"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.switchView('staff');}">
+            <!-- Agent 4: Staff Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('staff')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-staff">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -675,14 +586,14 @@
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Staff</h4>
-                  <span class="agent-tagline">Shift rosters & coverage</span>
+                  <span class="agent-tagline">Shift Coverage & Floor Auditors</span>
                 </div>
                 <span class="agent-status-badge status-active">Active</span>
               </div>
               <div class="agent-body-metrics">
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">24</span>
-                  <span class="agent-metric-name">On Duty</span>
+                  <span class="agent-metric-name">On Active Shift</span>
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">6</span>
@@ -694,15 +605,13 @@
                 </div>
               </div>
               <div class="agent-card-footer">
-                <span class="agent-cta-text">Open Staff</span>
+                <span class="agent-cta-text">Inspect Shift Roster</span>
                 <span class="agent-arrow-icon">→</span>
               </div>
             </div>
 
-            <!-- Module 5: Reorder -->
-            <div class="dash-card agent-module-card" onclick="MallApp.switchView('reorder')" role="button" tabindex="0"
-              aria-label="Open Reorder module"
-              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MallApp.switchView('reorder');}">
+            <!-- Agent 5: Reorder Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('reorder')">
               <div class="agent-card-header">
                 <div class="agent-icon-badge agent-reorder">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -712,7 +621,7 @@
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Reorder</h4>
-                  <span class="agent-tagline">Purchase order procurement</span>
+                  <span class="agent-tagline">Automated PO Procurement Engine</span>
                 </div>
                 <span class="agent-status-badge status-active">Active</span>
               </div>
@@ -722,8 +631,8 @@
                   <span class="agent-metric-name">Dispatched Transit</span>
                 </div>
                 <div class="agent-metric-pair">
-                  <span class="agent-metric-num" style="color: var(--solar-primary, #5429FF);">3 POs</span>
-                  <span class="agent-metric-name">Pending Sign-off</span>
+                  <span class="agent-metric-num">3 POs</span>
+                  <span class="agent-metric-name">Vendor Approvals</span>
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">1.4d</span>
@@ -731,12 +640,10 @@
                 </div>
               </div>
               <div class="agent-card-footer">
-                <span class="agent-cta-text">Open Reordering</span>
+                <span class="agent-cta-text">Trigger PO Batch</span>
                 <span class="agent-arrow-icon">→</span>
               </div>
             </div>
-          </div>
-        </div>
           </div>
         </div>
 
