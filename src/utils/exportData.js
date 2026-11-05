@@ -139,6 +139,38 @@ export function getExportFilename(moduleName, extension) {
   return `mallmatrix-${cleanMod}-${yyyy}-${mm}-${dd}.${cleanExt}`;
 }
 
+export function getActiveCurrency() {
+  try {
+    return localStorage.getItem('mallmatrix_currency') || 'USD';
+  } catch (e) {
+    return 'USD';
+  }
+}
+
+export function formatExportCurrency(amount, isPdf = false) {
+  const curr = getActiveCurrency();
+  const num = typeof amount === 'number' ? amount : (parseFloat(String(amount).replace(/[^0-9.-]+/g, '')) || 0);
+  if (curr === 'INR') {
+    const formatted = new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+    if (isPdf) {
+      // Standard Helvetica doesn't support the ₹ glyph, so safely represent as Rs.
+      return formatted.replace(/₹\s?/, 'Rs. ');
+    }
+    return formatted;
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num);
+}
+
 // ==========================================
 // 2. CSV EXPORT (Blob + UTF-8 BOM)
 // ==========================================
@@ -623,8 +655,8 @@ export function exportSinglePOToPDF(po) {
       item.name || 'Catalog Item',
       item.sku || 'SKU-GEN',
       String(item.qty || 1),
-      `$${Number(item.price || 0).toFixed(2)}`,
-      `$${Number(item.subtotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      formatExportCurrency(item.price, true),
+      formatExportCurrency(item.subtotal, true)
     ]);
 
     const autoTableFn = (typeof doc.autoTable === 'function') ? doc.autoTable.bind(doc) : autoTable;
@@ -673,7 +705,7 @@ export function exportSinglePOToPDF(po) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(84, 41, 255);
-    doc.text(po.value || '$0.00', summaryBoxX + summaryBoxW - 12, finalY + 24, { align: 'right' });
+    doc.text(formatExportCurrency(po.value, true), summaryBoxX + summaryBoxW - 12, finalY + 24, { align: 'right' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
@@ -748,7 +780,7 @@ export function exportFullReportToPDF(mallData) {
     const cardH = 55;
 
     const kpis = [
-      { label: 'Gross Sales Volume', val: `$${(mallData.totalRevenue || 148250).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, sub: 'Active retail stores' },
+      { label: 'Gross Sales Volume', val: formatExportCurrency(mallData.totalRevenue || 148920, true), sub: 'Active retail stores' },
       { label: 'Low Stock SKUs', val: String(mallData.lowStockCount || 6), sub: 'Buffer breach alerts' },
       { label: 'Pending PO Reorders', val: String(mallData.pendingPOCount || 2), sub: 'Awaiting B2B release' },
       { label: 'Staff On Shift', val: `${mallData.staffOnDuty || 3} Officers`, sub: 'Active floor auditors' }
@@ -790,7 +822,7 @@ export function exportFullReportToPDF(mallData) {
       t.name,
       t.unit,
       `${(t.calculatedUnits || t.unitsSold).toLocaleString()} units`,
-      `$${(t.calculatedSales || t.salesAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      formatExportCurrency(t.calculatedSales || t.salesAmount, true),
       `${t.turnoverRate}%`,
       String(t.posStatus || 'Online').toUpperCase()
     ]);
@@ -826,7 +858,7 @@ export function exportFullReportToPDF(mallData) {
         p.category,
         String(p.stock),
         String(p.minBuffer),
-        `$${p.price.toFixed(2)}`,
+        formatExportCurrency(p.price, true),
         status
       ];
     });
@@ -856,7 +888,7 @@ export function exportFullReportToPDF(mallData) {
       po.supplier,
       po.items,
       po.tenant,
-      po.value,
+      formatExportCurrency(po.value, true),
       po.status,
       po.expectedDelivery || 'In transit'
     ]);

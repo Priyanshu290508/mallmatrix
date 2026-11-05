@@ -3198,7 +3198,9 @@ body.has-overlay-open .floating-copilot-pill {
 
 /* 5. Confirmation Modal (Batch Reorder) & Reject Modal Overlay Enforcements */
 #batchReorderModal,
-#poRejectModal {
+#poRejectModal,
+#settingsModal,
+#newProductModal {
   display: none !important;
   position: fixed !important;
   inset: 0 !important;
@@ -3210,9 +3212,22 @@ body.has-overlay-open .floating-copilot-pill {
   padding: 20px !important;
 }
 
+#batchReorderModal:not(.open),
+#poRejectModal:not(.open),
+#settingsModal:not(.open),
+#newProductModal:not(.open) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 #batchReorderModal.open,
-#poRejectModal.open {
+#poRejectModal.open,
+#settingsModal.open,
+#newProductModal.open {
   display: flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .batch-reorder-modal {
@@ -3358,9 +3373,22 @@ body.has-overlay-open .floating-copilot-pill {
   outline: none !important;
 }
 
+#poDetailDrawer:not(.open),
+.po-detail-drawer:not(.open),
+#invRestockDrawer:not(.open),
+.inv-restock-drawer:not(.open) {
+  transform: translateX(100%) !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 #poDetailDrawer.open,
-.po-detail-drawer.open {
+.po-detail-drawer.open,
+#invRestockDrawer.open,
+.inv-restock-drawer.open {
   transform: translateX(0) !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 #poDrawerBackdrop {

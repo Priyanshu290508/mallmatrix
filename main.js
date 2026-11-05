@@ -18,367 +18,40 @@ import {
   getExportFilename
 } from './src/utils/exportData.js';
 
+import {
+  initialStores,
+  initialProducts,
+  initialPurchaseOrders,
+  initialStaff,
+  getTotalGrossSales,
+  getTotalStockValuation,
+  getCriticalStockCount,
+  getLowStockCount,
+  getPendingPOCount,
+  formatOrdinalDate,
+  formatCurrency
+} from './src/data/mallData.js';
+
 const MallState = {
   activeView: 'dashboard',
+  currency: localStorage.getItem('mallmatrix_currency') || 'USD',
   totalSKUs: 18450,
   salesAmount: 2500.00,
   taxesAmount: 470.00,
   netIncome: 57000,
-  stockValuation: 586.14,
+  stockValuation: getTotalStockValuation(initialProducts),
 
-  // Real-time Inventory Catalog across Mall Tenants
-  products: [
-    {
-      id: 'prod-1',
-      name: 'Zara Tailored Wool Overcoat',
-      sku: 'SKU-ZAR-882',
-      tenant: 'Zara Flagship',
-      unit: '#204',
-      category: 'Fashion',
-      stock: 4,
-      minBuffer: 25,
-      price: 189.00
-    },
-    {
-      id: 'prod-2',
-      name: 'Apple USB-C 30W Power Adapter',
-      sku: 'SKU-APP-102',
-      tenant: 'Apple Store',
-      unit: '#101',
-      category: 'Electronics',
-      stock: 8,
-      minBuffer: 50,
-      price: 39.00
-    },
-    {
-      id: 'prod-3',
-      name: 'Nike Air Zoom Pegasus 41',
-      sku: 'SKU-NIK-401',
-      tenant: 'Nike Experience',
-      unit: '#112',
-      category: 'Footwear',
-      stock: 6,
-      minBuffer: 30,
-      price: 140.00
-    },
-    {
-      id: 'prod-4',
-      name: 'Sephora Hydration Glow Serum 50ml',
-      sku: 'SKU-SEP-309',
-      tenant: 'Sephora Luxury',
-      unit: '#108',
-      category: 'Cosmetics',
-      stock: 5,
-      minBuffer: 20,
-      price: 68.00
-    },
-    {
-      id: 'prod-5',
-      name: 'H&M Relaxed Fit Organic Hoodie',
-      sku: 'SKU-HM-551',
-      tenant: 'H&M Retail',
-      unit: '#201',
-      category: 'Fashion',
-      stock: 12,
-      minBuffer: 40,
-      price: 34.99
-    },
-    {
-      id: 'prod-6',
-      name: 'Starbucks Colombian Whole Bean (1kg)',
-      sku: 'SKU-SBX-012',
-      tenant: 'Starbucks Reserve',
-      unit: '#G-05',
-      category: 'Dining',
-      stock: 22,
-      minBuffer: 35,
-      price: 28.50
-    },
-    {
-      id: 'prod-7',
-      name: 'Apple iPhone 16 Pro 256GB Natural Titanium',
-      sku: 'SKU-APP-990',
-      tenant: 'Apple Store',
-      unit: '#101',
-      category: 'Electronics',
-      stock: 64,
-      minBuffer: 25,
-      price: 1099.00
-    },
-    {
-      id: 'prod-8',
-      name: 'Nike Tech Fleece Windrunner',
-      sku: 'SKU-NIK-884',
-      tenant: 'Nike Experience',
-      unit: '#112',
-      category: 'Fashion',
-      stock: 78,
-      minBuffer: 30,
-      price: 135.00
-    }
-  ],
+  // Real-time Inventory Catalog across Mall Tenants (Derived from single source)
+  products: initialProducts.map(p => ({ ...p })),
 
-  // Reorder Purchase Orders
-  purchaseOrders: [
-    {
-      id: 'PO-8942',
-      supplier: 'Inditex Global Logistics',
-      vendorContact: 'Inditex Logistics EMEA (dispatch@inditex.com)',
-      leadTime: '3 business days',
-      items: '75x Wool Overcoats, 120x Knitwear',
-      tenant: 'Zara Flagship (#204)',
-      unit: '#204, Floor 2 (North Wing)',
-      value: '$14,250.00',
-      status: 'Pending',
-      reason: 'Triggered: stock 4 < min buffer 25 (Autumn seasonal spike)',
-      createdDate: 'Mar 24, 2026, 09:30 AM',
-      expectedDelivery: 'Mar 27, 2026',
-      timeline: {
-        created: 'Mar 24, 2026, 09:30 AM',
-        approved: null,
-        shipped: null,
-        delivered: null
-      },
-      lineItems: [
-        { name: 'Wool Blend Overcoats', sku: 'SKU-ZAR-882', qty: 75, price: 110.00, subtotal: 8250.00 },
-        { name: 'Fine Merino Knitwear', sku: 'SKU-ZAR-883', qty: 120, price: 50.00, subtotal: 6000.00 }
-      ],
-      rejectionReason: null
-    },
-    {
-      id: 'PO-8941',
-      supplier: 'Apple Retail Operations Corp',
-      vendorContact: 'Apple B2B Supply (procure@apple.com)',
-      leadTime: '2 business days',
-      items: '120x USB-C Chargers, 40x AirPods Pro',
-      tenant: 'Apple Store (#101)',
-      unit: '#101, Floor 1 (Central Atrium)',
-      value: '$18,400.00',
-      status: 'Delivered',
-      reason: 'Triggered: stock 8 < min buffer 50 (Safety replenishment)',
-      createdDate: 'Mar 21, 2026, 08:15 AM',
-      expectedDelivery: 'Delivered on Mar 23, 2026',
-      timeline: {
-        created: 'Mar 21, 2026, 08:15 AM',
-        approved: 'Mar 21, 2026, 10:00 AM',
-        shipped: 'Mar 22, 2026, 02:45 PM',
-        delivered: 'Mar 23, 2026, 11:20 AM'
-      },
-      lineItems: [
-        { name: 'USB-C 20W Power Adapters', sku: 'SKU-APP-102', qty: 120, price: 29.00, subtotal: 3480.00 },
-        { name: 'AirPods Pro (2nd Gen)', sku: 'SKU-APP-103', qty: 40, price: 373.00, subtotal: 14920.00 }
-      ],
-      rejectionReason: null
-    },
-    {
-      id: 'PO-8940',
-      supplier: 'Nike Direct Supply EMEA',
-      vendorContact: 'Nike Regional B2B Hub (orders@nike-emea.com)',
-      leadTime: '4 business days',
-      items: '80x Pegasus 41, 60x Metcon 9',
-      tenant: 'Nike Experience (#112)',
-      unit: '#112, Floor 1 (Sports Corridor)',
-      value: '$16,100.00',
-      status: 'Pending',
-      reason: 'Triggered: stock 6 < min buffer 30 (Marathon promotion velocity)',
-      createdDate: 'Mar 24, 2026, 10:12 AM',
-      expectedDelivery: 'Mar 28, 2026',
-      timeline: {
-        created: 'Mar 24, 2026, 10:12 AM',
-        approved: null,
-        shipped: null,
-        delivered: null
-      },
-      lineItems: [
-        { name: 'Air Zoom Pegasus 41', sku: 'SKU-NIK-412', qty: 80, price: 115.00, subtotal: 9200.00 },
-        { name: 'Nike Metcon 9 Training', sku: 'SKU-NIK-413', qty: 60, price: 115.00, subtotal: 6900.00 }
-      ],
-      rejectionReason: null
-    },
-    {
-      id: 'PO-8939',
-      supplier: 'LVMH Beauty Distribution',
-      vendorContact: 'LVMH Logistics Paris (dispatch@lvmh-beauty.com)',
-      leadTime: '3 business days',
-      items: '100x Glow Serums, 45x Luxury Scents',
-      tenant: 'Sephora Luxury (#108)',
-      unit: '#108, Floor 1 (Beauty Plaza)',
-      value: '$8,950.00',
-      status: 'Delivered',
-      reason: 'Triggered: stock 5 < min buffer 20 (Fragrance stock depletion)',
-      createdDate: 'Mar 20, 2026, 02:30 PM',
-      expectedDelivery: 'Delivered on Mar 22, 2026',
-      timeline: {
-        created: 'Mar 20, 2026, 02:30 PM',
-        approved: 'Mar 20, 2026, 04:15 PM',
-        shipped: 'Mar 21, 2026, 09:00 AM',
-        delivered: 'Mar 22, 2026, 03:10 PM'
-      },
-      lineItems: [
-        { name: 'Hydra-Luxe Glow Serums', sku: 'SKU-SEP-301', qty: 100, price: 45.00, subtotal: 4500.00 },
-        { name: 'Maison Luxury Scents', sku: 'SKU-SEP-302', qty: 45, price: 98.88, subtotal: 4450.00 }
-      ],
-      rejectionReason: null
-    }
-  ],
+  // Reorder Purchase Orders (Derived from single source)
+  purchaseOrders: initialPurchaseOrders.map(po => ({ ...po })),
 
-  // Tenants Information & POS Real-time Telemetry
-  tenants: [
-    {
-      id: 'ten-1',
-      name: 'Apple Store',
-      unit: '#101, Floor 1 (Central Atrium)',
-      category: 'Consumer Electronics & Hardware',
-      skus: '1,420 SKUs',
-      stockHealth: 94,
-      salesToday: '$48,200',
-      salesAmount: 48200,
-      unitsSold: 284,
-      turnoverRate: 94,
-      changePct: 8.4,
-      sparkline: [38, 42, 45, 48, 52, 49, 58],
-      posStatus: 'online',
-      lastSync: '2s ago',
-      manager: 'Michael Ross',
-      contact: 'ext. 4101',
-      status: 'Active'
-    },
-    {
-      id: 'ten-2',
-      name: 'Zara Flagship',
-      unit: '#204, Floor 2 (North Wing)',
-      category: 'Fashion & Apparel',
-      skus: '3,850 SKUs',
-      stockHealth: 78,
-      salesToday: '$32,450',
-      salesAmount: 32450,
-      unitsSold: 196,
-      turnoverRate: 78,
-      changePct: 4.2,
-      sparkline: [28, 30, 26, 34, 31, 35, 39],
-      posStatus: 'online',
-      lastSync: '5s ago',
-      manager: 'Clara Dubois',
-      contact: 'ext. 4204',
-      status: 'Active'
-    },
-    {
-      id: 'ten-3',
-      name: 'Nike Experience',
-      unit: '#112, Floor 1 (Sports Corridor)',
-      category: 'Footwear & Athletic Gear',
-      skus: '2,150 SKUs',
-      stockHealth: 88,
-      salesToday: '$24,180',
-      salesAmount: 24180,
-      unitsSold: 142,
-      turnoverRate: 88,
-      changePct: -2.1,
-      sparkline: [29, 27, 28, 25, 26, 24, 23],
-      posStatus: 'delayed',
-      lastSync: '48s ago',
-      manager: 'Marcus Sterling',
-      contact: 'ext. 4112',
-      status: 'Active'
-    },
-    {
-      id: 'ten-4',
-      name: 'Sephora Luxury',
-      unit: '#108, Floor 1 (Beauty Plaza)',
-      category: 'Cosmetics & Fragrances',
-      skus: '2,940 SKUs',
-      stockHealth: 82,
-      salesToday: '$19,840',
-      salesAmount: 19840,
-      unitsSold: 168,
-      turnoverRate: 82,
-      changePct: 6.5,
-      sparkline: [15, 17, 16, 18, 19, 21, 23],
-      posStatus: 'online',
-      lastSync: '3s ago',
-      manager: 'Hannah Vance',
-      contact: 'ext. 4108',
-      status: 'Active'
-    },
-    {
-      id: 'ten-5',
-      name: 'H&M Retail',
-      unit: '#201, Floor 2 (Grand Promenade)',
-      category: 'Fast Fashion & Homeware',
-      skus: '4,100 SKUs',
-      stockHealth: 90,
-      salesToday: '$16,250',
-      salesAmount: 16250,
-      unitsSold: 215,
-      turnoverRate: 72,
-      changePct: -4.8,
-      sparkline: [22, 20, 19, 21, 18, 17, 16],
-      posStatus: 'delayed',
-      lastSync: '1m ago',
-      manager: 'Liam Gallagher',
-      contact: 'ext. 4201',
-      status: 'Active'
-    },
-    {
-      id: 'ten-6',
-      name: 'Starbucks Reserve',
-      unit: '#G-05, Ground Floor (East Entrance)',
-      category: 'Specialty Coffee & Bakery',
-      skus: '480 SKUs',
-      stockHealth: 96,
-      salesToday: '$8,000',
-      salesAmount: 8000,
-      unitsSold: 310,
-      turnoverRate: 64,
-      changePct: -11.4,
-      sparkline: [14, 13, 11, 12, 10, 9, 8],
-      posStatus: 'offline',
-      lastSync: '14m ago',
-      manager: 'Maya Lin',
-      contact: 'ext. 4005',
-      status: 'Offline'
-    }
-  ],
+  // Tenants Information & POS Real-time Telemetry (Derived from single source)
+  tenants: initialStores.map(t => ({ ...t })),
 
-  // Staff Directory
-  staff: [
-    {
-      name: 'Elena Rostova',
-      id: 'STF-081',
-      role: 'Lead Inventory Auditor',
-      zone: 'Level 1 & Luxury Plaza',
-      status: 'On Duty',
-      audits: 'Apple Store & Sephora Audit',
-      contact: 'elena.r@mallmatrix.com'
-    },
-    {
-      name: 'Marcus Vance',
-      id: 'STF-082',
-      role: 'Dock Receiving Supervisor',
-      zone: 'Central Logistics Dock B',
-      status: 'On Duty',
-      audits: 'Inditex Freight Inflow Ingest',
-      contact: 'marcus.v@mallmatrix.com'
-    },
-    {
-      name: 'Chloe Bennett',
-      id: 'STF-083',
-      role: 'Tenant Stock Compliance Officer',
-      zone: 'Level 2 Fashion Promenade',
-      status: 'On Duty',
-      audits: 'Zara Seasonal Clearance Verify',
-      contact: 'chloe.b@mallmatrix.com'
-    },
-    {
-      name: 'David Chen',
-      id: 'STF-084',
-      role: 'Automated Restock Coordinator',
-      zone: 'Operations Hub / Level 4',
-      status: 'On Break',
-      audits: 'PO-8942 Dispatch Queue',
-      contact: 'david.c@mallmatrix.com'
-    }
-  ]
+  // Staff Directory (Derived from single source)
+  staff: initialStaff.map(s => ({ ...s }))
 };
 
 // Global Application Controller
@@ -426,6 +99,7 @@ window.MallApp = {
 
   loadStateFromStorage() {
     try {
+      MallState.currency = localStorage.getItem('mallmatrix_currency') || 'USD';
       const savedPOs = localStorage.getItem('mallmatrix_purchase_orders');
       if (savedPOs) {
         const parsed = JSON.parse(savedPOs);
@@ -434,8 +108,8 @@ window.MallApp = {
           if (status === 'On Pending') status = 'Pending';
           if (status === 'Order Delivered') status = 'Delivered';
 
-          const createdDate = po.createdDate || 'Mar 24, 2026, 09:30 AM';
-          const expectedDelivery = po.expectedDelivery || 'Mar 27, 2026 (3 days)';
+          const createdDate = po.createdDate || 'Nov 05, 2026, 09:30 AM';
+          const expectedDelivery = po.expectedDelivery || 'Nov 08, 2026 (3 days)';
           const reason = po.reason || 'Triggered: stock below safety buffer';
           const lineItems = po.lineItems && po.lineItems.length > 0 ? po.lineItems : [
             { name: po.items || 'Requisition Batch', sku: 'SKU-GEN-01', qty: 1, price: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0, subtotal: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0 }
@@ -443,10 +117,10 @@ window.MallApp = {
 
           const timeline = po.timeline || {
             created: createdDate,
-            approved: (status === 'Approved' || status === 'Shipped' || status === 'Delivered') ? 'Mar 24, 2026, 11:30 AM' : null,
-            shipped: (status === 'Shipped' || status === 'Delivered') ? 'Mar 25, 2026, 02:00 PM' : null,
-            delivered: (status === 'Delivered') ? 'Mar 26, 2026, 10:45 AM' : null,
-            rejected: (status === 'Rejected') ? 'Mar 24, 2026, 12:15 PM' : null
+            approved: (status === 'Approved' || status === 'Shipped' || status === 'Delivered') ? 'Nov 05, 2026, 11:30 AM' : null,
+            shipped: (status === 'Shipped' || status === 'Delivered') ? 'Nov 06, 2026, 02:00 PM' : null,
+            delivered: (status === 'Delivered') ? 'Nov 07, 2026, 10:45 AM' : null,
+            rejected: (status === 'Rejected') ? 'Nov 05, 2026, 12:15 PM' : null
           };
 
           return {
@@ -552,20 +226,40 @@ window.MallApp = {
     }
     this.updateOverlayState();
 
-    // Update main header title
+    // Update main header title and dynamic greeting
     const mainTitle = document.getElementById('pageMainTitle');
+    const mainSubtitle = document.getElementById('pageMainSubtitle');
+    const liveDateEl = document.getElementById('headerLiveDate');
+
+    if (liveDateEl) {
+      liveDateEl.textContent = formatOrdinalDate(new Date());
+    }
+
     if (mainTitle) {
-      const titles = {
-        dashboard: 'Welcome To Stock Management',
-        inventory: 'Mall Inventory & Stock Management',
-        reorder: 'Automated Reordering System',
-        sales: 'Manage Sales & POS Analytics',
-        staff: 'Staff & Shift Duty Roster',
-        tenants: 'Mall Tenant Stores Directory',
-        copilot: 'MallMatrix AI Copilot Assistant',
-        export: 'Data Export Center'
-      };
-      mainTitle.textContent = titles[viewName] || 'Welcome To Stock Management';
+      if (viewName === 'dashboard') {
+        const hour = new Date().getHours();
+        const greeting = hour < 12 ? 'Good morning' : (hour < 18 ? 'Good afternoon' : 'Good evening');
+        mainTitle.textContent = `${greeting}, Alex`;
+        if (mainSubtitle) {
+          const critCount = getCriticalStockCount(MallState.products);
+          mainSubtitle.style.display = 'block';
+          mainSubtitle.textContent = `${critCount} critical items and 2 overdue rents need your attention.`;
+        }
+      } else {
+        const titles = {
+          inventory: 'Mall Inventory & Stock Management',
+          reorder: 'Automated Reordering System',
+          sales: 'Manage Sales & POS Analytics',
+          staff: 'Staff & Shift Duty Roster',
+          tenants: 'Mall Tenant Stores Directory',
+          copilot: 'MallMatrix AI Copilot Assistant',
+          export: 'Data Export Center'
+        };
+        mainTitle.textContent = titles[viewName] || 'MallMatrix Operations';
+        if (mainSubtitle) {
+          mainSubtitle.style.display = 'none';
+        }
+      }
     }
 
     // Close mobile sidebar if open
@@ -817,12 +511,29 @@ window.MallApp = {
       const lower = userText.toLowerCase();
       let answer = `I analyzed the mall telemetry mesh for "<em>${this.escapeHTML(userText)}</em>". All 18,450 SKUs across 48 tenant stores are actively monitored with zero dropped events.`;
 
-      if (lower.includes('trend') || lower.includes('analyze') || lower.includes('quarterly')) {
+      if (lower.includes('stock out') || (lower.includes('which stores') && lower.includes('stock'))) {
+        answer = `<strong>Weekly Stock-out & Safety Buffer Risk Forecast:</strong><br>
+        Based on live POS velocity and warehouse stock levels, <strong>3 stores</strong> require immediate replenishment:<br>
+        • <strong>Zara Flagship (#204):</strong> Wool Overcoats (SKU-ZAR-882) at 4 units (buffer 25). Projected stock-out in <strong>1.5 days</strong>.<br>
+        • <strong>Nike Experience (#112):</strong> Air Zoom Pegasus (SKU-NIK-401) at 6 units (buffer 30). Projected stock-out in <strong>2 days</strong>.<br>
+        • <strong>Sephora Luxury (#108):</strong> Hydration Glow Serum (SKU-SEP-309) at 5 units (buffer 20). Projected stock-out in <strong>2.5 days</strong>.<br><br>
+        Recommendation: Run the automated batch reorder to generate POs and prevent weekend sales loss.`;
+      } else if (lower.includes('zara') && (lower.includes('turnover') || lower.includes('drop'))) {
+        answer = `<strong>Zara Flagship Turnover & Velocity Analysis:</strong><br>
+        • <strong>Turnover Velocity:</strong> 78% (down 4.2% week-on-week from 82.2%).<br>
+        • <strong>Root Cause:</strong> Severe stock depletion in high-margin outerwear (only 4 units of SKU-ZAR-882 remaining), causing dropped basket conversions during peak shopping hours.<br>
+        • <strong>Purchase Order Status:</strong> PO #8942 (${this.formatCurrency(14250.00)}) is currently <em>Pending</em> approval for Inditex supplier dispatch. Approving this PO will restore optimal safety buffer within 3 business days.`;
+      } else if (lower.includes('overdue') || (lower.includes('po') && lower.includes('summarize')) || (lower.includes('purchase order') && lower.includes('summarize'))) {
+        answer = `<strong>Today's Purchase Order Audit & Exceptions:</strong><br>
+        • <strong>Pending POs (2):</strong> PO-8942 (Zara Flagship, ${this.formatCurrency(14250.00)}) and PO-8940 (Nike Experience, ${this.formatCurrency(16100.00)}) are awaiting approval.<br>
+        • <strong>Delivered This Week (2):</strong> PO-8941 (${this.formatCurrency(18400.00)}) and PO-8939 (${this.formatCurrency(8950.00)}) cleared dock receiving with 100% SKU match.<br>
+        • <strong>Overdue Status:</strong> Zero POs are currently past contractual SLA. Next vendor lead-time window is Nov 08, 2026.`;
+      } else if (lower.includes('trend') || lower.includes('analyze') || lower.includes('quarterly')) {
         answer = `<strong>Quarterly Performance & Trend Insights (Q3-Q4 Telemetry):</strong><br>
-        • <strong>Revenue Velocity:</strong> Gross mall transaction volume grew <strong>+18.4%</strong> QoQ ($148,250.00 today).<br>
-        • <strong>Peak Conversion Hours:</strong> 14:00 – 18:00 on Saturdays generate 42% of weekend revenue ($62,265 avg).<br>
+        • <strong>Revenue Velocity:</strong> Gross mall transaction volume grew <strong>+18.4%</strong> QoQ (${this.formatCurrency(getTotalGrossSales(MallState.tenants))} today).<br>
+        • <strong>Peak Conversion Hours:</strong> 14:00 – 18:00 on Saturdays generate 42% of weekend revenue.<br>
         • <strong>Turnover Velocity:</strong> Consumer Electronics leads at 4.2x velocity, followed closely by Fast Fashion at 3.8x.<br>
-        • <strong>Strategic Recommendation:</strong> Reallocate 15% safety stock buffer toward winter apparel and high-density weekend footfall categories to capture an estimated +$32,000 in uncaptured demand.`;
+        • <strong>Strategic Recommendation:</strong> Reallocate 15% safety stock buffer toward winter apparel and high-density weekend footfall categories.`;
       } else if (lower.includes('proposal') || lower.includes('draft') || lower.includes('client')) {
         answer = `<strong>Retail Tenant Autonomous Inventory Proposal Draft:</strong><br>
         <strong>Document Title:</strong> MallMatrix Continuous Buffer Management Framework<br>
@@ -833,10 +544,10 @@ window.MallApp = {
         • <strong>Immediate Action:</strong> Proposal packet draft ready for export to PDF / Tenant Management review.`;
       } else if (lower.includes('summarize') || lower.includes('document') || lower.includes('report')) {
         answer = `<strong>Executive Digest & Operations Document Summary:</strong><br>
-        <strong>Source File:</strong> <code>MallMatrix-Operations-Audit-Oct2026.pdf</code> (42 pages)<br><br>
+        <strong>Source File:</strong> <code>MallMatrix-Operations-Audit-Nov2026.pdf</code><br><br>
         • <strong>Lease & Safety Compliance:</strong> 46 of 48 tenant retail stores maintain 100% adherence.<br>
-        • <strong>Critical Replenishment:</strong> 4 SKUs require immediate supplier reordering (Zara Wool Overcoat, Apple 30W Adapter, Nike Pegasus 41, H&M Denim Jacket).<br>
-        • <strong>Financial Health:</strong> Today's Gross Mall Volume is <strong>$148,250.00</strong> with 99.8% POS uptime.<br>
+        • <strong>Critical Replenishment:</strong> 4 SKUs require immediate supplier reordering (Zara Wool Overcoat, Apple 30W Adapter, Nike Pegasus 41, Sephora Serum).<br>
+        • <strong>Financial Health:</strong> Today's Gross Mall Volume is <strong>${this.formatCurrency(getTotalGrossSales(MallState.tenants))}</strong> with 99.8% POS uptime.<br>
         • <strong>Receiving Dock Schedule:</strong> Next multi-vendor dock window opens tomorrow at 06:00 AM EST (Zones A & B).`;
       } else if (lower.includes('urgent') || lower.includes('low stock')) {
         answer = `<strong>Urgent Restock Advisory:</strong><br>
@@ -846,7 +557,7 @@ window.MallApp = {
         Recommendation: Run automated batch reorder now to secure Friday delivery.`;
       } else if (lower.includes('zara')) {
         answer = `<strong>Zara Flagship (#204):</strong><br>
-        Current sales velocity is 18 units/day. PO #8942 has been generated for 75 units ($14,250 total) and is currently <em>On Pending</em> for vendor dispatch.`;
+        Current sales velocity is 18 units/day. PO #8942 has been generated for 75 units (${this.formatCurrency(14250.00)} total) and is currently <em>Pending</em> for vendor dispatch.`;
       } else if (lower.includes('food') || lower.includes('dining')) {
         answer = `<strong>Food Court Demand Projection:</strong><br>
         Weekend mall footfall is expected to increase by +35%. Coffee beans and fresh perishables are scheduled for early Friday dock delivery. Compliance score is 96%.`;
@@ -862,7 +573,7 @@ window.MallApp = {
           </svg>
         </div>
         <div class="msg-bubble">
-          <div class="msg-author">M365 Copilot</div>
+          <div class="msg-author">MallMatrix AI</div>
           <div class="msg-text">${answer}</div>
         </div>
       `;
@@ -969,7 +680,7 @@ window.MallApp = {
     if (tenantEl) tenantEl.textContent = `${p.tenant} (${p.unit})`;
     if (currStockEl) currStockEl.textContent = p.stock;
     if (minBufferEl) minBufferEl.textContent = p.minBuffer;
-    if (unitPriceEl) unitPriceEl.textContent = `$${p.price.toFixed(2)}`;
+    if (unitPriceEl) unitPriceEl.textContent = this.formatCurrency(p.price);
 
     if (formulaBadgeEl) {
       formulaBadgeEl.textContent = `Suggested: ${suggestedQty} units`;
@@ -982,7 +693,7 @@ window.MallApp = {
     if (statusWrap) {
       statusWrap.innerHTML = `
         <span class="inv-status-pill ${status.pillClass}">
-          ${status.label} (${p.stock} / ${p.minBuffer} min)
+          ${status.label} (${p.stock} / ${p.minBuffer})
         </span>
       `;
     }
@@ -1058,9 +769,9 @@ window.MallApp = {
     if (isNaN(qty) || qty < 1) qty = 0;
     const total = Math.max(0, qty * p.price);
 
-    costVal.textContent = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    costVal.textContent = this.formatCurrency(total);
     if (formulaEl) {
-      formulaEl.textContent = `${qty} units × $${p.price.toFixed(2)}`;
+      formulaEl.textContent = `${qty} units × ${this.formatCurrency(p.price)}`;
     }
   },
 
@@ -1094,7 +805,7 @@ window.MallApp = {
       items: `${qty}x ${p.name}`,
       tenant: `${p.tenant} (${p.unit})`,
       unit: p.unit,
-      value: `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: totalCost,
       status: 'Pending',
       reason: `Triggered: stock ${p.stock} < min buffer ${p.minBuffer}`,
       createdDate: nowStr,
@@ -1177,10 +888,10 @@ window.MallApp = {
               <strong style="color: #334155;">+${suggestedQty} units</strong>
             </td>
             <td>
-              <span style="color: #64748B;">$${p.price.toFixed(2)}</span>
+              <span style="color: #64748B;">${this.formatCurrency(p.price)}</span>
             </td>
             <td style="text-align: right;">
-              <strong style="color: var(--solar-primary, #5429FF);">$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              <strong style="color: var(--solar-primary, #5429FF);">${this.formatCurrency(subtotal)}</strong>
             </td>
           </tr>
         `;
@@ -1194,7 +905,7 @@ window.MallApp = {
           </div>
           <div class="batch-modal-kpi">
             <span class="batch-modal-kpi-label">Total Estimated Cost</span>
-            <div class="batch-modal-kpi-val" style="color: #059669;">$${totalEstCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div class="batch-modal-kpi-val" style="color: #059669;">${this.formatCurrency(totalEstCost)}</div>
           </div>
           <div class="batch-modal-kpi">
             <span class="batch-modal-kpi-label">Buffer Policy</span>
@@ -1282,7 +993,7 @@ window.MallApp = {
         items: `${suggestedQty}x ${p.name}`,
         tenant: `${p.tenant} (${p.unit})`,
         unit: p.unit,
-        value: `$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        value: subtotal,
         status: 'Pending',
         reason: `Triggered: stock ${p.stock - suggestedQty} < min buffer ${p.minBuffer}`,
         createdDate: nowStr,
@@ -1308,7 +1019,7 @@ window.MallApp = {
     this.renderAll();
     this.closeBatchReorderModal();
 
-    this.showToast(`Batch Reorder confirmed! Created ${createdCount} Purchase Orders ($${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`, 'success');
+    this.showToast(`Batch Reorder confirmed! Created ${createdCount} Purchase Orders (${this.formatCurrency(totalVal)}).`, 'success');
   },
 
   generateBatchReorder() {
@@ -1326,13 +1037,66 @@ window.MallApp = {
     this.renderTenantCards();
     this.renderAllExportButtons();
     this.renderExportCenter();
+    this.updateCurrencyUI();
   },
 
   renderMetrics() {
+    // 1. Live dynamic date
+    const liveDateEl = document.getElementById('headerLiveDate');
+    if (liveDateEl) {
+      liveDateEl.textContent = formatOrdinalDate(new Date());
+    }
+
+    // 2. Dynamic greeting & status subtitle
+    const mainTitle = document.getElementById('pageMainTitle');
+    const mainSubtitle = document.getElementById('pageMainSubtitle');
+    if (MallState.activeView === 'dashboard') {
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? 'Good morning' : (hour < 18 ? 'Good afternoon' : 'Good evening');
+      if (mainTitle) mainTitle.textContent = `${greeting}, Alex`;
+      if (mainSubtitle) {
+        const critCount = getCriticalStockCount(MallState.products);
+        mainSubtitle.style.display = 'block';
+        mainSubtitle.textContent = `${critCount} critical items and 2 overdue rents need your attention.`;
+      }
+    }
+
+    // 3. Gross Revenue Today (equal to sum of all store sales!)
+    const totalRev = getTotalGrossSales(MallState.tenants);
     const revEl = document.getElementById('kpiRevenueVal');
     if (revEl) {
-      const totalRev = 148250 + (MallState.salesAmount - 2500);
-      revEl.textContent = `$${totalRev.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      revEl.textContent = this.formatCurrency(totalRev);
+    }
+
+    // 4. Rent overdue
+    const rentEl = document.getElementById('kpiRentOverdueVal');
+    if (rentEl) {
+      rentEl.textContent = this.formatCurrency(14500.00);
+    }
+
+    // 5. Stock-out card
+    const critCount = getCriticalStockCount(MallState.products);
+    const lowCount = getLowStockCount(MallState.products);
+    const critEl = document.getElementById('kpiCriticalStockVal');
+    const lowEl = document.getElementById('kpiLowBufferVal');
+    if (critEl) critEl.textContent = `${critCount} Critical Items`;
+    if (lowEl) lowEl.textContent = `${lowCount} Low Buffer`;
+
+    // 6. Sales Agent Gross Volume
+    const salesAgentGrossEl = document.getElementById('salesAgentGrossVal');
+    if (salesAgentGrossEl) {
+      salesAgentGrossEl.textContent = MallState.currency === 'INR' ? '₹1.49L' : '$148.9K';
+    }
+
+    // 7. Reorder page pending value sum
+    const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending');
+    const pendingValSum = pendingOrders.reduce((sum, po) => {
+      const num = typeof po.value === 'number' ? po.value : (parseFloat(String(po.value).replace(/[^0-9.-]+/g, '')) || 0);
+      return sum + num;
+    }, 0);
+    const pendingValEl = document.getElementById('reorderPendingVal');
+    if (pendingValEl) {
+      pendingValEl.textContent = this.formatCurrency(pendingValSum);
     }
   },
 
@@ -1500,8 +1264,8 @@ window.MallApp = {
               <span class="inv-status-pill ${status.pillClass}">${status.label}</span>
             </div>
           </td>
-          <td><span class="inv-buffer-val">${p.minBuffer} min</span></td>
-          <td><span class="inv-price-val">$${p.price.toFixed(2)}</span></td>
+          <td><span class="inv-buffer-val">${p.minBuffer}</span></td>
+          <td><span class="inv-price-val">${this.formatCurrency(p.price)}</span></td>
           <td class="text-right">
             <button class="btn-table-action ${isLowOrCritical ? 'btn-action-restock' : ''}" onclick="MallApp.openRestockDrawer('${p.sku}')">
               ${isLowOrCritical ? 'Restock' : '+ Add Stock'}
@@ -1679,7 +1443,6 @@ window.MallApp = {
   getPOStatusBadge(status) {
     switch (status) {
       case 'Pending':
-      case 'On Pending':
         return `<span class="po-badge po-badge-pending">⏳ Pending</span>`;
       case 'Approved':
         return `<span class="po-badge po-badge-approved">✓ Approved</span>`;
@@ -1719,9 +1482,9 @@ window.MallApp = {
 
     if (statusVal !== 'all') {
       if (statusVal === 'Pending') {
-        orders = orders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
+        orders = orders.filter(po => po.status === 'Pending');
       } else if (statusVal === 'Delivered') {
-        orders = orders.filter(po => po.status === 'Delivered' || po.status === 'Order Delivered');
+        orders = orders.filter(po => po.status === 'Delivered');
       } else {
         orders = orders.filter(po => po.status === statusVal);
       }
@@ -1732,12 +1495,12 @@ window.MallApp = {
     this.renderReorderExportButton();
 
     // Update summary metrics
-    const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
-    const deliveredOrders = MallState.purchaseOrders.filter(po => po.status === 'Delivered' || po.status === 'Order Delivered');
+    const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending');
+    const deliveredOrders = MallState.purchaseOrders.filter(po => po.status === 'Delivered');
 
     let pendingValSum = 0;
     pendingOrders.forEach(po => {
-      const num = parseFloat((po.value || '').replace(/[^0-9.-]+/g, '')) || 0;
+      const num = typeof po.value === 'number' ? po.value : (parseFloat(String(po.value).replace(/[^0-9.-]+/g, '')) || 0);
       pendingValSum += num;
     });
 
@@ -1747,7 +1510,7 @@ window.MallApp = {
     const totalBadgeEl = document.getElementById('reorderTotalBadge');
 
     if (pendingCountEl) pendingCountEl.textContent = `${pendingOrders.length} Orders`;
-    if (pendingValEl) pendingValEl.textContent = `$${pendingValSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (pendingValEl) pendingValEl.textContent = this.formatCurrency(pendingValSum);
     if (deliveredCountEl) deliveredCountEl.textContent = `${deliveredOrders.length} Completed`;
     if (totalBadgeEl) totalBadgeEl.textContent = `${MallState.purchaseOrders.length} Requisitions Tracked`;
 
@@ -1757,8 +1520,8 @@ window.MallApp = {
     }
 
     tbody.innerHTML = orders.map(po => {
-      const isPending = po.status === 'Pending' || po.status === 'On Pending';
-      const isDelivered = po.status === 'Delivered' || po.status === 'Order Delivered';
+      const isPending = po.status === 'Pending';
+      const isDelivered = po.status === 'Delivered';
       const isApproved = po.status === 'Approved';
       const isShipped = po.status === 'Shipped';
       const isRejected = po.status === 'Rejected';
@@ -1834,7 +1597,7 @@ window.MallApp = {
             <span class="reorder-tenant-badge">${this.escapeHTML(po.tenant)}</span>
           </td>
           <td>
-            <strong class="reorder-value-text">${this.escapeHTML(po.value)}</strong>
+            <strong class="reorder-value-text">${this.formatCurrency(po.value)}</strong>
           </td>
           <td>
             ${statusBadge}
@@ -1950,7 +1713,7 @@ window.MallApp = {
         </div>
         <div class="po-reject-summary-row">
           <span style="color: #64748B;">Order Valuation:</span>
-          <strong style="color: var(--solar-primary, #5429FF);">${this.escapeHTML(po.value)}</strong>
+          <strong style="color: var(--solar-primary, #5429FF);">${this.formatCurrency(po.value)}</strong>
         </div>
       `;
     }
@@ -2047,10 +1810,10 @@ window.MallApp = {
     if (tenantEl) tenantEl.textContent = `${po.tenant} • ${po.unit || 'Floor 1'}`;
     if (statusBadgeEl) statusBadgeEl.innerHTML = this.getPOStatusBadge(po.status);
 
-    const isPending = po.status === 'Pending' || po.status === 'On Pending';
+    const isPending = po.status === 'Pending';
     const isApproved = po.status === 'Approved';
     const isShipped = po.status === 'Shipped';
-    const isDelivered = po.status === 'Delivered' || po.status === 'Order Delivered';
+    const isDelivered = po.status === 'Delivered';
     const isRejected = po.status === 'Rejected';
 
     const timeline = po.timeline || {
@@ -2142,8 +1905,8 @@ window.MallApp = {
         <td><strong style="font-weight: 700; color: #0F172A;">${this.escapeHTML(item.name)}</strong></td>
         <td><span style="font-family: monospace; font-size: 0.74rem; color: #475569; background: #F1F5F9; padding: 2px 7px; border-radius: 4px; white-space: nowrap;">${this.escapeHTML(item.sku || 'SKU-000')}</span></td>
         <td><strong>${item.qty}</strong></td>
-        <td style="white-space: nowrap;">$${item.price.toFixed(2)}</td>
-        <td style="text-align: right; font-weight: 700; white-space: nowrap;">$${item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="white-space: nowrap;">${this.formatCurrency(item.price)}</td>
+        <td style="text-align: right; font-weight: 700; white-space: nowrap;">${this.formatCurrency(item.subtotal)}</td>
       </tr>
     `).join('');
 
@@ -2209,7 +1972,7 @@ window.MallApp = {
             ${lineRowsHtml}
             <tr class="po-line-total-row">
               <td colspan="4">Total Order Valuation</td>
-              <td style="text-align: right;">${this.escapeHTML(po.value)}</td>
+              <td style="text-align: right;">${this.formatCurrency(po.value)}</td>
             </tr>
           </tbody>
         </table>
@@ -2408,6 +2171,8 @@ window.MallApp = {
     if (!container) return;
 
     const mult = this._salesDateMultiplier || 1.0;
+    const isINR = MallState.currency === 'INR';
+    const currencySymbol = isINR ? '₹' : '$';
     const tenants = MallState.tenants.map(t => ({
       name: t.name,
       shortName: t.name.replace(' Store', '').replace(' Flagship', '').replace(' Experience', '').replace(' Luxury', '').replace(' Retail', '').replace(' Reserve', ''),
@@ -2436,7 +2201,7 @@ window.MallApp = {
       const val = Math.round(roundedMax - (roundedMax / gridSteps) * i);
       gridLinesSvg += `
         <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#E2E8F0" stroke-dasharray="4 4" stroke-width="1" />
-        <text x="${paddingLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" font-weight="600" fill="#94A3B8">$${(val / 1000).toFixed(0)}k</text>
+        <text x="${paddingLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" font-weight="600" fill="#94A3B8">${currencySymbol}${(val / 1000).toFixed(0)}k</text>
       `;
     }
 
@@ -2452,11 +2217,11 @@ window.MallApp = {
       const y = paddingTop + chartH - barH;
 
       barsSvg += `
-        <g class="recharts-bar-group" data-store="${this.escapeHTML(t.name)}" data-revenue="$${t.amount.toLocaleString()}" data-unit="${this.escapeHTML(t.unit)}">
+        <g class="recharts-bar-group" data-store="${this.escapeHTML(t.name)}" data-revenue="${this.formatCurrency(t.amount)}" data-unit="${this.escapeHTML(t.unit)}">
           <rect x="${paddingLeft + slotW * i}" y="${paddingTop}" width="${slotW}" height="${chartH}" fill="transparent" class="bar-slot-hover" />
           <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="5" ry="5" fill="url(#rechartsBarGrad)" class="recharts-bar-rect" />
           <text x="${x + barW / 2}" y="${height - 20}" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">${this.escapeHTML(t.shortName)}</text>
-          <text x="${x + barW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8">$${(t.amount / 1000).toFixed(1)}k</text>
+          <text x="${x + barW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8">${currencySymbol}${(t.amount / 1000).toFixed(1)}k</text>
         </g>
       `;
     });
@@ -2464,7 +2229,7 @@ window.MallApp = {
     const totalRev = tenants.reduce((acc, cur) => acc + cur.amount, 0);
     const totalRevEl = document.getElementById('salesChartTotalRevenue');
     if (totalRevEl) {
-      totalRevEl.textContent = `$${totalRev.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      totalRevEl.textContent = this.formatCurrency(totalRev);
     }
 
     container.innerHTML = `
@@ -2605,7 +2370,7 @@ window.MallApp = {
             <strong class="sales-units-val">${t.calculatedUnits.toLocaleString()} units</strong>
           </td>
           <td>
-            <strong class="sales-gross-val">$${t.calculatedSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            <strong class="sales-gross-val">${this.formatCurrency(t.calculatedSales)}</strong>
           </td>
           <td>
             <div class="sales-trend-cluster">
@@ -2721,7 +2486,7 @@ window.MallApp = {
           key: 'price',
           label: 'Unit Price',
           excelType: 'number',
-          format: val => `$${Number(val || 0).toFixed(2)}`
+          format: val => this.formatCurrency(val)
         },
         {
           key: 'status',
@@ -2752,7 +2517,7 @@ window.MallApp = {
           key: 'value',
           label: 'Total',
           excelType: 'number',
-          format: val => typeof val === 'number' ? `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : val
+          format: val => this.formatCurrency(val)
         },
         { key: 'status', label: 'Status' },
         { key: 'createdDate', label: 'Created Date' },
@@ -2769,7 +2534,7 @@ window.MallApp = {
           supplier: `${rows.length} Orders`,
           items: '',
           tenant: '',
-          value: `$${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          value: this.formatCurrency(totalVal),
           status: '',
           createdDate: '',
           expectedDelivery: ''
@@ -2798,7 +2563,7 @@ window.MallApp = {
           key: 'calculatedSales',
           label: 'Gross Sales',
           excelType: 'number',
-          format: val => `$${Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          format: val => this.formatCurrency(val)
         },
         {
           key: 'turnoverRate',
@@ -2820,7 +2585,7 @@ window.MallApp = {
           name: `${rows.length} Stores`,
           unit: 'All Mall Wings',
           calculatedUnits: `${sumUnits.toLocaleString()} units`,
-          calculatedSales: `$${sumSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          calculatedSales: this.formatCurrency(sumSales),
           turnoverRate: '',
           posStatus: 'All Synced'
         };
@@ -3446,7 +3211,7 @@ window.MallApp = {
       const salesRows = this.getCalculatedSalesRows(this._exportDateMultiplier);
       const totalRev = salesRows.reduce((acc, cur) => acc + (cur.calculatedSales || cur.salesAmount), 0);
       const lowStockCount = MallState.products.filter(p => p.stock <= p.minBuffer).length;
-      const pendingPOCount = MallState.purchaseOrders.filter(p => p.status === 'Pending' || p.status === 'On Pending').length;
+      const pendingPOCount = MallState.purchaseOrders.filter(p => p.status === 'Pending').length;
       const staffOnDuty = MallState.staff.filter(s => s.status === 'On Duty').length;
 
       const mallData = {
@@ -3482,6 +3247,7 @@ window.MallApp = {
     if (switchInModal) {
       switchInModal.checked = getExportTotalsSetting();
     }
+    this.updateCurrencyUI();
     if (modal) {
       modal.classList.add('open');
       modal.style.display = 'flex';
@@ -3496,6 +3262,48 @@ window.MallApp = {
       modal.style.display = 'none';
       this.setOverlayOpen(false);
     }
+  },
+
+  setCurrency(curr) {
+    if (curr !== 'USD' && curr !== 'INR') return;
+    MallState.currency = curr;
+    try {
+      localStorage.setItem('mallmatrix_currency', curr);
+    } catch (e) {
+      console.warn('Currency storage failed', e);
+    }
+    this.updateCurrencyUI();
+    this.renderAll();
+    this.showToast(`Display currency changed to ${curr === 'INR' ? 'INR (₹)' : 'USD ($)'}`, 'success');
+  },
+
+  updateCurrencyUI() {
+    const isINR = MallState.currency === 'INR';
+    const btnUSD = document.getElementById('currencyBtnUSD');
+    const btnINR = document.getElementById('currencyBtnINR');
+    const checkUSD = document.getElementById('currencyCheckUSD');
+    const checkINR = document.getElementById('currencyCheckINR');
+
+    if (btnUSD && btnINR) {
+      btnUSD.style.borderColor = isINR ? '#CBD5E1' : '#5429FF';
+      btnUSD.style.background = isINR ? '#FFFFFF' : '#F5F3FF';
+      btnUSD.style.color = isINR ? '#475569' : '#5429FF';
+
+      btnINR.style.borderColor = isINR ? '#5429FF' : '#CBD5E1';
+      btnINR.style.background = isINR ? '#F5F3FF' : '#FFFFFF';
+      btnINR.style.color = isINR ? '#5429FF' : '#475569';
+    }
+    if (checkUSD) checkUSD.style.display = isINR ? 'none' : 'inline';
+    if (checkINR) checkINR.style.display = isINR ? 'inline' : 'none';
+
+    const legendText = document.getElementById('salesChartLegendText');
+    if (legendText) {
+      legendText.textContent = `Gross Sales (${isINR ? '₹' : '$'})`;
+    }
+  },
+
+  formatCurrency(amount) {
+    return formatCurrency(amount, MallState.currency);
   },
 
   toggleTotalsSetting(checked) {

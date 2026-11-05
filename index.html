@@ -192,13 +192,16 @@
             </svg>
           </button>
           <div class="welcome-title-wrap">
-            <h1 class="welcome-title" id="pageMainTitle">Welcome To Stock Management</h1>
-            <button class="icon-edit-btn title-edit-btn" title="Edit View Title" aria-label="Edit title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h1 class="welcome-title" id="pageMainTitle">Good morning, Alex</h1>
+              <button class="icon-edit-btn title-edit-btn" title="Edit View Title" aria-label="Edit title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            </div>
+            <p id="pageMainSubtitle" class="page-main-subtitle" style="font-size: 0.82rem; color: #64748B; margin: 2px 0 0 0; font-weight: 500;">4 critical items and 2 overdue rents need your attention.</p>
           </div>
         </div>
 
@@ -211,7 +214,7 @@
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span id="headerLiveDate">24th March 2026</span>
+            <span id="headerLiveDate">5th November 2026</span>
           </div>
 
           <!-- Log out Button -->
@@ -745,7 +748,7 @@
                     Stock Qty <span class="inv-sort-icon" id="sort-icon-stock">↕</span>
                   </th>
                   <th class="inv-th-sortable" data-col="minBuffer">
-                    Min Buffer <span class="inv-sort-icon" id="sort-icon-minBuffer">↕</span>
+                    Min Buffer (units) <span class="inv-sort-icon" id="sort-icon-minBuffer">↕</span>
                   </th>
                   <th class="inv-th-sortable" data-col="price">
                     Unit Price <span class="inv-sort-icon" id="sort-icon-price">↕</span>
@@ -873,7 +876,7 @@
           <div>
             <h2 class="section-title">Manage Sales & POS Analytics</h2>
             <p class="section-desc">Consolidated mall sales reports, store terminal volume, turnover velocity, and live
-              POS telemetry.</p>
+              POS telemetry for Top 6 Stores.</p>
           </div>
           <!-- Actions: Export Button + Date Range Selector -->
           <div class="panel-actions flex items-center gap-3 flex-wrap">
@@ -905,14 +908,14 @@
         <div class="dash-card sales-chart-card">
           <div class="sales-chart-header">
             <div>
-              <h3 class="sales-chart-title">Revenue by Store</h3>
+              <h3 class="sales-chart-title">Revenue by Store (Top 6 Stores)</h3>
               <p class="sales-chart-subtitle">Aggregated retail POS turnover across active mall tenants (<span
                   id="salesChartRangeLabel">Today</span>)</p>
             </div>
             <div class="sales-chart-legend-wrap">
               <div class="sales-chart-legend">
                 <span class="legend-dot" style="background: var(--solar-primary, #5429FF);"></span>
-                <span class="legend-text">Gross Sales ($)</span>
+                <span class="legend-text" id="salesChartLegendText">Gross Sales</span>
               </div>
               <div class="sales-total-badge">
                 <span>Total:</span>
@@ -929,6 +932,10 @@
 
         <!-- TABLE CARD -->
         <div class="dash-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 10px 20px; border-bottom: 1px solid #F1F5F9;">
+            <div style="font-size: 0.92rem; font-weight: 800; color: #0F172A;">Top 6 Stores Performance</div>
+            <span class="tag-badge tag-purple" style="font-size: 0.72rem; font-weight: 700;">Top 6 Stores</span>
+          </div>
           <div class="table-responsive">
             <table class="clean-table sales-analytics-table">
               <thead>
@@ -1079,7 +1086,7 @@
               </svg>
             </div>
 
-            <h1 class="copilot-m365-title">Welcome to M365 Copilot</h1>
+            <h1 class="copilot-m365-title">MallMatrix AI</h1>
             <p class="copilot-m365-subtitle">How can I help you today?</p>
           </div>
 
@@ -1136,11 +1143,11 @@
             </form>
           </div>
 
-          <!-- 3 SUGGESTION PROMPT CARDS (Matches Reference Image) -->
+          <!-- 3 SUGGESTION PROMPT CARDS (MallMatrix AI Mall-specific Prompts) -->
           <div class="copilot-prompt-cards-grid" id="copilotCardsGrid">
-            <!-- Card 1: Analyze data trends -->
+            <!-- Card 1: Which stores will stock out this week? -->
             <div class="copilot-action-card"
-              onclick="MallApp.askCopilotDirect('Analyze data trends: Review quarterly performance and identify key insights across mall stores')">
+              onclick="MallApp.askCopilotDirect('Which stores will stock out this week?')">
               <div class="action-card-sparkle">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
@@ -1148,14 +1155,14 @@
                 </svg>
               </div>
               <div class="action-card-content">
-                <h3 class="action-card-title">Analyze data trends</h3>
-                <p class="action-card-desc">Review quarterly performance and identify key insights</p>
+                <h3 class="action-card-title">Which stores will stock out this week?</h3>
+                <p class="action-card-desc">Forecast safety stock buffer breaches across all 48 tenant stores</p>
               </div>
             </div>
 
-            <!-- Card 2: Draft a proposal -->
+            <!-- Card 2: Why did Zara's turnover drop? -->
             <div class="copilot-action-card"
-              onclick="MallApp.askCopilotDirect('Draft a proposal: Create a professional business proposal for tenant inventory reordering')">
+              onclick="MallApp.askCopilotDirect('Why did Zara\'s turnover drop?')">
               <div class="action-card-sparkle">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
@@ -1163,14 +1170,14 @@
                 </svg>
               </div>
               <div class="action-card-content">
-                <h3 class="action-card-title">Draft a proposal</h3>
-                <p class="action-card-desc">Create a professional business proposal for new clients</p>
+                <h3 class="action-card-title">Why did Zara's turnover drop?</h3>
+                <p class="action-card-desc">Analyze POS sales velocity and inventory levels for Zara Flagship</p>
               </div>
             </div>
 
-            <!-- Card 3: Summarize documents -->
+            <!-- Card 3: Summarize today's overdue POs -->
             <div class="copilot-action-card"
-              onclick="MallApp.askCopilotDirect('Summarize documents: Get concise summaries of lengthy reports and retail stock files')">
+              onclick="MallApp.askCopilotDirect('Summarize today\'s overdue POs')">
               <div class="action-card-sparkle">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
@@ -1178,8 +1185,8 @@
                 </svg>
               </div>
               <div class="action-card-content">
-                <h3 class="action-card-title">Summarize documents</h3>
-                <p class="action-card-desc">Get concise summaries of lengthy reports and files</p>
+                <h3 class="action-card-title">Summarize today's overdue POs</h3>
+                <p class="action-card-desc">Audit pending vendor purchase orders and delivery timelines</p>
               </div>
             </div>
           </div>
@@ -1592,6 +1599,23 @@
           <button type="button" class="modal-close-btn" onclick="MallApp.closeSettingsModal()" aria-label="Close settings">&times;</button>
         </div>
         <div class="modal-body" style="padding-top: 14px; display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 8px; display: block;">Display Currency</label>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" id="currencyBtnUSD" class="clean-btn" onclick="MallApp.setCurrency('USD')"
+                style="flex: 1; padding: 10px 14px; border: 1.5px solid #5429FF; background: #F5F3FF; border-radius: 10px; font-weight: 700; font-size: 0.84rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #5429FF;">
+                <span>USD ($)</span>
+                <span id="currencyCheckUSD" style="font-weight: 800;">✓</span>
+              </button>
+              <button type="button" id="currencyBtnINR" class="clean-btn" onclick="MallApp.setCurrency('INR')"
+                style="flex: 1; padding: 10px 14px; border: 1.5px solid #CBD5E1; background: #FFFFFF; border-radius: 10px; font-weight: 700; font-size: 0.84rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #475569;">
+                <span>INR (₹ Lakh/Cr)</span>
+                <span id="currencyCheckINR" style="font-weight: 800; display: none;">✓</span>
+              </button>
+            </div>
+            <div style="font-size: 0.74rem; color: #64748B; margin-top: 5px;">When INR is selected, all prices and valuations are formatted with ₹ and Indian numbering (lakh/crore).</div>
+          </div>
+
           <div>
             <label style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 8px; display: block;">Report & Data Export Options</label>
             <label class="export-toggle-label" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 10px; cursor: pointer;">
