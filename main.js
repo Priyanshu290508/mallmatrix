@@ -524,6 +524,7 @@ window.MallApp = {
     if (copilotBtn) {
       copilotBtn.style.display = viewName === 'copilot' ? 'none' : 'flex';
     }
+    this.updateOverlayState();
 
     // Update main header title
     const mainTitle = document.getElementById('pageMainTitle');
@@ -546,6 +547,36 @@ window.MallApp = {
     if (sidebar && sidebarBackdrop) {
       sidebar.classList.remove('open');
       sidebarBackdrop.classList.remove('active');
+    }
+  },
+
+  // OVERLAY & FLOATING COPILOT SHARED STATE
+  isOverlayOpen: false,
+
+  setOverlayOpen(isOpen) {
+    this.isOverlayOpen = Boolean(isOpen);
+    this.updateOverlayState();
+  },
+
+  updateOverlayState() {
+    // Check if any drawer or modal is currently visible/open in DOM
+    const openOverlays = document.querySelectorAll(
+      '#poDetailDrawer.open, #invRestockDrawer.open, #batchReorderModal.open, #poRejectModal.open, #newProductModal.open, .modal-backdrop.open, .inv-restock-drawer.open, .inv-drawer-backdrop.open'
+    );
+    const isOpen = Boolean(this.isOverlayOpen || openOverlays.length > 0);
+    this.isOverlayOpen = isOpen;
+
+    const floatingBtn = document.getElementById('floatingCopilotBtn');
+    if (floatingBtn) {
+      if (isOpen) {
+        floatingBtn.classList.add('copilot-overlay-hidden');
+      } else {
+        floatingBtn.classList.remove('copilot-overlay-hidden');
+      }
+    }
+
+    if (document.body) {
+      document.body.classList.toggle('has-overlay-open', isOpen);
     }
   },
 
@@ -608,10 +639,18 @@ window.MallApp = {
       qtyInput.addEventListener('input', () => this.updateDrawerCostPreview());
     }
 
-    // Global Escape key to dismiss drawer
+    // Global Escape key to dismiss all drawers and modals
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         this.closeRestockDrawer();
+        this.closePODetailDrawer();
+        this.closeBatchReorderModal();
+        this.closeRejectModal();
+        const prodModal = document.getElementById('newProductModal');
+        if (prodModal && prodModal.classList.contains('open')) {
+          prodModal.classList.remove('open');
+        }
+        this.setOverlayOpen(false);
       }
     });
   },
@@ -623,9 +662,17 @@ window.MallApp = {
     const cancelBtn = document.getElementById('cancelProductModalBtn');
     const form = document.getElementById('newProductForm');
 
-    const closeModal = () => modal.classList.remove('open');
+    const closeModal = () => {
+      if (modal) modal.classList.remove('open');
+      this.setOverlayOpen(false);
+    };
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    }
 
     if (form) {
       form.addEventListener('submit', (e) => {
@@ -662,7 +709,10 @@ window.MallApp = {
 
   openProductModal() {
     const modal = document.getElementById('newProductModal');
-    if (modal) modal.classList.add('open');
+    if (modal) {
+      modal.classList.add('open');
+      this.setOverlayOpen(true);
+    }
   },
 
   // 4. AI COPILOT
@@ -933,6 +983,7 @@ window.MallApp = {
     backdrop.classList.add('open');
     drawer.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
+    this.setOverlayOpen(true);
 
     this.trapDrawerFocus(drawer);
 
@@ -966,6 +1017,7 @@ window.MallApp = {
     }
 
     this._activeRestockSku = null;
+    this.setOverlayOpen(false);
   },
 
   updateDrawerCostPreview() {
@@ -1150,6 +1202,7 @@ window.MallApp = {
     }
 
     modal.classList.add('open');
+    this.setOverlayOpen(true);
 
     if (this._batchModalKeydownHandler) {
       document.removeEventListener('keydown', this._batchModalKeydownHandler);
@@ -1168,6 +1221,7 @@ window.MallApp = {
       document.removeEventListener('keydown', this._batchModalKeydownHandler);
       this._batchModalKeydownHandler = null;
     }
+    this.setOverlayOpen(false);
   },
 
   confirmBatchReorder() {
@@ -1871,6 +1925,7 @@ window.MallApp = {
     if (err) err.style.display = 'none';
 
     if (modal) modal.classList.add('open');
+    this.setOverlayOpen(true);
 
     if (this._rejectModalKeydownHandler) {
       document.removeEventListener('keydown', this._rejectModalKeydownHandler);
@@ -1894,6 +1949,7 @@ window.MallApp = {
       this._rejectModalKeydownHandler = null;
     }
     this._activeRejectPoId = null;
+    this.setOverlayOpen(false);
   },
 
   confirmRejectPO() {
@@ -2045,15 +2101,11 @@ window.MallApp = {
 
     let lineRowsHtml = lineItems.map(item => `
       <tr>
-        <td>
-          <div style="display: flex; flex-direction: column;">
-            <strong style="font-weight: 700; color: #0F172A;">${this.escapeHTML(item.name)}</strong>
-            <span style="font-family: monospace; font-size: 0.72rem; color: #64748B;">${this.escapeHTML(item.sku || 'SKU-000')}</span>
-          </div>
-        </td>
+        <td><strong style="font-weight: 700; color: #0F172A;">${this.escapeHTML(item.name)}</strong></td>
+        <td><span style="font-family: monospace; font-size: 0.74rem; color: #475569; background: #F1F5F9; padding: 2px 7px; border-radius: 4px; white-space: nowrap;">${this.escapeHTML(item.sku || 'SKU-000')}</span></td>
         <td><strong>${item.qty}</strong></td>
-        <td>$${item.price.toFixed(2)}</td>
-        <td style="text-align: right; font-weight: 700;">$${item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="white-space: nowrap;">$${item.price.toFixed(2)}</td>
+        <td style="text-align: right; font-weight: 700; white-space: nowrap;">$${item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
       </tr>
     `).join('');
 
@@ -2108,7 +2160,8 @@ window.MallApp = {
         <table class="po-line-table">
           <thead>
             <tr>
-              <th>Item & SKU</th>
+              <th>Item</th>
+              <th>SKU</th>
               <th>Qty</th>
               <th>Unit Price</th>
               <th style="text-align: right;">Subtotal</th>
@@ -2117,7 +2170,7 @@ window.MallApp = {
           <tbody>
             ${lineRowsHtml}
             <tr class="po-line-total-row">
-              <td colspan="3">Total Order Valuation</td>
+              <td colspan="4">Total Order Valuation</td>
               <td style="text-align: right;">${this.escapeHTML(po.value)}</td>
             </tr>
           </tbody>
@@ -2155,7 +2208,7 @@ window.MallApp = {
           </button>
         `;
       } else {
-        // Delivered or Rejected
+        // Delivered or Rejected (or default)
         footerEl.innerHTML = `
           <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.archivePO('${po.id}')">
             Archive PO
@@ -2169,6 +2222,8 @@ window.MallApp = {
 
     drawer.classList.add('open');
     backdrop.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    this.setOverlayOpen(true);
 
     if (this._poDrawerKeydownHandler) {
       document.removeEventListener('keydown', this._poDrawerKeydownHandler);
@@ -2182,7 +2237,10 @@ window.MallApp = {
   closePODetailDrawer() {
     const drawer = document.getElementById('poDetailDrawer');
     const backdrop = document.getElementById('poDrawerBackdrop');
-    if (drawer) drawer.classList.remove('open');
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
     if (backdrop) backdrop.classList.remove('open');
 
     if (this._poDrawerKeydownHandler) {
@@ -2190,6 +2248,7 @@ window.MallApp = {
       this._poDrawerKeydownHandler = null;
     }
     this._activeDetailPoId = null;
+    this.setOverlayOpen(false);
   },
 
   // SALES DATE RANGE, RECHARTS BAR CHART & ANALYTICS

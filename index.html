@@ -1398,23 +1398,29 @@
     </aside>
 
     <!-- 1. BATCH REORDER CONFIRMATION MODAL -->
-    <div class="modal-backdrop" id="batchReorderModal" onclick="if(event.target === this) MallApp.closeBatchReorderModal()">
+    <div class="modal-backdrop" id="batchReorderModal"
+      onclick="if(event.target === this) MallApp.closeBatchReorderModal()">
       <div class="modal-box batch-reorder-modal" onclick="event.stopPropagation()">
         <div class="modal-header">
           <div>
             <h3 class="modal-title" id="batchReorderTitle">Confirm Batch Reorder</h3>
-            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Automated replenishment for all SKUs currently below safety stock buffer thresholds.</p>
+            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Automated replenishment
+              for all SKUs currently below safety stock buffer thresholds.</p>
           </div>
-          <button type="button" class="modal-close-btn" onclick="MallApp.closeBatchReorderModal()" aria-label="Close batch reorder modal">&times;</button>
+          <button type="button" class="modal-close-btn" onclick="MallApp.closeBatchReorderModal()"
+            aria-label="Close batch reorder modal">&times;</button>
         </div>
 
         <div class="modal-body" id="batchReorderModalBody" style="margin-top: 14px;">
           <!-- Rendered dynamically -->
         </div>
 
-        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
-          <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeBatchReorderModal()">Cancel</button>
-          <button type="button" class="btn-primary-reorder" id="btnConfirmBatchReorder" onclick="MallApp.confirmBatchReorder()">
+        <div class="modal-footer"
+          style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+          <button type="button" class="clean-btn btn-secondary"
+            onclick="MallApp.closeBatchReorderModal()">Cancel</button>
+          <button type="button" class="btn-primary-reorder" id="btnConfirmBatchReorder"
+            onclick="MallApp.confirmBatchReorder()">
             Confirm & Create POs
           </button>
         </div>
@@ -1427,9 +1433,11 @@
         <div class="modal-header">
           <div>
             <h3 class="modal-title" id="rejectModalTitle">Reject Purchase Order</h3>
-            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Provide a mandatory reason for rejecting this PO for procurement compliance.</p>
+            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Provide a mandatory
+              reason for rejecting this PO for procurement compliance.</p>
           </div>
-          <button type="button" class="modal-close-btn" onclick="MallApp.closeRejectModal()" aria-label="Close reject modal">&times;</button>
+          <button type="button" class="modal-close-btn" onclick="MallApp.closeRejectModal()"
+            aria-label="Close reject modal">&times;</button>
         </div>
 
         <div class="modal-body" style="margin-top: 14px;">
@@ -1438,25 +1446,34 @@
           </div>
 
           <div class="form-group" style="margin-top: 14px;">
-            <label class="form-label" for="rejectModalComment" style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 6px;">
+            <label class="form-label" for="rejectModalComment"
+              style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 6px;">
               Rejection Reason <span style="color: #DC2626;">*</span>
             </label>
-            <textarea id="rejectModalComment" class="clean-textarea" rows="3" placeholder="Enter reason (e.g. price mismatch, budget freeze, duplicate order)..." required style="width: 100%; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 10px; font-family: inherit; font-size: 0.84rem; resize: vertical; outline: none;"></textarea>
-            <div id="rejectModalError" class="reject-error-text" style="display: none;">A rejection reason is required before confirming.</div>
+            <textarea id="rejectModalComment" class="clean-textarea" rows="3"
+              placeholder="Enter reason (e.g. price mismatch, budget freeze, duplicate order)..." required
+              style="width: 100%; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 10px; font-family: inherit; font-size: 0.84rem; resize: vertical; outline: none;"></textarea>
+            <div id="rejectModalError" class="reject-error-text" style="display: none;">A rejection reason is required
+              before confirming.</div>
           </div>
         </div>
 
-        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+        <div class="modal-footer"
+          style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
           <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeRejectModal()">Cancel</button>
-          <button type="button" class="btn-danger-action" onclick="MallApp.confirmRejectPO()" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 0.84rem; cursor: pointer; border: none;">Confirm Rejection</button>
+          <button type="button" class="btn-danger-action" onclick="MallApp.confirmRejectPO()"
+            style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 0.84rem; cursor: pointer; border: none;">Confirm
+            Rejection</button>
         </div>
       </div>
     </div>
 
     <!-- 3. PO DETAIL SLIDE-OVER DRAWER -->
-    <div class="inv-drawer-backdrop" id="poDrawerBackdrop" onclick="MallApp.closePODetailDrawer()" aria-hidden="true"></div>
-    <aside class="inv-restock-drawer po-detail-drawer" id="poDetailDrawer" role="dialog" aria-modal="true" aria-labelledby="poDrawerTitle" aria-hidden="true" tabindex="-1">
-      <div class="inv-drawer-header">
+    <div class="inv-drawer-backdrop" id="poDrawerBackdrop" onclick="MallApp.closePODetailDrawer()" aria-hidden="true">
+    </div>
+    <aside class="inv-restock-drawer po-detail-drawer" id="poDetailDrawer" role="dialog" aria-modal="true"
+      aria-labelledby="poDrawerTitle" aria-hidden="true" tabindex="-1">
+      <div class="inv-drawer-header po-drawer-header">
         <div class="po-drawer-title-group">
           <div class="po-drawer-id-line">
             <h3 class="inv-drawer-title" id="poDrawerTitle">PO-0000</h3>
@@ -1464,7 +1481,8 @@
           </div>
           <span class="po-drawer-subtitle" id="poDrawerTenant">Tenant Store</span>
         </div>
-        <button type="button" class="inv-drawer-close" onclick="MallApp.closePODetailDrawer()" aria-label="Close PO details">
+        <button type="button" class="inv-drawer-close" onclick="MallApp.closePODetailDrawer()"
+          aria-label="Close PO details">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
