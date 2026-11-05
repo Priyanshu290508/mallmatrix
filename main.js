@@ -108,34 +108,102 @@ const MallState = {
     {
       id: 'PO-8942',
       supplier: 'Inditex Global Logistics',
+      vendorContact: 'Inditex Logistics EMEA (dispatch@inditex.com)',
+      leadTime: '3 business days',
       items: '75x Wool Overcoats, 120x Knitwear',
       tenant: 'Zara Flagship (#204)',
-      value: '$14,250',
-      status: 'On Pending'
+      unit: '#204, Floor 2 (North Wing)',
+      value: '$14,250.00',
+      status: 'Pending',
+      reason: 'Triggered: stock 4 < min buffer 25 (Autumn seasonal spike)',
+      createdDate: 'Mar 24, 2026, 09:30 AM',
+      expectedDelivery: 'Mar 27, 2026',
+      timeline: {
+        created: 'Mar 24, 2026, 09:30 AM',
+        approved: null,
+        shipped: null,
+        delivered: null
+      },
+      lineItems: [
+        { name: 'Wool Blend Overcoats', sku: 'SKU-ZAR-882', qty: 75, price: 110.00, subtotal: 8250.00 },
+        { name: 'Fine Merino Knitwear', sku: 'SKU-ZAR-883', qty: 120, price: 50.00, subtotal: 6000.00 }
+      ],
+      rejectionReason: null
     },
     {
       id: 'PO-8941',
       supplier: 'Apple Retail Operations Corp',
+      vendorContact: 'Apple B2B Supply (procure@apple.com)',
+      leadTime: '2 business days',
       items: '120x USB-C Chargers, 40x AirPods Pro',
       tenant: 'Apple Store (#101)',
-      value: '$18,400',
-      status: 'Order Delivered'
+      unit: '#101, Floor 1 (Central Atrium)',
+      value: '$18,400.00',
+      status: 'Delivered',
+      reason: 'Triggered: stock 8 < min buffer 50 (Safety replenishment)',
+      createdDate: 'Mar 21, 2026, 08:15 AM',
+      expectedDelivery: 'Delivered on Mar 23, 2026',
+      timeline: {
+        created: 'Mar 21, 2026, 08:15 AM',
+        approved: 'Mar 21, 2026, 10:00 AM',
+        shipped: 'Mar 22, 2026, 02:45 PM',
+        delivered: 'Mar 23, 2026, 11:20 AM'
+      },
+      lineItems: [
+        { name: 'USB-C 20W Power Adapters', sku: 'SKU-APP-102', qty: 120, price: 29.00, subtotal: 3480.00 },
+        { name: 'AirPods Pro (2nd Gen)', sku: 'SKU-APP-103', qty: 40, price: 373.00, subtotal: 14920.00 }
+      ],
+      rejectionReason: null
     },
     {
       id: 'PO-8940',
       supplier: 'Nike Direct Supply EMEA',
+      vendorContact: 'Nike Regional B2B Hub (orders@nike-emea.com)',
+      leadTime: '4 business days',
       items: '80x Pegasus 41, 60x Metcon 9',
       tenant: 'Nike Experience (#112)',
-      value: '$16,100',
-      status: 'On Pending'
+      unit: '#112, Floor 1 (Sports Corridor)',
+      value: '$16,100.00',
+      status: 'Pending',
+      reason: 'Triggered: stock 6 < min buffer 30 (Marathon promotion velocity)',
+      createdDate: 'Mar 24, 2026, 10:12 AM',
+      expectedDelivery: 'Mar 28, 2026',
+      timeline: {
+        created: 'Mar 24, 2026, 10:12 AM',
+        approved: null,
+        shipped: null,
+        delivered: null
+      },
+      lineItems: [
+        { name: 'Air Zoom Pegasus 41', sku: 'SKU-NIK-412', qty: 80, price: 115.00, subtotal: 9200.00 },
+        { name: 'Nike Metcon 9 Training', sku: 'SKU-NIK-413', qty: 60, price: 115.00, subtotal: 6900.00 }
+      ],
+      rejectionReason: null
     },
     {
       id: 'PO-8939',
       supplier: 'LVMH Beauty Distribution',
+      vendorContact: 'LVMH Logistics Paris (dispatch@lvmh-beauty.com)',
+      leadTime: '3 business days',
       items: '100x Glow Serums, 45x Luxury Scents',
       tenant: 'Sephora Luxury (#108)',
-      value: '$8,950',
-      status: 'Order Delivered'
+      unit: '#108, Floor 1 (Beauty Plaza)',
+      value: '$8,950.00',
+      status: 'Delivered',
+      reason: 'Triggered: stock 5 < min buffer 20 (Fragrance stock depletion)',
+      createdDate: 'Mar 20, 2026, 02:30 PM',
+      expectedDelivery: 'Delivered on Mar 22, 2026',
+      timeline: {
+        created: 'Mar 20, 2026, 02:30 PM',
+        approved: 'Mar 20, 2026, 04:15 PM',
+        shipped: 'Mar 21, 2026, 09:00 AM',
+        delivered: 'Mar 22, 2026, 03:10 PM'
+      },
+      lineItems: [
+        { name: 'Hydra-Luxe Glow Serums', sku: 'SKU-SEP-301', qty: 100, price: 45.00, subtotal: 4500.00 },
+        { name: 'Maison Luxury Scents', sku: 'SKU-SEP-302', qty: 45, price: 98.88, subtotal: 4450.00 }
+      ],
+      rejectionReason: null
     }
   ],
 
@@ -311,6 +379,11 @@ window.MallApp = {
   _salesDateRange: 'today',
   _salesDateMultiplier: 1.0,
   _salesSort: { col: 'salesAmount', dir: 'desc' },
+  _activeDetailPoId: null,
+  _activeRejectPoId: null,
+  _poDrawerKeydownHandler: null,
+  _batchModalKeydownHandler: null,
+  _rejectModalKeydownHandler: null,
 
   init() {
     this.loadStateFromStorage();
@@ -331,7 +404,38 @@ window.MallApp = {
     try {
       const savedPOs = localStorage.getItem('mallmatrix_purchase_orders');
       if (savedPOs) {
-        MallState.purchaseOrders = JSON.parse(savedPOs);
+        const parsed = JSON.parse(savedPOs);
+        MallState.purchaseOrders = parsed.map(po => {
+          let status = po.status;
+          if (status === 'On Pending') status = 'Pending';
+          if (status === 'Order Delivered') status = 'Delivered';
+
+          const createdDate = po.createdDate || 'Mar 24, 2026, 09:30 AM';
+          const expectedDelivery = po.expectedDelivery || 'Mar 27, 2026 (3 days)';
+          const reason = po.reason || 'Triggered: stock below safety buffer';
+          const lineItems = po.lineItems && po.lineItems.length > 0 ? po.lineItems : [
+            { name: po.items || 'Requisition Batch', sku: 'SKU-GEN-01', qty: 1, price: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0, subtotal: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0 }
+          ];
+
+          const timeline = po.timeline || {
+            created: createdDate,
+            approved: (status === 'Approved' || status === 'Shipped' || status === 'Delivered') ? 'Mar 24, 2026, 11:30 AM' : null,
+            shipped: (status === 'Shipped' || status === 'Delivered') ? 'Mar 25, 2026, 02:00 PM' : null,
+            delivered: (status === 'Delivered') ? 'Mar 26, 2026, 10:45 AM' : null,
+            rejected: (status === 'Rejected') ? 'Mar 24, 2026, 12:15 PM' : null
+          };
+
+          return {
+            ...po,
+            status,
+            reason,
+            createdDate,
+            expectedDelivery,
+            lineItems,
+            timeline,
+            rejectionReason: po.rejectionReason || null
+          };
+        });
       }
       const savedProds = localStorage.getItem('mallmatrix_products');
       if (savedProds) {
@@ -897,18 +1001,39 @@ window.MallApp = {
 
     const vendor = vendorSelect ? vendorSelect.value : `${p.tenant} Logistics Hub`;
     const totalCost = qty * p.price;
+    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + 3);
+    const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-    // Add new PO to Reordering page list with status "Pending"
+    // Add new PO to Reordering page list with status "Pending" and rich details
     const newPO = {
       id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
       supplier: vendor,
+      vendorContact: `${vendor} Direct Dispatch (${vendor.toLowerCase().replace(/[^a-z]/g, '')}@mallmatrix-b2b.com)`,
+      leadTime: '3 business days',
       items: `${qty}x ${p.name}`,
       tenant: `${p.tenant} (${p.unit})`,
+      unit: p.unit,
       value: `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      status: 'Pending'
+      status: 'Pending',
+      reason: `Triggered: stock ${p.stock} < min buffer ${p.minBuffer}`,
+      createdDate: nowStr,
+      expectedDelivery: `${expDateStr} (3 days)`,
+      timeline: {
+        created: nowStr,
+        approved: null,
+        shipped: null,
+        delivered: null
+      },
+      lineItems: [
+        { name: p.name, sku: p.sku, qty: qty, price: p.price, subtotal: totalCost }
+      ],
+      rejectionReason: null
     };
 
     MallState.purchaseOrders.unshift(newPO);
+    this.savePurchaseOrders();
 
     // Close the drawer
     this.closeRestockDrawer();
@@ -925,16 +1050,192 @@ window.MallApp = {
     this.createPOFromDrawer();
   },
 
-  generateBatchReorder() {
-    let count = 0;
-    MallState.products.forEach(p => {
-      if (p.stock <= p.minBuffer) {
-        p.stock += (p.minBuffer * 2);
-        count++;
-      }
+  // BATCH REORDER CONFIRMATION MODAL & EXECUTION
+  openBatchReorderModal() {
+    const modal = document.getElementById('batchReorderModal');
+    const backdrop = document.getElementById('batchReorderBackdrop');
+    const body = document.getElementById('batchReorderModalBody');
+    const confirmBtn = document.getElementById('btnConfirmBatchReorder');
+    if (!modal || !backdrop || !body) return;
+
+    // Scan for low stock products (stock <= minBuffer)
+    const lowStockItems = MallState.products.filter(p => p.stock <= p.minBuffer);
+
+    if (lowStockItems.length === 0) {
+      body.innerHTML = `
+        <div style="text-align: center; padding: 36px 16px;">
+          <div style="width: 54px; height: 54px; border-radius: 50%; background: #D1FAE5; color: #059669; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; font-size: 1.6rem;">✓</div>
+          <h4 style="font-size: 1.05rem; font-weight: 800; color: #0F172A; margin: 0 0 6px 0;">All Inventory Levels Healthy</h4>
+          <p style="font-size: 0.84rem; color: #64748B; max-width: 420px; margin: 0 auto;">No SKUs are currently below safety buffer thresholds. There are no pending purchase orders required at this time.</p>
+        </div>
+      `;
+      if (confirmBtn) confirmBtn.disabled = true;
+    } else {
+      let totalEstCost = 0;
+      let skuRowsHtml = '';
+
+      lowStockItems.forEach(p => {
+        const suggestedQty = Math.max(1, (p.minBuffer * 3) - p.stock);
+        const subtotal = suggestedQty * p.price;
+        totalEstCost += subtotal;
+
+        skuRowsHtml += `
+          <tr>
+            <td>
+              <div style="display: flex; flex-direction: column;">
+                <strong style="color: #0F172A; font-weight: 700;">${this.escapeHTML(p.name)}</strong>
+                <span style="font-family: monospace; font-size: 0.72rem; color: #64748B;">${this.escapeHTML(p.sku)}</span>
+              </div>
+            </td>
+            <td>
+              <span style="font-size: 0.78rem; font-weight: 600; color: #475569;">${this.escapeHTML(p.tenant)}</span>
+            </td>
+            <td>
+              <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; font-size: 0.74rem; font-weight: 800; background: ${p.stock < p.minBuffer * 0.5 ? '#FEE2E2' : '#FEF3C7'}; color: ${p.stock < p.minBuffer * 0.5 ? '#DC2626' : '#D97706'};">
+                ${p.stock} / ${p.minBuffer}
+              </span>
+            </td>
+            <td>
+              <strong style="color: #334155;">+${suggestedQty} units</strong>
+            </td>
+            <td>
+              <span style="color: #64748B;">$${p.price.toFixed(2)}</span>
+            </td>
+            <td style="text-align: right;">
+              <strong style="color: var(--solar-primary, #5429FF);">$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            </td>
+          </tr>
+        `;
+      });
+
+      body.innerHTML = `
+        <div class="batch-modal-summary-grid">
+          <div class="batch-modal-kpi">
+            <span class="batch-modal-kpi-label">POs to Generate</span>
+            <div class="batch-modal-kpi-val" style="color: var(--solar-primary, #5429FF);">${lowStockItems.length} Orders</div>
+          </div>
+          <div class="batch-modal-kpi">
+            <span class="batch-modal-kpi-label">Total Estimated Cost</span>
+            <div class="batch-modal-kpi-val" style="color: #059669;">$${totalEstCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          </div>
+          <div class="batch-modal-kpi">
+            <span class="batch-modal-kpi-label">Buffer Policy</span>
+            <div class="batch-modal-kpi-val" style="font-size: 0.95rem; color: #475569;">Target 3x Safety Stock</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 0.78rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">Affected Low-Stock SKUs (${lowStockItems.length})</span>
+          <span style="font-size: 0.72rem; color: #64748B;">Auto-calculated reorder volumes</span>
+        </div>
+
+        <div class="batch-modal-table-wrap">
+          <table class="batch-sku-table">
+            <thead>
+              <tr>
+                <th>Product / SKU</th>
+                <th>Tenant Store</th>
+                <th>Stock / Buffer</th>
+                <th>Reorder Qty</th>
+                <th>Unit Price</th>
+                <th style="text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${skuRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+      if (confirmBtn) confirmBtn.disabled = false;
+    }
+
+    modal.classList.add('open');
+    backdrop.classList.add('open');
+
+    if (this._batchModalKeydownHandler) {
+      document.removeEventListener('keydown', this._batchModalKeydownHandler);
+    }
+    this._batchModalKeydownHandler = (e) => {
+      if (e.key === 'Escape') this.closeBatchReorderModal();
+    };
+    document.addEventListener('keydown', this._batchModalKeydownHandler);
+  },
+
+  closeBatchReorderModal() {
+    const modal = document.getElementById('batchReorderModal');
+    const backdrop = document.getElementById('batchReorderBackdrop');
+    if (modal) modal.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+
+    if (this._batchModalKeydownHandler) {
+      document.removeEventListener('keydown', this._batchModalKeydownHandler);
+      this._batchModalKeydownHandler = null;
+    }
+  },
+
+  confirmBatchReorder() {
+    const lowStockItems = MallState.products.filter(p => p.stock <= p.minBuffer);
+    if (lowStockItems.length === 0) {
+      this.closeBatchReorderModal();
+      return;
+    }
+
+    let createdCount = 0;
+    let totalVal = 0;
+    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + 3);
+    const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    lowStockItems.forEach(p => {
+      const suggestedQty = Math.max(1, (p.minBuffer * 3) - p.stock);
+      const subtotal = suggestedQty * p.price;
+      totalVal += subtotal;
+
+      // Update in-memory stock
+      p.stock += suggestedQty;
+
+      // Create new PO with Pending status
+      const newPO = {
+        id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+        supplier: `${p.tenant} Logistics Hub`,
+        vendorContact: `${p.tenant} Wholesale Dispatch (dispatch@${p.tenant.toLowerCase().replace(/[^a-z]/g, '')}.com)`,
+        leadTime: '3 business days',
+        items: `${suggestedQty}x ${p.name}`,
+        tenant: `${p.tenant} (${p.unit})`,
+        unit: p.unit,
+        value: `$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        status: 'Pending',
+        reason: `Triggered: stock ${p.stock - suggestedQty} < min buffer ${p.minBuffer}`,
+        createdDate: nowStr,
+        expectedDelivery: `${expDateStr} (3 days)`,
+        timeline: {
+          created: nowStr,
+          approved: null,
+          shipped: null,
+          delivered: null
+        },
+        lineItems: [
+          { name: p.name, sku: p.sku, qty: suggestedQty, price: p.price, subtotal: subtotal }
+        ],
+        rejectionReason: null
+      };
+
+      MallState.purchaseOrders.unshift(newPO);
+      createdCount++;
     });
+
+    this.saveProducts();
+    this.savePurchaseOrders();
     this.renderAll();
-    this.showToast(`Batch Reorder completed! Restocked ${count} items.`, 'success');
+    this.closeBatchReorderModal();
+
+    this.showToast(`Batch Reorder confirmed! Created ${createdCount} Purchase Orders ($${totalVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`, 'success');
+  },
+
+  generateBatchReorder() {
+    this.openBatchReorderModal();
   },
 
   // 6. RENDER DATA
@@ -1292,6 +1593,25 @@ window.MallApp = {
     this.showToast(`Batch restock complete! Replenished stock for ${restockedCount} selected products.`, 'success');
   },
 
+  getPOStatusBadge(status) {
+    switch (status) {
+      case 'Pending':
+      case 'On Pending':
+        return `<span class="po-badge po-badge-pending">⏳ Pending</span>`;
+      case 'Approved':
+        return `<span class="po-badge po-badge-approved">✓ Approved</span>`;
+      case 'Shipped':
+        return `<span class="po-badge po-badge-shipped">🚚 Shipped</span>`;
+      case 'Delivered':
+      case 'Order Delivered':
+        return `<span class="po-badge po-badge-delivered">✓ Delivered</span>`;
+      case 'Rejected':
+        return `<span class="po-badge po-badge-rejected">✕ Rejected</span>`;
+      default:
+        return `<span class="po-badge po-badge-pending">⏳ ${this.escapeHTML(status)}</span>`;
+    }
+  },
+
   renderPurchaseOrders() {
     const tbody = document.getElementById('purchaseOrdersTableBody');
     if (!tbody) return;
@@ -1308,19 +1628,25 @@ window.MallApp = {
         (po.id && po.id.toLowerCase().includes(query)) ||
         (po.supplier && po.supplier.toLowerCase().includes(query)) ||
         (po.items && po.items.toLowerCase().includes(query)) ||
-        (po.tenant && po.tenant.toLowerCase().includes(query))
+        (po.tenant && po.tenant.toLowerCase().includes(query)) ||
+        (po.reason && po.reason.toLowerCase().includes(query)) ||
+        (po.status && po.status.toLowerCase().includes(query))
       );
     }
 
-    if (statusVal === 'Pending') {
-      orders = orders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
-    } else if (statusVal === 'Delivered') {
-      orders = orders.filter(po => po.status === 'Order Delivered');
+    if (statusVal !== 'all') {
+      if (statusVal === 'Pending') {
+        orders = orders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
+      } else if (statusVal === 'Delivered') {
+        orders = orders.filter(po => po.status === 'Delivered' || po.status === 'Order Delivered');
+      } else {
+        orders = orders.filter(po => po.status === statusVal);
+      }
     }
 
     // Update summary metrics
     const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
-    const deliveredOrders = MallState.purchaseOrders.filter(po => po.status === 'Order Delivered');
+    const deliveredOrders = MallState.purchaseOrders.filter(po => po.status === 'Delivered' || po.status === 'Order Delivered');
 
     let pendingValSum = 0;
     pendingOrders.forEach(po => {
@@ -1344,25 +1670,77 @@ window.MallApp = {
     }
 
     tbody.innerHTML = orders.map(po => {
-      const isDelivered = po.status === 'Order Delivered';
-      const pillClass = isDelivered ? 'pill-delivered' : 'pill-pending';
-      const displayStatus = (po.status === 'On Pending' || po.status === 'Pending') ? 'Pending' : po.status;
-      const actualIdx = MallState.purchaseOrders.indexOf(po);
+      const isPending = po.status === 'Pending' || po.status === 'On Pending';
+      const isDelivered = po.status === 'Delivered' || po.status === 'Order Delivered';
+      const isApproved = po.status === 'Approved';
+      const isShipped = po.status === 'Shipped';
+      const isRejected = po.status === 'Rejected';
+
+      const statusBadge = this.getPOStatusBadge(po.status);
+      const reasonText = po.reason || 'Triggered: stock below minimum safety buffer';
+
+      let actionButtons = '';
+      if (isPending) {
+        actionButtons = `
+          <div class="reorder-actions-wrap">
+            <button type="button" class="btn-table-action btn-action-approve" onclick="event.stopPropagation(); MallApp.approvePO('${po.id}')" title="Approve this Purchase Order">
+              Approve
+            </button>
+            <button type="button" class="btn-table-action btn-action-reject" onclick="event.stopPropagation(); MallApp.openRejectModal('${po.id}')" title="Reject with comments">
+              Reject
+            </button>
+          </div>
+        `;
+      } else if (isApproved) {
+        actionButtons = `
+          <div class="reorder-actions-wrap">
+            <button type="button" class="btn-table-action btn-action-ship" onclick="event.stopPropagation(); MallApp.shipPO('${po.id}')" title="Mark as dispatched / in transit">
+              Ship
+            </button>
+          </div>
+        `;
+      } else if (isShipped) {
+        actionButtons = `
+          <div class="reorder-actions-wrap">
+            <button type="button" class="btn-table-action btn-action-deliver" onclick="event.stopPropagation(); MallApp.deliverPO('${po.id}')" title="Confirm physical receipt and update inventory">
+              Deliver
+            </button>
+          </div>
+        `;
+      } else {
+        // Delivered or Rejected: keeps only Archive
+        actionButtons = `
+          <div class="reorder-actions-wrap">
+            <button type="button" class="btn-table-action btn-action-archive" onclick="event.stopPropagation(); MallApp.archivePO('${po.id}')" title="Archive order record">
+              Archive
+            </button>
+          </div>
+        `;
+      }
 
       return `
-        <tr class="reorder-table-row">
+        <tr class="reorder-table-row" onclick="MallApp.openPODetailDrawer('${po.id}')" title="Click to view full PO details and fulfillment timeline">
           <td>
             <code class="reorder-po-code">${this.escapeHTML(po.id)}</code>
           </td>
           <td>
             <div class="reorder-vendor-cell">
               <strong>${this.escapeHTML(po.supplier)}</strong>
-              <span class="reorder-sub-tenant">Approved Vendor</span>
+              <span class="reorder-sub-tenant">${this.escapeHTML(po.vendorContact ? po.vendorContact.split('(')[0].trim() : 'Approved B2B Vendor')}</span>
             </div>
           </td>
           <td>
             <div class="reorder-items-cell">
               <span class="reorder-items-text">${this.escapeHTML(po.items)}</span>
+              <!-- 4. REASON LINE ON EACH PO -->
+              <span class="reorder-reason-text">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>${this.escapeHTML(reasonText)}</span>
+              </span>
             </div>
           </td>
           <td>
@@ -1372,35 +1750,454 @@ window.MallApp = {
             <strong class="reorder-value-text">${this.escapeHTML(po.value)}</strong>
           </td>
           <td>
-            <span class="status-pill ${pillClass}">
-              ${isDelivered ? '✓ ' : '⏳ '}${displayStatus}
-            </span>
+            ${statusBadge}
           </td>
           <td class="text-right">
-            <button class="btn-table-action ${isDelivered ? 'btn-action-archive' : 'btn-action-approve'}" onclick="MallApp.approvePO(${actualIdx})">
-              ${isDelivered ? 'Archive' : 'Approve PO'}
-            </button>
+            ${actionButtons}
           </td>
         </tr>
       `;
     }).join('');
   },
 
-  approvePO(idx) {
-    const po = MallState.purchaseOrders[idx];
-    if (po) {
-      if (po.status === 'Order Delivered') {
-        MallState.purchaseOrders.splice(idx, 1);
-        this.savePurchaseOrders();
-        this.renderPurchaseOrders();
-        this.showToast(`Purchase Order ${po.id} archived.`, 'info');
+  // PO ACTION HANDLERS WITH TOAST NOTIFICATIONS
+  approvePO(poId) {
+    const po = MallState.purchaseOrders.find(item => item.id === poId);
+    if (!po) return;
+
+    po.status = 'Approved';
+    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+    po.timeline.approved = nowStr;
+
+    this.savePurchaseOrders();
+    this.renderPurchaseOrders();
+
+    // If detail drawer is showing this PO, re-render drawer
+    if (this._activeDetailPoId === poId) {
+      this.openPODetailDrawer(poId);
+    }
+
+    this.showToast(`Purchase Order ${po.id} approved successfully!`, 'success');
+  },
+
+  shipPO(poId) {
+    const po = MallState.purchaseOrders.find(item => item.id === poId);
+    if (!po) return;
+
+    po.status = 'Shipped';
+    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+    po.timeline.shipped = nowStr;
+
+    this.savePurchaseOrders();
+    this.renderPurchaseOrders();
+
+    if (this._activeDetailPoId === poId) {
+      this.openPODetailDrawer(poId);
+    }
+
+    this.showToast(`Purchase Order ${po.id} marked as Shipped! In transit.`, 'info');
+  },
+
+  deliverPO(poId) {
+    const po = MallState.purchaseOrders.find(item => item.id === poId);
+    if (!po) return;
+
+    po.status = 'Delivered';
+    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+    po.timeline.delivered = nowStr;
+
+    this.savePurchaseOrders();
+    this.renderPurchaseOrders();
+
+    if (this._activeDetailPoId === poId) {
+      this.openPODetailDrawer(poId);
+    }
+
+    this.showToast(`Purchase Order ${po.id} delivered! Stock updated.`, 'success');
+  },
+
+  archivePO(poId) {
+    const idx = MallState.purchaseOrders.findIndex(item => item.id === poId);
+    if (idx !== -1) {
+      const po = MallState.purchaseOrders[idx];
+      MallState.purchaseOrders.splice(idx, 1);
+      this.savePurchaseOrders();
+      this.renderPurchaseOrders();
+
+      if (this._activeDetailPoId === poId) {
+        this.closePODetailDrawer();
+      }
+
+      this.showToast(`Purchase Order ${po.id} archived.`, 'info');
+    }
+  },
+
+  // 5. REJECT PO MODAL (REQUIRED COMMENT)
+  openRejectModal(poId) {
+    const po = MallState.purchaseOrders.find(item => item.id === poId);
+    if (!po) return;
+
+    this._activeRejectPoId = poId;
+
+    const modal = document.getElementById('poRejectModal');
+    const backdrop = document.getElementById('poRejectBackdrop');
+    const summary = document.getElementById('rejectModalSummary');
+    const textarea = document.getElementById('rejectModalComment');
+    const err = document.getElementById('rejectModalError');
+
+    if (summary) {
+      summary.innerHTML = `
+        <div class="po-reject-summary-row">
+          <span style="color: #64748B;">PO Identifier:</span>
+          <strong style="font-family: monospace; color: #0F172A;">${this.escapeHTML(po.id)}</strong>
+        </div>
+        <div class="po-reject-summary-row">
+          <span style="color: #64748B;">Vendor / Supplier:</span>
+          <strong>${this.escapeHTML(po.supplier)}</strong>
+        </div>
+        <div class="po-reject-summary-row">
+          <span style="color: #64748B;">Target Tenant:</span>
+          <strong>${this.escapeHTML(po.tenant)}</strong>
+        </div>
+        <div class="po-reject-summary-row">
+          <span style="color: #64748B;">Order Valuation:</span>
+          <strong style="color: var(--solar-primary, #5429FF);">${this.escapeHTML(po.value)}</strong>
+        </div>
+      `;
+    }
+
+    if (textarea) {
+      textarea.value = '';
+      textarea.classList.remove('has-error');
+    }
+    if (err) err.style.display = 'none';
+
+    if (modal) modal.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+
+    if (this._rejectModalKeydownHandler) {
+      document.removeEventListener('keydown', this._rejectModalKeydownHandler);
+    }
+    this._rejectModalKeydownHandler = (e) => {
+      if (e.key === 'Escape') this.closeRejectModal();
+    };
+    document.addEventListener('keydown', this._rejectModalKeydownHandler);
+
+    setTimeout(() => {
+      if (textarea) textarea.focus();
+    }, 100);
+  },
+
+  closeRejectModal() {
+    const modal = document.getElementById('poRejectModal');
+    const backdrop = document.getElementById('poRejectBackdrop');
+    if (modal) modal.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+
+    if (this._rejectModalKeydownHandler) {
+      document.removeEventListener('keydown', this._rejectModalKeydownHandler);
+      this._rejectModalKeydownHandler = null;
+    }
+    this._activeRejectPoId = null;
+  },
+
+  confirmRejectPO() {
+    if (!this._activeRejectPoId) return;
+    const po = MallState.purchaseOrders.find(item => item.id === this._activeRejectPoId);
+    if (!po) return;
+
+    const textarea = document.getElementById('rejectModalComment');
+    const err = document.getElementById('rejectModalError');
+    const comment = textarea ? textarea.value.trim() : '';
+
+    if (!comment) {
+      if (err) err.style.display = 'block';
+      if (textarea) {
+        textarea.classList.add('has-error');
+        textarea.focus();
+      }
+      this.showToast('Please provide a mandatory reason for rejecting this PO.', 'warning');
+      return;
+    }
+
+    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    po.status = 'Rejected';
+    po.rejectionReason = comment;
+    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+    po.timeline.rejected = nowStr;
+
+    this.savePurchaseOrders();
+    this.renderPurchaseOrders();
+
+    if (this._activeDetailPoId === po.id) {
+      this.openPODetailDrawer(po.id);
+    }
+
+    this.closeRejectModal();
+    this.showToast(`Purchase Order ${po.id} rejected. Reason: ${comment}`, 'warning');
+  },
+
+  // 3. PO DETAIL SLIDE-OVER DRAWER (TIMELINE, REASON, VENDOR, ITEMS, TOTAL)
+  openPODetailDrawer(poId) {
+    const po = MallState.purchaseOrders.find(item => item.id === poId);
+    if (!po) return;
+
+    this._activeDetailPoId = poId;
+
+    const drawer = document.getElementById('poDetailDrawer');
+    const backdrop = document.getElementById('poDrawerBackdrop');
+    const titleEl = document.getElementById('poDrawerTitle');
+    const tenantEl = document.getElementById('poDrawerTenant');
+    const statusBadgeEl = document.getElementById('poDrawerStatusBadge');
+    const bodyEl = document.getElementById('poDrawerBody');
+    const footerEl = document.getElementById('poDrawerFooter');
+
+    if (!drawer || !backdrop || !bodyEl) return;
+
+    if (titleEl) titleEl.textContent = po.id;
+    if (tenantEl) tenantEl.textContent = `${po.tenant} • ${po.unit || 'Floor 1'}`;
+    if (statusBadgeEl) statusBadgeEl.innerHTML = this.getPOStatusBadge(po.status);
+
+    const isPending = po.status === 'Pending' || po.status === 'On Pending';
+    const isApproved = po.status === 'Approved';
+    const isShipped = po.status === 'Shipped';
+    const isDelivered = po.status === 'Delivered' || po.status === 'Order Delivered';
+    const isRejected = po.status === 'Rejected';
+
+    const timeline = po.timeline || {
+      created: po.createdDate || 'Mar 24, 2026, 09:30 AM',
+      approved: isApproved || isShipped || isDelivered ? 'Mar 24, 2026, 11:30 AM' : null,
+      shipped: isShipped || isDelivered ? 'Mar 25, 2026, 02:00 PM' : null,
+      delivered: isDelivered ? 'Mar 26, 2026, 10:45 AM' : null,
+      rejected: isRejected ? (po.timeline?.rejected || 'Mar 24, 2026, 12:15 PM') : null
+    };
+
+    // Build timeline HTML
+    let timelineHtml = '';
+    if (isRejected) {
+      timelineHtml = `
+        <div class="po-timeline-block">
+          <h4 class="po-section-heading">Fulfillment Timeline</h4>
+          <div class="po-stepper">
+            <div class="po-step completed">
+              <div class="po-step-marker">✓</div>
+              <span class="po-step-label">Created</span>
+              <span class="po-step-time">${timeline.created || 'Recorded'}</span>
+            </div>
+            <div class="po-step-line" style="background: #F87171;">
+              <div class="po-step-line-fill" style="width: 100%; background: #EF4444;"></div>
+            </div>
+            <div class="po-step rejected-step">
+              <div class="po-step-marker">✕</div>
+              <span class="po-step-label" style="color: #DC2626;">Rejected</span>
+              <span class="po-step-time" style="color: #DC2626;">${timeline.rejected || 'Rejected'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      const step1Done = true;
+      const step2Done = isApproved || isShipped || isDelivered;
+      const step3Done = isShipped || isDelivered;
+      const step4Done = isDelivered;
+
+      const step1Class = step2Done ? 'completed' : 'current';
+      const step2Class = step3Done ? 'completed' : (step2Done ? 'current' : (isPending ? 'pending-step' : ''));
+      const step3Class = step4Done ? 'completed' : (step3Done ? 'current' : '');
+      const step4Class = step4Done ? 'completed' : '';
+
+      let progressWidth = '0%';
+      if (isDelivered) progressWidth = '100%';
+      else if (isShipped) progressWidth = '66%';
+      else if (isApproved) progressWidth = '33%';
+
+      timelineHtml = `
+        <div class="po-timeline-block">
+          <h4 class="po-section-heading">Fulfillment Timeline</h4>
+          <div class="po-stepper">
+            <div class="po-step-line">
+              <div class="po-step-line-fill" style="width: ${progressWidth};"></div>
+            </div>
+            <div class="po-step ${step1Class}">
+              <div class="po-step-marker">${step1Done && step2Done ? '✓' : '1'}</div>
+              <span class="po-step-label">Created</span>
+              <span class="po-step-time">${timeline.created || 'Recorded'}</span>
+            </div>
+            <div class="po-step ${step2Class}">
+              <div class="po-step-marker">${step2Done ? '✓' : '2'}</div>
+              <span class="po-step-label">Approved</span>
+              <span class="po-step-time">${timeline.approved || (isPending ? 'Awaiting Sign-off' : '—')}</span>
+            </div>
+            <div class="po-step ${step3Class}">
+              <div class="po-step-marker">${step3Done ? '✓' : '3'}</div>
+              <span class="po-step-label">Shipped</span>
+              <span class="po-step-time">${timeline.shipped || (isApproved ? 'In Dispatch Queue' : '—')}</span>
+            </div>
+            <div class="po-step ${step4Class}">
+              <div class="po-step-marker">${step4Done ? '✓' : '4'}</div>
+              <span class="po-step-label">Delivered</span>
+              <span class="po-step-time">${timeline.delivered || (isShipped ? `Est: ${po.expectedDelivery}` : '—')}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Line items table HTML
+    const lineItems = po.lineItems && po.lineItems.length > 0 ? po.lineItems : [
+      { name: po.items, sku: 'SKU-REORDER', qty: 1, price: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0, subtotal: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0 }
+    ];
+
+    let lineRowsHtml = lineItems.map(item => `
+      <tr>
+        <td>
+          <div style="display: flex; flex-direction: column;">
+            <strong style="font-weight: 700; color: #0F172A;">${this.escapeHTML(item.name)}</strong>
+            <span style="font-family: monospace; font-size: 0.72rem; color: #64748B;">${this.escapeHTML(item.sku || 'SKU-000')}</span>
+          </div>
+        </td>
+        <td><strong>${item.qty}</strong></td>
+        <td>$${item.price.toFixed(2)}</td>
+        <td style="text-align: right; font-weight: 700;">$${item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>
+    `).join('');
+
+    bodyEl.innerHTML = `
+      <!-- REASON CALLOUT -->
+      <div class="po-reason-callout">
+        <div class="po-reason-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>Automated Replenishment Trigger</span>
+        </div>
+        <p class="po-reason-text">${this.escapeHTML(po.reason || 'Triggered: stock below safety buffer target')}</p>
+      </div>
+
+      ${isRejected ? `
+        <!-- REJECTION AUDIT CALLOUT -->
+        <div class="po-rejection-callout">
+          <div class="po-rejection-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <span>PO Rejection Recorded (${timeline.rejected || 'Audit Log'})</span>
+          </div>
+          <p class="po-rejection-comment">${this.escapeHTML(po.rejectionReason || 'No comment recorded.')}</p>
+        </div>
+      ` : ''}
+
+      <!-- TIMELINE -->
+      ${timelineHtml}
+
+      <!-- LOGISTICS & VENDOR METADATA -->
+      <div class="po-meta-grid">
+        <div class="po-meta-box">
+          <span class="po-meta-box-label">Vendor / Supplier</span>
+          <div class="po-meta-box-val">${this.escapeHTML(po.supplier)}</div>
+          <span class="po-meta-box-sub">${this.escapeHTML(po.vendorContact || 'Tier 1 B2B Supplier')}</span>
+        </div>
+        <div class="po-meta-box">
+          <span class="po-meta-box-label">Expected Delivery</span>
+          <div class="po-meta-box-val" style="color: var(--solar-primary, #5429FF);">${this.escapeHTML(po.expectedDelivery || 'In 3 business days')}</div>
+          <span class="po-meta-box-sub">SLA: ${this.escapeHTML(po.leadTime || '3 days lead time')}</span>
+        </div>
+      </div>
+
+      <!-- LINE ITEMS TABLE -->
+      <div class="po-line-items-block">
+        <table class="po-line-table">
+          <thead>
+            <tr>
+              <th>Item & SKU</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th style="text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lineRowsHtml}
+            <tr class="po-line-total-row">
+              <td colspan="3">Total Order Valuation</td>
+              <td style="text-align: right;">${this.escapeHTML(po.value)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // Footer actions
+    if (footerEl) {
+      if (isPending) {
+        footerEl.innerHTML = `
+          <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.openRejectModal('${po.id}')" style="color: #DC2626; border-color: rgba(220, 38, 38, 0.35);">
+            Reject PO
+          </button>
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.approvePO('${po.id}')">
+            Approve PO
+          </button>
+        `;
+      } else if (isApproved) {
+        footerEl.innerHTML = `
+          <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.closePODetailDrawer()">
+            Close
+          </button>
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.shipPO('${po.id}')" style="background: #7E22CE;">
+            Mark as Shipped
+          </button>
+        `;
+      } else if (isShipped) {
+        footerEl.innerHTML = `
+          <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.closePODetailDrawer()">
+            Close
+          </button>
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.deliverPO('${po.id}')" style="background: #10B981;">
+            Mark as Delivered
+          </button>
+        `;
       } else {
-        po.status = 'Order Delivered';
-        this.savePurchaseOrders();
-        this.renderPurchaseOrders();
-        this.showToast(`Purchase Order ${po.id} approved and marked Delivered!`, 'success');
+        // Delivered or Rejected
+        footerEl.innerHTML = `
+          <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.archivePO('${po.id}')">
+            Archive PO
+          </button>
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.closePODetailDrawer()">
+            Close
+          </button>
+        `;
       }
     }
+
+    drawer.classList.add('open');
+    backdrop.classList.add('open');
+
+    if (this._poDrawerKeydownHandler) {
+      document.removeEventListener('keydown', this._poDrawerKeydownHandler);
+    }
+    this._poDrawerKeydownHandler = (e) => {
+      if (e.key === 'Escape') this.closePODetailDrawer();
+    };
+    document.addEventListener('keydown', this._poDrawerKeydownHandler);
+  },
+
+  closePODetailDrawer() {
+    const drawer = document.getElementById('poDetailDrawer');
+    const backdrop = document.getElementById('poDrawerBackdrop');
+    if (drawer) drawer.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+
+    if (this._poDrawerKeydownHandler) {
+      document.removeEventListener('keydown', this._poDrawerKeydownHandler);
+      this._poDrawerKeydownHandler = null;
+    }
+    this._activeDetailPoId = null;
   },
 
   // SALES DATE RANGE, RECHARTS BAR CHART & ANALYTICS
@@ -1786,9 +2583,14 @@ window.MallApp = {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
+    let icon = 'ℹ';
+    if (type === 'success') icon = '✓';
+    else if (type === 'warning') icon = '⚠️';
+    else if (type === 'danger' || type === 'error') icon = '✕';
+
     const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `<span>${type === 'success' ? '✓' : 'ℹ'}</span><span>${this.escapeHTML(msg)}</span>`;
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${this.escapeHTML(msg)}</span>`;
     container.appendChild(toast);
 
     setTimeout(() => {
@@ -1796,7 +2598,7 @@ window.MallApp = {
       toast.style.transform = 'translateY(10px)';
       toast.style.transition = 'all 0.25s ease';
       setTimeout(() => toast.remove(), 250);
-    }, 3200);
+    }, 3500);
   },
 
   escapeHTML(str) {

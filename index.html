@@ -772,10 +772,10 @@
         <div class="panel-section-head">
           <div>
             <h2 class="section-title">Automated Reordering System</h2>
-            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.
-            </p>
+            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.</p>
           </div>
-          <button class="btn-create-order btn-batch-reorder" onclick="MallApp.generateBatchReorder()">
+          <!-- 1. Top-Right Primary Button for Batch Reorder -->
+          <button type="button" class="btn-primary-reorder" onclick="MallApp.openBatchReorderModal()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
             </svg>
@@ -811,12 +811,15 @@
           <div class="table-filter-bar inv-filter-bar">
             <div class="inv-filter-left">
               <input type="text" id="reorderSearchInput" class="clean-search-input"
-                placeholder="Search POs by identifier, vendor, items, or tenant store..."
+                placeholder="Search POs by identifier, vendor, items, tenant, or reason..."
                 oninput="MallApp.renderPurchaseOrders()">
               <select id="reorderStatusFilter" class="clean-select" onchange="MallApp.renderPurchaseOrders()">
                 <option value="all">All Statuses</option>
-                <option value="Pending">Pending Approval</option>
-                <option value="Delivered">Order Delivered</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Shipped">Shipped</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
             <div class="inv-filter-right">
@@ -828,13 +831,13 @@
             <table class="clean-table reorder-table">
               <thead>
                 <tr>
-                  <th style="min-width: 130px;">PO Identifier</th>
-                  <th>Vendor / Supplier</th>
-                  <th>Requisition Items</th>
-                  <th>Target Tenant</th>
-                  <th>PO Total</th>
-                  <th>Status</th>
-                  <th class="text-right">Action</th>
+                  <th style="min-width: 120px;">PO Identifier</th>
+                  <th style="min-width: 180px;">Vendor / Supplier</th>
+                  <th style="min-width: 240px;">Requisition Items & Reason</th>
+                  <th style="min-width: 160px;">Target Tenant</th>
+                  <th style="min-width: 110px;">PO Total</th>
+                  <th style="min-width: 120px;">Status</th>
+                  <th class="text-right" style="min-width: 150px;">Action</th>
                 </tr>
               </thead>
               <tbody id="purchaseOrdersTableBody">
@@ -1379,6 +1382,88 @@
           </svg>
           Create PO
         </button>
+      </div>
+    </aside>
+
+    <!-- 1. BATCH REORDER CONFIRMATION MODAL -->
+    <div class="modal-backdrop" id="batchReorderBackdrop" onclick="MallApp.closeBatchReorderModal()"></div>
+    <div class="clean-modal-card batch-reorder-modal" id="batchReorderModal" role="dialog" aria-modal="true" aria-labelledby="batchReorderTitle">
+      <div class="modal-head">
+        <div>
+          <h3 class="modal-title" id="batchReorderTitle">Confirm Batch Reorder</h3>
+          <p class="modal-desc">Automated replenishment for all SKUs currently below safety stock buffer thresholds.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="MallApp.closeBatchReorderModal()" aria-label="Close batch reorder modal">✕</button>
+      </div>
+
+      <div class="modal-body" id="batchReorderModalBody">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeBatchReorderModal()">Cancel</button>
+        <button type="button" class="clean-btn btn-primary" id="btnConfirmBatchReorder" onclick="MallApp.confirmBatchReorder()">
+          Confirm & Create POs
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. REJECT PO REASON MODAL -->
+    <div class="modal-backdrop" id="poRejectBackdrop" onclick="MallApp.closeRejectModal()"></div>
+    <div class="clean-modal-card po-reject-modal" id="poRejectModal" role="dialog" aria-modal="true" aria-labelledby="rejectModalTitle">
+      <div class="modal-head">
+        <div>
+          <h3 class="modal-title" id="rejectModalTitle">Reject Purchase Order</h3>
+          <p class="modal-desc">Provide a mandatory reason for rejecting this PO for procurement compliance.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="MallApp.closeRejectModal()" aria-label="Close reject modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="po-reject-summary-card" id="rejectModalSummary">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label" for="rejectModalComment">
+            Rejection Reason <span style="color: #DC2626;">*</span>
+          </label>
+          <textarea id="rejectModalComment" class="clean-textarea" rows="3" placeholder="Enter reason (e.g. price mismatch, budget freeze, duplicate order)..." required></textarea>
+          <div id="rejectModalError" class="reject-error-text" style="display: none;">A rejection reason is required before confirming.</div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeRejectModal()">Cancel</button>
+        <button type="button" class="clean-btn btn-danger-action" onclick="MallApp.confirmRejectPO()">Confirm Rejection</button>
+      </div>
+    </div>
+
+    <!-- 3. PO DETAIL SLIDE-OVER DRAWER -->
+    <div class="drawer-backdrop" id="poDrawerBackdrop" onclick="MallApp.closePODetailDrawer()"></div>
+    <aside class="inv-drawer po-detail-drawer" id="poDetailDrawer" role="dialog" aria-modal="true" aria-labelledby="poDrawerTitle">
+      <div class="inv-drawer-header">
+        <div class="po-drawer-title-group">
+          <div class="po-drawer-id-line">
+            <h3 class="inv-drawer-title" id="poDrawerTitle">PO-0000</h3>
+            <div id="poDrawerStatusBadge"></div>
+          </div>
+          <span class="po-drawer-subtitle" id="poDrawerTenant">Tenant Store</span>
+        </div>
+        <button type="button" class="inv-drawer-close" onclick="MallApp.closePODetailDrawer()" aria-label="Close PO details">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="inv-drawer-body po-drawer-body" id="poDrawerBody">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="inv-drawer-footer po-drawer-footer" id="poDrawerFooter">
+        <!-- Rendered dynamically -->
       </div>
     </aside>
 
