@@ -317,10 +317,10 @@ window.MallApp = {
       panel.classList.toggle('active', panel.id === `view-${viewName}`);
     });
 
-    // Toggle bottom-right Copilot button (only visible on dashboard)
+    // Keep bottom-right Copilot button visible on all views except the copilot view itself
     const copilotBtn = document.getElementById('floatingCopilotBtn');
     if (copilotBtn) {
-      copilotBtn.style.display = viewName === 'dashboard' ? 'flex' : 'none';
+      copilotBtn.style.display = viewName === 'copilot' ? 'none' : 'flex';
     }
 
     // Update main header title
