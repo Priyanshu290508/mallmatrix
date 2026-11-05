@@ -2998,3 +2998,411 @@ body {
   background-color: #E2E8F0 !important;
   color: #1E293B !important;
 }
+
+/* ==========================================================================
+   MANAGE SALES & POS ANALYTICS ENHANCEMENTS
+   ========================================================================== */
+
+/* 1. Date Range Selector */
+.sales-date-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sales-date-btn-group {
+  display: inline-flex;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.sales-date-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sales-date-btn:hover {
+  color: #0F172A;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.sales-date-btn.active {
+  background: var(--solar-primary, #5429FF);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(84, 41, 255, 0.25);
+}
+
+.sales-custom-date-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #64748B;
+}
+
+.clean-date-input {
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.78rem;
+  color: #0F172A;
+  outline: none;
+  font-family: inherit;
+}
+
+/* 2. Recharts-style Bar Chart */
+.sales-chart-card {
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.sales-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sales-chart-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 4px 0;
+}
+
+.sales-chart-subtitle {
+  font-size: 0.82rem;
+  color: #64748B;
+  margin: 0;
+  font-weight: 500;
+}
+
+.sales-chart-legend-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sales-chart-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.sales-chart-legend .legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.sales-total-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #EEF2FF;
+  border: 1px solid rgba(84, 41, 255, 0.2);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #3730A3;
+}
+
+.sales-total-badge strong {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--solar-primary, #5429FF);
+}
+
+.sales-chart-svg-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.sales-recharts-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.recharts-bar-rect {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.recharts-bar-group:hover .recharts-bar-rect {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+}
+
+.recharts-bar-group:hover .bar-slot-hover {
+  fill: rgba(84, 41, 255, 0.04);
+}
+
+/* Interactive Floating Tooltip */
+.recharts-tooltip-box {
+  position: absolute;
+  pointer-events: none;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+  min-width: 140px;
+  transform: translate(-50%, -100%);
+  animation: fadeInTooltip 0.15s ease-out;
+}
+
+@keyframes fadeInTooltip {
+  from { opacity: 0; transform: translate(-50%, -90%); }
+  to { opacity: 1; transform: translate(-50%, -100%); }
+}
+
+.tooltip-store {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.tooltip-unit {
+  font-size: 0.72rem;
+  color: #64748B;
+  margin-bottom: 4px;
+}
+
+.tooltip-rev {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--solar-primary, #5429FF);
+}
+
+.tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--solar-primary, #5429FF);
+}
+
+/* 3. Sortable Headers */
+.sales-th-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.sales-th-sortable:hover {
+  color: var(--solar-primary, #5429FF) !important;
+}
+
+.sales-sort-icon {
+  display: inline-block;
+  font-size: 0.72rem;
+  margin-left: 4px;
+  opacity: 0.45;
+  transition: all 0.15s ease;
+}
+
+.sales-sort-icon.active {
+  opacity: 1;
+  color: var(--solar-primary, #5429FF);
+  font-weight: 800;
+}
+
+/* 4. Table Row Elements */
+.sales-store-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sales-store-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.sales-store-cat {
+  font-size: 0.72rem;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.sales-unit-text {
+  font-size: 0.82rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.sales-units-val {
+  font-size: 0.88rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.sales-gross-val {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--solar-primary, #5429FF);
+}
+
+/* 5. Sparkline & Trend Indicator */
+.sales-trend-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sales-sparkline-svg {
+  display: block;
+  overflow: visible;
+}
+
+.change-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.change-indicator.positive {
+  background: #D1FAE5;
+  color: #059669;
+}
+
+.change-indicator.negative {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+/* 6. Turnover Rate Horizontal Progress Bar */
+.turnover-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 160px;
+}
+
+.turnover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.turnover-val.turnover-green { color: #059669; }
+.turnover-val.turnover-amber { color: #D97706; }
+.turnover-val.turnover-red { color: #DC2626; }
+
+.turnover-status-text {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.turnover-status-text.turnover-green { color: #059669; }
+.turnover-status-text.turnover-amber { color: #D97706; }
+.turnover-status-text.turnover-red { color: #DC2626; }
+
+.turnover-bar-track {
+  width: 100%;
+  height: 6px;
+  background: #E2E8F0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.turnover-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+.turnover-bar-fill.turnover-green { background-color: #10B981; }
+.turnover-bar-fill.turnover-amber { background-color: #F59E0B; }
+.turnover-bar-fill.turnover-red { background-color: #EF4444; }
+
+/* 7. POS Status (Dot + Last Sync + Offline Row Tint) */
+.pos-status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pos-status-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.pos-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.pos-status-dot.dot-online {
+  background-color: #10B981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.pos-status-dot.dot-delayed {
+  background-color: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.pos-status-dot.dot-offline {
+  background-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.pos-sync-time {
+  font-size: 0.72rem;
+  color: #94A3B8;
+  font-weight: 500;
+  padding-left: 15px;
+}
+
+/* Offline rows get a subtle red-tinted background */
+.sales-row.row-pos-offline {
+  background-color: rgba(239, 68, 68, 0.04) !important;
+  border-left: 3px solid #EF4444;
+}
+
+.sales-row.row-pos-offline:hover {
+  background-color: rgba(239, 68, 68, 0.07) !important;
+}

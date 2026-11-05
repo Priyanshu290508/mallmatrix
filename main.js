@@ -139,73 +139,121 @@ const MallState = {
     }
   ],
 
-  // Tenants Information
+  // Tenants Information & POS Real-time Telemetry
   tenants: [
     {
+      id: 'ten-1',
       name: 'Apple Store',
       unit: '#101, Floor 1 (Central Atrium)',
       category: 'Consumer Electronics & Hardware',
       skus: '1,420 SKUs',
       stockHealth: 94,
       salesToday: '$48,200',
+      salesAmount: 48200,
+      unitsSold: 284,
+      turnoverRate: 94,
+      changePct: 8.4,
+      sparkline: [38, 42, 45, 48, 52, 49, 58],
+      posStatus: 'online',
+      lastSync: '2s ago',
       manager: 'Michael Ross',
       contact: 'ext. 4101',
       status: 'Active'
     },
     {
+      id: 'ten-2',
       name: 'Zara Flagship',
       unit: '#204, Floor 2 (North Wing)',
       category: 'Fashion & Apparel',
       skus: '3,850 SKUs',
       stockHealth: 78,
       salesToday: '$32,450',
+      salesAmount: 32450,
+      unitsSold: 196,
+      turnoverRate: 78,
+      changePct: 4.2,
+      sparkline: [28, 30, 26, 34, 31, 35, 39],
+      posStatus: 'online',
+      lastSync: '5s ago',
       manager: 'Clara Dubois',
       contact: 'ext. 4204',
       status: 'Active'
     },
     {
+      id: 'ten-3',
       name: 'Nike Experience',
       unit: '#112, Floor 1 (Sports Corridor)',
       category: 'Footwear & Athletic Gear',
       skus: '2,150 SKUs',
       stockHealth: 88,
       salesToday: '$24,180',
+      salesAmount: 24180,
+      unitsSold: 142,
+      turnoverRate: 88,
+      changePct: -2.1,
+      sparkline: [29, 27, 28, 25, 26, 24, 23],
+      posStatus: 'delayed',
+      lastSync: '48s ago',
       manager: 'Marcus Sterling',
       contact: 'ext. 4112',
       status: 'Active'
     },
     {
+      id: 'ten-4',
       name: 'Sephora Luxury',
       unit: '#108, Floor 1 (Beauty Plaza)',
       category: 'Cosmetics & Fragrances',
       skus: '2,940 SKUs',
       stockHealth: 82,
       salesToday: '$19,840',
+      salesAmount: 19840,
+      unitsSold: 168,
+      turnoverRate: 82,
+      changePct: 6.5,
+      sparkline: [15, 17, 16, 18, 19, 21, 23],
+      posStatus: 'online',
+      lastSync: '3s ago',
       manager: 'Hannah Vance',
       contact: 'ext. 4108',
       status: 'Active'
     },
     {
+      id: 'ten-5',
       name: 'H&M Retail',
       unit: '#201, Floor 2 (Grand Promenade)',
       category: 'Fast Fashion & Homeware',
       skus: '4,100 SKUs',
       stockHealth: 90,
       salesToday: '$16,250',
+      salesAmount: 16250,
+      unitsSold: 215,
+      turnoverRate: 72,
+      changePct: -4.8,
+      sparkline: [22, 20, 19, 21, 18, 17, 16],
+      posStatus: 'delayed',
+      lastSync: '1m ago',
       manager: 'Liam Gallagher',
       contact: 'ext. 4201',
       status: 'Active'
     },
     {
+      id: 'ten-6',
       name: 'Starbucks Reserve',
       unit: '#G-05, Ground Floor (East Entrance)',
       category: 'Specialty Coffee & Bakery',
       skus: '480 SKUs',
       stockHealth: 96,
       salesToday: '$8,000',
+      salesAmount: 8000,
+      unitsSold: 310,
+      turnoverRate: 64,
+      changePct: -11.4,
+      sparkline: [14, 13, 11, 12, 10, 9, 8],
+      posStatus: 'offline',
+      lastSync: '14m ago',
       manager: 'Maya Lin',
       contact: 'ext. 4005',
-      status: 'Active'
+      status: 'Offline'
     }
   ],
 
@@ -260,6 +308,9 @@ window.MallApp = {
   _activeRestockSku: null,
   _lastFocusedElement: null,
   _drawerKeydownHandler: null,
+  _salesDateRange: 'today',
+  _salesDateMultiplier: 1.0,
+  _salesSort: { col: 'salesAmount', dir: 'desc' },
 
   init() {
     this.loadStateFromStorage();
@@ -294,13 +345,13 @@ window.MallApp = {
   savePurchaseOrders() {
     try {
       localStorage.setItem('mallmatrix_purchase_orders', JSON.stringify(MallState.purchaseOrders));
-    } catch (e) {}
+    } catch (e) { }
   },
 
   saveProducts() {
     try {
       localStorage.setItem('mallmatrix_products', JSON.stringify(MallState.products));
-    } catch (e) {}
+    } catch (e) { }
   },
 
   // 1. NAVIGATION
@@ -359,6 +410,9 @@ window.MallApp = {
       this.renderPurchaseOrders();
     } else if (viewName === 'inventory') {
       this.renderInventoryTable();
+    } else if (viewName === 'sales') {
+      this.renderSalesLeaderboard();
+      this.renderRevenueBarChart();
     }
 
     // Keep bottom-right Copilot button visible on all views except the copilot view itself
@@ -888,6 +942,7 @@ window.MallApp = {
     this.renderMetrics();
     this.renderInventoryTable();
     this.renderPurchaseOrders();
+    this.renderRevenueBarChart();
     this.renderSalesLeaderboard();
     this.renderStaffTable();
     this.renderTenantCards();
@@ -1266,7 +1321,7 @@ window.MallApp = {
     // Update summary metrics
     const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending' || po.status === 'On Pending');
     const deliveredOrders = MallState.purchaseOrders.filter(po => po.status === 'Order Delivered');
-    
+
     let pendingValSum = 0;
     pendingOrders.forEach(po => {
       const num = parseFloat((po.value || '').replace(/[^0-9.-]+/g, '')) || 0;
@@ -1348,21 +1403,338 @@ window.MallApp = {
     }
   },
 
+  // SALES DATE RANGE, RECHARTS BAR CHART & ANALYTICS
+  setSalesDateRange(range) {
+    this._salesDateRange = range;
+
+    const group = document.getElementById('salesDateRangeGroup');
+    if (group) {
+      group.querySelectorAll('.sales-date-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-range') === range);
+      });
+    }
+
+    const customBox = document.getElementById('salesCustomDateBox');
+    if (customBox) {
+      customBox.style.display = range === 'custom' ? 'inline-flex' : 'none';
+    }
+
+    const rangeLabels = {
+      today: { mult: 1.0, label: 'Today', header: "Today's Gross Sales" },
+      '7d': { mult: 6.8, label: 'Last 7 Days', header: '7-Day Gross Sales' },
+      '30d': { mult: 28.5, label: 'Last 30 Days', header: '30-Day Gross Sales' },
+      custom: { mult: 14.0, label: 'Custom Range (Mar 01 - Mar 24)', header: 'Custom Period Sales' }
+    };
+
+    const config = rangeLabels[range] || rangeLabels.today;
+    this._salesDateMultiplier = config.mult;
+
+    const chartRangeLabel = document.getElementById('salesChartRangeLabel');
+    if (chartRangeLabel) chartRangeLabel.textContent = config.label;
+
+    const headerTitle = document.getElementById('salesHeaderPeriodTitle');
+    if (headerTitle) headerTitle.textContent = config.header;
+
+    this.renderRevenueBarChart();
+    this.renderSalesLeaderboard();
+  },
+
+  applyCustomDateRange() {
+    const start = document.getElementById('salesDateStart')?.value || '2026-03-01';
+    const end = document.getElementById('salesDateEnd')?.value || '2026-03-24';
+    const d1 = new Date(start);
+    const d2 = new Date(end);
+    const diffDays = Math.max(1, Math.round((d2 - d1) / (1000 * 60 * 60 * 24))) + 1;
+
+    this._salesDateMultiplier = Number((diffDays * 0.95).toFixed(1));
+    const label = `${start.substring(5)} to ${end.substring(5)} (${diffDays} days)`;
+
+    const chartRangeLabel = document.getElementById('salesChartRangeLabel');
+    if (chartRangeLabel) chartRangeLabel.textContent = label;
+
+    const headerTitle = document.getElementById('salesHeaderPeriodTitle');
+    if (headerTitle) headerTitle.textContent = `Custom (${diffDays}d) Sales`;
+
+    this.renderRevenueBarChart();
+    this.renderSalesLeaderboard();
+    this.showToast(`Updated analytics for custom range: ${diffDays} days`, 'info');
+  },
+
+  sortSalesTable(col) {
+    if (this._salesSort.col === col) {
+      this._salesSort.dir = this._salesSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this._salesSort.col = col;
+      this._salesSort.dir = (col === 'name' || col === 'unit') ? 'asc' : 'desc';
+    }
+    this.renderSalesLeaderboard();
+  },
+
+  generateSparklineSvg(points, isPositive) {
+    if (!points || points.length === 0) return '';
+    const min = Math.min(...points);
+    const max = Math.max(...points);
+    const range = (max - min) || 1;
+    const w = 75;
+    const h = 24;
+    const pad = 3;
+
+    const coords = points.map((p, i) => {
+      const x = pad + (i / (points.length - 1)) * (w - 2 * pad);
+      const y = (h - pad) - ((p - min) / range) * (h - 2 * pad);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    const polyline = coords.join(' ');
+    const strokeColor = isPositive ? '#10B981' : '#EF4444';
+    const fillColor = isPositive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+
+    const firstX = coords[0].split(',')[0];
+    const lastX = coords[coords.length - 1].split(',')[0];
+    const areaPath = `M ${coords[0]} L ${coords.join(' L ')} L ${lastX},${h} L ${firstX},${h} Z`;
+
+    return `
+      <svg width="${w}" height="${h}" class="sales-sparkline-svg" viewBox="0 0 ${w} ${h}">
+        <path d="${areaPath}" fill="${fillColor}" />
+        <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${polyline}" />
+        <circle cx="${coords[coords.length - 1].split(',')[0]}" cy="${coords[coords.length - 1].split(',')[1]}" r="2.5" fill="${strokeColor}" />
+      </svg>
+    `;
+  },
+
+  renderRevenueBarChart() {
+    const container = document.getElementById('salesBarChartContainer');
+    if (!container) return;
+
+    const mult = this._salesDateMultiplier || 1.0;
+    const tenants = MallState.tenants.map(t => ({
+      name: t.name,
+      shortName: t.name.replace(' Store', '').replace(' Flagship', '').replace(' Experience', '').replace(' Luxury', '').replace(' Retail', '').replace(' Reserve', ''),
+      amount: Math.round(t.salesAmount * mult),
+      unit: t.unit
+    }));
+
+    const maxVal = Math.max(...tenants.map(t => t.amount), 1000);
+    const roundedMax = Math.ceil(maxVal / 10000) * 10000;
+
+    const width = 800;
+    const height = 230;
+    const paddingLeft = 65;
+    const paddingRight = 30;
+    const paddingTop = 25;
+    const paddingBottom = 45;
+
+    const chartW = width - paddingLeft - paddingRight;
+    const chartH = height - paddingTop - paddingBottom;
+
+    // Grid lines
+    const gridSteps = 4;
+    let gridLinesSvg = '';
+    for (let i = 0; i <= gridSteps; i++) {
+      const y = paddingTop + (chartH / gridSteps) * i;
+      const val = Math.round(roundedMax - (roundedMax / gridSteps) * i);
+      gridLinesSvg += `
+        <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#E2E8F0" stroke-dasharray="4 4" stroke-width="1" />
+        <text x="${paddingLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" font-weight="600" fill="#94A3B8">$${(val / 1000).toFixed(0)}k</text>
+      `;
+    }
+
+    // Bars
+    const barCount = tenants.length;
+    const slotW = chartW / barCount;
+    const barW = Math.min(54, slotW * 0.55);
+
+    let barsSvg = '';
+    tenants.forEach((t, i) => {
+      const x = paddingLeft + slotW * i + (slotW - barW) / 2;
+      const barH = (t.amount / roundedMax) * chartH;
+      const y = paddingTop + chartH - barH;
+
+      barsSvg += `
+        <g class="recharts-bar-group" data-store="${this.escapeHTML(t.name)}" data-revenue="$${t.amount.toLocaleString()}" data-unit="${this.escapeHTML(t.unit)}">
+          <rect x="${paddingLeft + slotW * i}" y="${paddingTop}" width="${slotW}" height="${chartH}" fill="transparent" class="bar-slot-hover" />
+          <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="5" ry="5" fill="url(#rechartsBarGrad)" class="recharts-bar-rect" />
+          <text x="${x + barW / 2}" y="${height - 20}" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">${this.escapeHTML(t.shortName)}</text>
+          <text x="${x + barW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8">$${(t.amount / 1000).toFixed(1)}k</text>
+        </g>
+      `;
+    });
+
+    const totalRev = tenants.reduce((acc, cur) => acc + cur.amount, 0);
+    const totalRevEl = document.getElementById('salesChartTotalRevenue');
+    if (totalRevEl) {
+      totalRevEl.textContent = `$${totalRev.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" class="sales-recharts-svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="rechartsBarGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8F57FF" />
+            <stop offset="100%" stop-color="#5429FF" />
+          </linearGradient>
+        </defs>
+        ${gridLinesSvg}
+        <line x1="${paddingLeft}" y1="${paddingTop + chartH}" x2="${width - paddingRight}" y2="${paddingTop + chartH}" stroke="#CBD5E1" stroke-width="1.5" />
+        ${barsSvg}
+      </svg>
+      <div class="recharts-tooltip-box" id="salesBarTooltip" style="display: none;"></div>
+    `;
+
+    // Tooltip interaction
+    const tooltip = document.getElementById('salesBarTooltip');
+    if (tooltip) {
+      container.querySelectorAll('.recharts-bar-group').forEach(grp => {
+        grp.addEventListener('mouseenter', () => {
+          const store = grp.getAttribute('data-store');
+          const revenue = grp.getAttribute('data-revenue');
+          const unit = grp.getAttribute('data-unit');
+          tooltip.innerHTML = `
+            <div class="tooltip-store">${store}</div>
+            <div class="tooltip-unit">${unit}</div>
+            <div class="tooltip-rev"><span class="tooltip-dot"></span> <strong>${revenue}</strong></div>
+          `;
+          tooltip.style.display = 'block';
+        });
+
+        grp.addEventListener('mousemove', (e) => {
+          const rect = container.getBoundingClientRect();
+          const x = e.clientX - rect.left + 15;
+          const y = e.clientY - rect.top - 40;
+          tooltip.style.left = `${Math.min(x, rect.width - 150)}px`;
+          tooltip.style.top = `${Math.max(10, y)}px`;
+        });
+
+        grp.addEventListener('mouseleave', () => {
+          tooltip.style.display = 'none';
+        });
+      });
+    }
+  },
+
   renderSalesLeaderboard() {
     const tbody = document.getElementById('salesLeaderboardBody');
     if (!tbody) return;
 
-    tbody.innerHTML = MallState.tenants.map((t, idx) => `
-      <tr>
-        <td><span class="status-pill pill-delivered">#0${idx + 1}</span></td>
-        <td><strong>${this.escapeHTML(t.name)}</strong></td>
-        <td>${this.escapeHTML(t.unit)}</td>
-        <td>${Math.floor(140 + Math.random() * 200)} items</td>
-        <td><strong style="color: var(--green-main);">${t.salesToday}</strong></td>
-        <td>${t.stockHealth}%</td>
-        <td><span class="status-pill pill-delivered">Online</span></td>
-      </tr>
-    `).join('');
+    const mult = this._salesDateMultiplier || 1.0;
+    const sortCol = this._salesSort.col || 'salesAmount';
+    const sortDir = this._salesSort.dir || 'desc';
+
+    // Update sort arrow icons
+    ['rank', 'name', 'unit', 'unitsSold', 'salesAmount', 'changePct', 'turnoverRate', 'posStatus'].forEach(c => {
+      const icon = document.getElementById(`sales-sort-${c}`);
+      if (icon) {
+        if (sortCol === c) {
+          icon.textContent = sortDir === 'asc' ? '↑' : '↓';
+          icon.classList.add('active');
+        } else {
+          icon.textContent = '↕';
+          icon.classList.remove('active');
+        }
+      }
+    });
+
+    let tenants = MallState.tenants.map((t, idx) => {
+      const calculatedSales = Math.round(t.salesAmount * mult);
+      const calculatedUnits = Math.round(t.unitsSold * mult);
+      return {
+        ...t,
+        originalRank: idx + 1,
+        calculatedSales,
+        calculatedUnits
+      };
+    });
+
+    // Sorting
+    const sign = sortDir === 'asc' ? 1 : -1;
+    tenants.sort((a, b) => {
+      if (sortCol === 'rank') return sign * (a.originalRank - b.originalRank);
+      if (sortCol === 'name') return sign * a.name.localeCompare(b.name);
+      if (sortCol === 'unit') return sign * a.unit.localeCompare(b.unit);
+      if (sortCol === 'unitsSold') return sign * (a.calculatedUnits - b.calculatedUnits);
+      if (sortCol === 'salesAmount') return sign * (a.calculatedSales - b.calculatedSales);
+      if (sortCol === 'changePct') return sign * (a.changePct - b.changePct);
+      if (sortCol === 'turnoverRate') return sign * (a.turnoverRate - b.turnoverRate);
+      if (sortCol === 'posStatus') return sign * a.posStatus.localeCompare(b.posStatus);
+      return 0;
+    });
+
+    tbody.innerHTML = tenants.map((t, idx) => {
+      const isOffline = t.posStatus === 'offline';
+      const isPositiveChange = t.changePct >= 0;
+
+      // Turnover rate color classes (green above 85%, amber 70-85%, red below 70%)
+      let turnoverClass = 'turnover-green';
+      if (t.turnoverRate < 70) {
+        turnoverClass = 'turnover-red';
+      } else if (t.turnoverRate <= 85) {
+        turnoverClass = 'turnover-amber';
+      }
+
+      // POS status dot
+      let dotClass = 'dot-online';
+      let statusLabel = 'Online';
+      if (t.posStatus === 'delayed') {
+        dotClass = 'dot-delayed';
+        statusLabel = 'Delayed';
+      } else if (t.posStatus === 'offline') {
+        dotClass = 'dot-offline';
+        statusLabel = 'Offline';
+      }
+
+      return `
+        <tr class="sales-row ${isOffline ? 'row-pos-offline' : ''}">
+          <td>
+            <span class="status-pill pill-delivered" style="font-weight: 800; min-width: 38px;">#0${idx + 1}</span>
+          </td>
+          <td>
+            <div class="sales-store-meta">
+              <strong class="sales-store-name">${this.escapeHTML(t.name)}</strong>
+              <span class="sales-store-cat">${this.escapeHTML(t.category)}</span>
+            </div>
+          </td>
+          <td>
+            <span class="sales-unit-text">${this.escapeHTML(t.unit)}</span>
+          </td>
+          <td>
+            <strong class="sales-units-val">${t.calculatedUnits.toLocaleString()} units</strong>
+          </td>
+          <td>
+            <strong class="sales-gross-val">$${t.calculatedSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+          </td>
+          <td>
+            <div class="sales-trend-cluster">
+              ${this.generateSparklineSvg(t.sparkline, isPositiveChange)}
+              <span class="change-indicator ${isPositiveChange ? 'positive' : 'negative'}">
+                ${isPositiveChange ? '▲ +' : '▼ '}${Math.abs(t.changePct)}%
+              </span>
+            </div>
+          </td>
+          <td>
+            <div class="turnover-cell">
+              <div class="turnover-header">
+                <span class="turnover-val ${turnoverClass}">${t.turnoverRate}%</span>
+                <span class="turnover-status-text ${turnoverClass}">
+                  ${t.turnoverRate > 85 ? 'Optimal' : (t.turnoverRate >= 70 ? 'Moderate' : 'Low')}
+                </span>
+              </div>
+              <div class="turnover-bar-track">
+                <div class="turnover-bar-fill ${turnoverClass}" style="width: ${Math.min(100, t.turnoverRate)}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="pos-status-cell">
+              <div class="pos-status-line">
+                <span class="pos-status-dot ${dotClass}"></span>
+                <span class="pos-status-name">${statusLabel}</span>
+              </div>
+              <span class="pos-sync-time">last sync ${t.lastSync}</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   },
 
   renderStaffTable() {
