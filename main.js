@@ -2612,6 +2612,14 @@ window.MallApp = {
     const chartW = width - paddingLeft - paddingRight;
     const chartH = height - paddingTop - paddingBottom;
 
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridStroke = isDark ? '#313153' : '#E2E8F0';
+    const axisTextFill = isDark ? '#A1A1C3' : '#94A3B8';
+    const storeLabelFill = isDark ? '#E2E2F8' : '#334155';
+    const baseLineStroke = isDark ? '#313153' : '#CBD5E1';
+    const gradStart = isDark ? '#C5B5FF' : '#8F57FF';
+    const gradEnd = isDark ? '#A590FF' : '#5429FF';
+
     // Grid lines
     const gridSteps = 4;
     let gridLinesSvg = '';
@@ -2619,8 +2627,8 @@ window.MallApp = {
       const y = paddingTop + (chartH / gridSteps) * i;
       const val = Math.round(roundedMax - (roundedMax / gridSteps) * i);
       gridLinesSvg += `
-        <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#E2E8F0" stroke-dasharray="4 4" stroke-width="1" />
-        <text x="${paddingLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" font-weight="600" fill="#94A3B8">${currencySymbol}${(val / 1000).toFixed(0)}k</text>
+        <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="${gridStroke}" stroke-dasharray="4 4" stroke-width="1" />
+        <text x="${paddingLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" font-weight="600" fill="${axisTextFill}">${currencySymbol}${(val / 1000).toFixed(0)}k</text>
       `;
     }
 
@@ -2639,8 +2647,8 @@ window.MallApp = {
         <g class="recharts-bar-group" data-store="${this.escapeHTML(t.name)}" data-revenue="${this.formatCurrency(t.amount)}" data-unit="${this.escapeHTML(t.unit)}">
           <rect x="${paddingLeft + slotW * i}" y="${paddingTop}" width="${slotW}" height="${chartH}" fill="transparent" class="bar-slot-hover" />
           <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="5" ry="5" fill="url(#rechartsBarGrad)" class="recharts-bar-rect" />
-          <text x="${x + barW / 2}" y="${height - 20}" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">${this.escapeHTML(t.shortName)}</text>
-          <text x="${x + barW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="#94A3B8">${currencySymbol}${(t.amount / 1000).toFixed(1)}k</text>
+          <text x="${x + barW / 2}" y="${height - 20}" text-anchor="middle" font-size="12" font-weight="700" fill="${storeLabelFill}">${this.escapeHTML(t.shortName)}</text>
+          <text x="${x + barW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="${axisTextFill}">${currencySymbol}${(t.amount / 1000).toFixed(1)}k</text>
         </g>
       `;
     });
@@ -2655,12 +2663,12 @@ window.MallApp = {
       <svg viewBox="0 0 ${width} ${height}" class="sales-recharts-svg" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="rechartsBarGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#8F57FF" />
-            <stop offset="100%" stop-color="#5429FF" />
+            <stop offset="0%" stop-color="${gradStart}" />
+            <stop offset="100%" stop-color="${gradEnd}" />
           </linearGradient>
         </defs>
         ${gridLinesSvg}
-        <line x1="${paddingLeft}" y1="${paddingTop + chartH}" x2="${width - paddingRight}" y2="${paddingTop + chartH}" stroke="#CBD5E1" stroke-width="1.5" />
+        <line x1="${paddingLeft}" y1="${paddingTop + chartH}" x2="${width - paddingRight}" y2="${paddingTop + chartH}" stroke="${baseLineStroke}" stroke-width="1.5" />
         ${barsSvg}
       </svg>
       <div class="recharts-tooltip-box" id="salesBarTooltip" style="display: none;"></div>
