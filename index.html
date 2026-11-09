@@ -42,7 +42,9 @@
     <aside class="sidebar" id="sidebar">
       <!-- SIDEBAR BRAND HEADER (Only Logo and Name) -->
       <a href="./landing.html" class="sidebar-brand-header" title="Go to MallMatrix Landing Page">
-        <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="brand-logo-img">
+        <div class="brand-logo-wrap">
+          <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="brand-logo-img">
+        </div>
         <div class="brand-title">Mall<span class="brand-highlight">Matrix</span></div>
       </a>
 
@@ -454,22 +456,26 @@
           <div class="orch-metrics-strip">
             <div class="orch-metric-box">
               <span class="orch-metric-label">System Synchronicity</span>
-              <div class="orch-metric-val">99.8% <span class="tag-badge tag-green">Optimal</span></div>
+              <div class="orch-metric-val">99.8% <span class="tag-badge tag-green info-dot-label"><span
+                    class="info-dot dot-success"></span>Optimal</span></div>
               <span class="orch-metric-sub">Zero telemetry drops across 48 stores</span>
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Autonomous Sub-Agents</span>
-              <div class="orch-metric-val">5 Active <span class="tag-badge tag-cyan">Connected</span></div>
+              <div class="orch-metric-val">5 Active <span class="tag-badge tag-cyan info-dot-label"><span
+                    class="info-dot dot-accent"></span>Connected</span></div>
               <span class="orch-metric-sub">Inventory, Sales, Tenants, Staff, Reorder</span>
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Stock Replenishment Triggers</span>
-              <div class="orch-metric-val">12 Auto-POs <span class="tag-badge tag-purple">In-Flight</span></div>
+              <div class="orch-metric-val">12 Auto-POs <span class="tag-badge tag-purple info-dot-label"><span
+                    class="info-dot dot-accent"></span>In-Flight</span></div>
               <span class="orch-metric-sub">Auto-replenishing 14 buffer breaches</span>
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Predicted Day Footfall</span>
-              <div class="orch-metric-val">38,420 <span class="tag-badge tag-amber">+14.2% Peak</span></div>
+              <div class="orch-metric-val">38,420 <span class="tag-badge tag-amber info-dot-label"><span
+                    class="info-dot dot-warning"></span>+14.2% Peak</span></div>
               <span class="orch-metric-sub">Estimated retail spending: <span
                   id="orchEstimatedSpendingVal">$240K+</span></span>
             </div>
@@ -605,15 +611,14 @@
                   <svg viewBox="0 0 540 180" class="smooth-wave-chart" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="waveGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#5429FF" stop-opacity="0.28" />
-                        <stop offset="100%" stop-color="#5429FF" stop-opacity="0.0" />
+                        <stop offset="0%" stop-color="#5B3DF5" stop-opacity="0.28" />
+                        <stop offset="100%" stop-color="#5B3DF5" stop-opacity="0.0" />
                       </linearGradient>
                       <filter id="glowCircle" x="-20%" y="-20%" width="140%" height="140%">
                         <feGaussianBlur stdDeviation="3" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                       </filter>
                     </defs>
-
                     <!-- Wave Area Fill -->
                     <path d="M 0 135 
                              C 45 135, 75 45, 120 45 
@@ -622,7 +627,7 @@
                              C 320 125, 345 55, 380 55 
                              C 410 55, 435 135, 470 135 
                              C 495 135, 520 120, 540 120 
-                             L 540 180 L 0 180 Z" fill="url(#waveGlow)" />
+                             L 540 180 L 0 180 Z" fill="url(#waveGlow)" class="chart-wave-area" />
 
                     <!-- Wave Line -->
                     <path d="M 0 135 
@@ -631,17 +636,15 @@
                              C 235 130, 260 75, 290 100 
                              C 320 125, 345 55, 380 55 
                              C 410 55, 435 135, 470 135 
-                             C 495 135, 520 120, 540 120" fill="none" stroke="#5429FF" stroke-width="3.2"
-                      stroke-linecap="round" />
+                             C 495 135, 520 120, 540 120" fill="none" stroke="#5B3DF5" stroke-width="3.5"
+                      stroke-linecap="round" class="chart-wave-line" />
 
                     <!-- Peak Points -->
-                    <circle cx="120" cy="45" r="7" fill="#0090B5" filter="url(#glowCircle)" />
-                    <circle cx="120" cy="45" r="4" fill="#FFFFFF" />
-
-                    <circle cx="380" cy="55" r="7" fill="#5429FF" filter="url(#glowCircle)" />
-                    <circle cx="380" cy="55" r="4" fill="#FFFFFF" />
-
-                    <circle cx="540" cy="120" r="6" fill="#0090B5" />
+                    <circle cx="120" cy="45" r="5" fill="#00D2B4" stroke="#FFFFFF" stroke-width="2"
+                      class="chart-dot-cyan" />
+                    <circle cx="380" cy="55" r="6" fill="#5B3DF5" stroke="#FFFFFF" stroke-width="2.5"
+                      filter="url(#glowCircle)" class="chart-peak-dot" />
+                    <circle cx="540" cy="120" r="4" fill="#5B3DF5" class="chart-dot-end" />
                   </svg>
 
                   <div class="chart-tooltip-box" style="left: 66%; top: 12%;">
@@ -985,7 +988,7 @@
           </div>
           <div class="reorder-stat-card">
             <span class="reorder-stat-label">On-Time Logistics Rate</span>
-            <div class="reorder-stat-val" style="color: var(--solar-primary, #5429FF);">98.8%</div>
+            <div class="reorder-stat-val" style="color: var(--accent);">98.8%</div>
             <span class="reorder-stat-sub" style="color: #059669;">Avg lead time: 2.4 days</span>
           </div>
         </div>
@@ -1069,7 +1072,7 @@
             </div>
             <div class="sales-chart-legend-wrap">
               <div class="sales-chart-legend">
-                <span class="legend-dot" style="background: var(--solar-primary, #5429FF);"></span>
+                <span class="legend-dot" style="background: var(--accent);"></span>
                 <span class="legend-text" id="salesChartLegendText">Gross Sales</span>
               </div>
               <div class="sales-total-badge">
@@ -1088,9 +1091,9 @@
         <!-- TABLE CARD -->
         <div class="dash-card">
           <div
-            style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 10px 20px; border-bottom: 1px solid #F1F5F9;">
-            <div style="font-size: 0.92rem; font-weight: 800; color: #0F172A;">Top 6 Stores Performance</div>
-            <span class="tag-badge tag-purple" style="font-size: 0.72rem; font-weight: 700;">Top 6 Stores</span>
+            style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 10px 20px; border-bottom: 1px solid var(--border);">
+            <div style="font-size: 0.92rem; font-weight: 800; color: var(--text);">Top 6 Stores Performance</div>
+            <span class="info-dot-label"><span class="info-dot dot-accent"></span>Top 6 stores</span>
           </div>
           <div class="table-responsive">
             <table class="clean-table sales-analytics-table">
@@ -1179,39 +1182,34 @@
             <div class="copilot-ribbon-logo-wrap">
               <svg class="copilot-ribbon-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <linearGradient id="copilotRibbonGrad1" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#00E5FF" />
-                    <stop offset="40%" stop-color="#0090B5" />
-                    <stop offset="75%" stop-color="#6366F1" />
-                    <stop offset="100%" stop-color="#5429FF" />
+                  <linearGradient id="copilotRibbonGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00A4EF" />
+                    <stop offset="40%" stop-color="#5B3DF5" />
+                    <stop offset="70%" stop-color="#0090B5" />
+                    <stop offset="100%" stop-color="#10B981" />
                   </linearGradient>
                   <linearGradient id="copilotRibbonGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#5429FF" />
-                    <stop offset="35%" stop-color="#7C3AED" />
-                    <stop offset="70%" stop-color="#9333EA" />
-                    <stop offset="100%" stop-color="#C084FC" />
+                    <stop offset="0%" stop-color="#FFB900" />
+                    <stop offset="35%" stop-color="#F25022" />
+                    <stop offset="70%" stop-color="#D946EF" />
+                    <stop offset="100%" stop-color="#5B3DF5" />
                   </linearGradient>
-                  <linearGradient id="copilotRibbonOverlap" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#3D1EB8" />
-                    <stop offset="100%" stop-color="#6366F1" />
+                  <linearGradient id="copilotRibbonOverlap" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#0F172A" stop-opacity="0.6" />
+                    <stop offset="100%" stop-color="#5B3DF5" stop-opacity="0.0" />
                   </linearGradient>
-                  <filter id="copilotRibbonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(84, 41, 255, 0.35)" />
-                  </filter>
                 </defs>
-                <g filter="url(#copilotRibbonGlow)">
-                  <!-- Ribbon Loop Left/Top (Cyan -> Green -> Yellow) -->
-                  <path
-                    d="M34 65C23 65 15 57 15 45C15 32 23 21 37 21C48 21 57 28 62 36L74 24C65 14 52 9 37 9C17 9 3 24 3 45C3 64 16 78 34 78C46 78 57 71 64 62L52 51C47 60 41 65 34 65Z"
-                    fill="url(#copilotRibbonGrad1)" />
-                  <!-- Ribbon Loop Right/Bottom (Yellow -> Orange -> Magenta -> Purple) -->
-                  <path
-                    d="M66 35C77 35 85 43 85 55C85 68 77 79 63 79C52 79 43 72 38 64L26 76C35 86 48 91 63 91C83 91 97 76 97 55C97 36 84 22 66 22C54 22 43 29 36 38L48 49C53 40 59 35 66 35Z"
-                    fill="url(#copilotRibbonGrad2)" />
-                  <!-- Center Twisted Knot Shading -->
-                  <path d="M48 49L62 36C57 28 48 21 37 21C34 21 31 22 28 23L40 37C43 40 46 44 48 49Z"
-                    fill="url(#copilotRibbonOverlap)" opacity="0.9" />
-                </g>
+                <!-- Ribbon Loop Left/Top -->
+                <path
+                  d="M34 65C23 65 15 57 15 45C15 32 23 21 37 21C48 21 57 28 62 36L74 24C65 14 52 9 37 9C17 9 3 24 3 45C3 64 16 78 34 78C46 78 57 71 64 62L52 51C47 60 41 65 34 65Z"
+                  fill="url(#copilotRibbonGrad1)" class="copilot-ribbon-left" />
+                <!-- Ribbon Loop Right/Bottom -->
+                <path
+                  d="M66 35C77 35 85 43 85 55C85 68 77 79 63 79C52 79 43 72 38 64L26 76C35 86 48 91 63 91C83 91 97 76 97 55C97 36 84 22 66 22C54 22 43 29 36 38L48 49C53 40 59 35 66 35Z"
+                  fill="url(#copilotRibbonGrad2)" class="copilot-ribbon-right" />
+                <!-- Center Twisted Knot Shading -->
+                <path d="M48 49L62 36C57 28 48 21 37 21C34 21 31 22 28 23L40 37C43 40 46 44 48 49Z"
+                  fill="url(#copilotRibbonOverlap)" opacity="0.9" class="copilot-ribbon-center" />
               </svg>
             </div>
 
@@ -1746,12 +1744,12 @@
               Currency</label>
             <div style="display: flex; gap: 10px;">
               <button type="button" id="currencyBtnUSD" class="clean-btn" onclick="MallApp.setCurrency('USD')"
-                style="flex: 1; padding: 10px 14px; border: 1.5px solid #5429FF; background: #F5F3FF; border-radius: 10px; font-weight: 700; font-size: 0.84rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #5429FF;">
+                style="flex: 1; padding: 10px 14px; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 6px; font-weight: 700; font-size: 0.84rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: var(--accent);">
                 <span>USD ($)</span>
                 <span id="currencyCheckUSD" style="font-weight: 800;">✓</span>
               </button>
               <button type="button" id="currencyBtnINR" class="clean-btn" onclick="MallApp.setCurrency('INR')"
-                style="flex: 1; padding: 10px 14px; border: 1.5px solid #CBD5E1; background: #FFFFFF; border-radius: 10px; font-weight: 700; font-size: 0.84rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: #475569;">
+                style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; font-weight: 700; font-size: 0.84rem; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: var(--text-muted);">
                 <span>INR (₹ Lakh/Cr)</span>
                 <span id="currencyCheckINR" style="font-weight: 800; display: none;">✓</span>
               </button>
@@ -1780,9 +1778,8 @@
             <label
               style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 6px; display: block;">Platform
               Telemetry</label>
-            <div
-              style="font-size: 0.8rem; color: #475569; background: #EEF2FF; border: 1px solid #E0E7FF; border-radius: 10px; padding: 12px 14px; line-height: 1.5;">
-              <strong style="color: #431ED4;">48 Mall Tenants Active:</strong> Real-time POS telemetry stream connected.
+            <div class="settings-telemetry-box">
+              <strong>48 Mall Tenants Active:</strong> Real-time POS telemetry stream connected.
               Autonomous buffer triggers online.
             </div>
           </div>

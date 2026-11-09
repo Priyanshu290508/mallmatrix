@@ -1184,7 +1184,7 @@ window.MallApp = {
               <span style="color: #64748B;">${this.formatCurrency(p.price)}</span>
             </td>
             <td style="text-align: right;">
-              <strong style="color: var(--solar-primary, #5429FF);">${this.formatCurrency(subtotal)}</strong>
+              <strong style="color: var(--accent);">${this.formatCurrency(subtotal)}</strong>
             </td>
           </tr>
         `;
@@ -1194,11 +1194,11 @@ window.MallApp = {
         <div class="batch-modal-summary-grid">
           <div class="batch-modal-kpi">
             <span class="batch-modal-kpi-label">POs to Generate</span>
-            <div class="batch-modal-kpi-val" style="color: var(--solar-primary, #5429FF);">${lowStockItems.length} Orders</div>
+            <div class="batch-modal-kpi-val" style="color: var(--accent);">${lowStockItems.length} Orders</div>
           </div>
           <div class="batch-modal-kpi">
             <span class="batch-modal-kpi-label">Total Estimated Cost</span>
-            <div class="batch-modal-kpi-val" style="color: #059669;">${this.formatCurrency(totalEstCost)}</div>
+            <div class="batch-modal-kpi-val" style="color: var(--success);">${this.formatCurrency(totalEstCost)}</div>
           </div>
           <div class="batch-modal-kpi">
             <span class="batch-modal-kpi-label">Buffer Policy</span>
@@ -2132,7 +2132,7 @@ window.MallApp = {
         </div>
         <div class="po-reject-summary-row">
           <span style="color: #64748B;">Order Valuation:</span>
-          <strong style="color: var(--solar-primary, #5429FF);">${this.formatCurrency(po.value)}</strong>
+          <strong style="color: var(--accent);">${this.formatCurrency(po.value)}</strong>
         </div>
       `;
     }
@@ -2370,7 +2370,7 @@ window.MallApp = {
         </div>
         <div class="po-meta-box">
           <span class="po-meta-box-label">Expected Delivery</span>
-          <div class="po-meta-box-val" style="color: var(--solar-primary, #5429FF);">${this.escapeHTML(po.expectedDelivery || 'In 3 business days')}</div>
+          <div class="po-meta-box-val" style="color: var(--accent);">${this.escapeHTML(po.expectedDelivery || 'In 3 business days')}</div>
           <span class="po-meta-box-sub">SLA: ${this.escapeHTML(po.leadTime || '3 days lead time')}</span>
         </div>
       </div>
@@ -2427,7 +2427,7 @@ window.MallApp = {
             Close
           </button>
           ${downloadBtnHtml}
-          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.shipPO('${po.id}')" style="background: #7E22CE;">
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.shipPO('${po.id}')" style="background: var(--accent); color: var(--primary-btn-text);">
             Mark as Shipped
           </button>
         `;
@@ -2613,12 +2613,13 @@ window.MallApp = {
     const chartH = height - paddingTop - paddingBottom;
 
     const isDark = document.documentElement.classList.contains('dark');
-    const gridStroke = isDark ? '#313153' : '#E2E8F0';
-    const axisTextFill = isDark ? '#A1A1C3' : '#94A3B8';
-    const storeLabelFill = isDark ? '#E2E2F8' : '#334155';
-    const baseLineStroke = isDark ? '#313153' : '#CBD5E1';
-    const gradStart = isDark ? '#C5B5FF' : '#8F57FF';
-    const gradEnd = isDark ? '#A590FF' : '#5429FF';
+    const gridStroke = isDark ? '#26262F' : '#E2E8F0';
+    const axisTextFill = isDark ? '#A1A1B5' : '#94A3B8';
+    const storeLabelFill = isDark ? '#F4F4F8' : '#334155';
+    const baseLineStroke = isDark ? '#26262F' : '#CBD5E1';
+    const gradStart = '#8F57FF';
+    const gradEnd = '#5B3DF5';
+    const barFill = isDark ? '#6D4DF2' : 'url(#rechartsBarGrad)';
 
     // Grid lines
     const gridSteps = 4;
@@ -2646,7 +2647,7 @@ window.MallApp = {
       barsSvg += `
         <g class="recharts-bar-group" data-store="${this.escapeHTML(t.name)}" data-revenue="${this.formatCurrency(t.amount)}" data-unit="${this.escapeHTML(t.unit)}">
           <rect x="${paddingLeft + slotW * i}" y="${paddingTop}" width="${slotW}" height="${chartH}" fill="transparent" class="bar-slot-hover" />
-          <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="5" ry="5" fill="url(#rechartsBarGrad)" class="recharts-bar-rect" />
+          <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="4" ry="4" fill="${barFill}" class="recharts-bar-rect" />
           <text x="${x + barW / 2}" y="${height - 20}" text-anchor="middle" font-size="12" font-weight="700" fill="${storeLabelFill}">${this.escapeHTML(t.shortName)}</text>
           <text x="${x + barW / 2}" y="${height - 6}" text-anchor="middle" font-size="10" font-weight="600" fill="${axisTextFill}">${currencySymbol}${(t.amount / 1000).toFixed(1)}k</text>
         </g>
@@ -3877,13 +3878,13 @@ window.MallApp = {
     const checkINR = document.getElementById('currencyCheckINR');
 
     if (btnUSD && btnINR) {
-      btnUSD.style.borderColor = isINR ? '#CBD5E1' : '#5429FF';
-      btnUSD.style.background = isINR ? '#FFFFFF' : '#F5F3FF';
-      btnUSD.style.color = isINR ? '#475569' : '#5429FF';
+      btnUSD.style.borderColor = isINR ? 'var(--border)' : 'var(--accent)';
+      btnUSD.style.background = isINR ? 'var(--surface)' : 'var(--accent-soft)';
+      btnUSD.style.color = isINR ? 'var(--text-muted)' : 'var(--accent)';
 
-      btnINR.style.borderColor = isINR ? '#5429FF' : '#CBD5E1';
-      btnINR.style.background = isINR ? '#F5F3FF' : '#FFFFFF';
-      btnINR.style.color = isINR ? '#5429FF' : '#475569';
+      btnINR.style.borderColor = isINR ? 'var(--accent)' : 'var(--border)';
+      btnINR.style.background = isINR ? 'var(--accent-soft)' : 'var(--surface)';
+      btnINR.style.color = isINR ? 'var(--accent)' : 'var(--text-muted)';
     }
     if (checkUSD) checkUSD.style.display = isINR ? 'none' : 'inline';
     if (checkINR) checkINR.style.display = isINR ? 'inline' : 'none';
