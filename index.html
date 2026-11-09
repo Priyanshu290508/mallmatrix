@@ -156,8 +156,10 @@
         </button>
 
         <!-- Sidebar Collapse / Expand Toggle Button -->
-        <button type="button" class="sidebar-collapse-toggle-btn" id="sidebarCollapseBtn" onclick="MallApp.toggleSidebarCollapse()" title="Toggle Sidebar (icons only)">
-          <svg class="collapse-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <button type="button" class="sidebar-collapse-toggle-btn" id="sidebarCollapseBtn"
+          onclick="MallApp.toggleSidebarCollapse()" title="Toggle Sidebar (icons only)">
+          <svg class="collapse-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5">
             <polyline points="11 17 6 12 11 7"></polyline>
             <polyline points="18 17 13 12 18 7"></polyline>
           </svg>
@@ -195,7 +197,8 @@
         <div class="header-row-utility">
           <!-- Left: Hamburger button (<1024px) + Global Search input -->
           <div class="header-utility-left">
-            <button type="button" class="header-hamburger-btn mobile-toggle-btn" id="mobileMenuBtn" aria-label="Open Navigation" onclick="MallApp.toggleMobileSidebar()">
+            <button type="button" class="header-hamburger-btn mobile-toggle-btn" id="mobileMenuBtn"
+              aria-label="Open Navigation" onclick="MallApp.toggleMobileSidebar()">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -204,9 +207,12 @@
             </button>
 
             <!-- Global Search Input (max-w-md, w-full, rounded-lg, light gray background, search icon on left, "Ctrl K" badge on right, truncates and never wraps) -->
-            <button type="button" class="header-search-bar" id="headerGlobalSearchBtn" onclick="MallApp.openCommandPalette()" aria-label="Search SKUs, stores, POs (Press Ctrl K)" title="Global Search (Ctrl+K)">
+            <button type="button" class="header-search-bar" id="headerGlobalSearchBtn"
+              onclick="MallApp.openCommandPalette()" aria-label="Search SKUs, stores, POs (Press Ctrl K)"
+              title="Global Search (Ctrl+K)">
               <div class="header-search-inner">
-                <svg class="header-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="header-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
@@ -220,7 +226,8 @@
           <div class="header-utility-right">
             <!-- Date Chip: calendar icon + "9 Nov 2026" in short format, whitespace-nowrap, text-sm, subtle border, rounded-lg. Hide calendar icon under 640px -->
             <div class="header-date-chip" id="headerDateChip">
-              <svg class="header-date-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="header-date-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -230,8 +237,10 @@
             </div>
 
             <!-- Refresh Icon Button: 36px square, ghost style, tooltip "Refresh data", spinning icon while refreshing -->
-            <button type="button" class="header-ghost-btn header-refresh-btn" id="headerRefreshDataBtn" onclick="MallApp.simulateRefresh()" title="Refresh data" aria-label="Refresh data">
-              <svg class="header-refresh-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button type="button" class="header-ghost-btn header-refresh-btn" id="headerRefreshDataBtn"
+              onclick="MallApp.simulateRefresh()" title="Refresh data" aria-label="Refresh data">
+              <svg class="header-refresh-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
               </svg>
@@ -239,14 +248,17 @@
 
             <!-- Notification Bell Icon Button: 36px square, ghost style, small red count badge (16px circle) top-right, not covering icon -->
             <div class="notification-dropdown-wrap" id="notificationDropdownWrap">
-              <button type="button" class="header-ghost-btn header-notification-btn" id="headerNotificationBtn" onclick="MallApp.toggleNotificationDropdown(event)" aria-label="Notifications" aria-haspopup="menu" aria-expanded="false" title="Notifications">
+              <button type="button" class="header-ghost-btn header-notification-btn" id="headerNotificationBtn"
+                onclick="MallApp.toggleNotificationDropdown(event)" aria-label="Notifications" aria-haspopup="menu"
+                aria-expanded="false" title="Notifications">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
                 <span class="notification-badge" id="notificationBadge">4</span>
               </button>
-              <div class="notification-dropdown-menu" id="notificationDropdown" role="menu" aria-label="Notifications list" style="display: none;">
+              <div class="notification-dropdown-menu" id="notificationDropdown" role="menu"
+                aria-label="Notifications list" style="display: none;">
                 <!-- Rendered dynamically -->
               </div>
             </div>
@@ -256,27 +268,34 @@
 
             <!-- Profile Menu: circular 36px avatar + name "Alex Rivera" + role "Mall Operations Lead" below in small gray (hide under 768px) + chevron -->
             <div class="header-profile-wrap" id="headerProfileMenuWrap">
-              <button type="button" class="header-profile-btn" id="headerProfileBtn" onclick="MallApp.toggleProfileDropdown(event)" aria-label="User profile menu" aria-haspopup="menu" aria-expanded="false">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80" alt="Alex Rivera" class="header-avatar-img">
+              <button type="button" class="header-profile-btn" id="headerProfileBtn"
+                onclick="MallApp.toggleProfileDropdown(event)" aria-label="User profile menu" aria-haspopup="menu"
+                aria-expanded="false">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80"
+                  alt="Alex Rivera" class="header-avatar-img">
                 <div class="header-profile-info">
                   <span class="header-profile-name">Alex Rivera</span>
                   <span class="header-profile-role">Mall Operations Lead</span>
                 </div>
-                <svg class="header-chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="header-chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
 
               <!-- Profile Dropdown (My Profile, Inventory Settings, Dark mode toggle, Log out in red separated by divider) -->
-              <div class="profile-dropdown-menu" id="headerProfileDropdown" role="menu" aria-label="User profile options" style="display: none;">
-                <button type="button" class="profile-menu-item" role="menuitem" onclick="MallApp.showToast('Profile: Alex Rivera (Mall Operations Lead)', 'info'); MallApp.toggleProfileDropdown(false);">
+              <div class="profile-dropdown-menu" id="headerProfileDropdown" role="menu"
+                aria-label="User profile options" style="display: none;">
+                <button type="button" class="profile-menu-item" role="menuitem"
+                  onclick="MallApp.showToast('Profile: Alex Rivera (Mall Operations Lead)', 'info'); MallApp.toggleProfileDropdown(false);">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
                   <span>My Profile</span>
                 </button>
-                <button type="button" class="profile-menu-item" role="menuitem" onclick="MallApp.openSettingsModal(); MallApp.toggleProfileDropdown(false);">
+                <button type="button" class="profile-menu-item" role="menuitem"
+                  onclick="MallApp.openSettingsModal(); MallApp.toggleProfileDropdown(false);">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="4" y1="21" x2="4" y2="14"></line>
                     <line x1="4" y1="10" x2="4" y2="3"></line>
@@ -290,14 +309,16 @@
                   </svg>
                   <span>Inventory Settings</span>
                 </button>
-                <button type="button" class="profile-menu-item" role="menuitem" onclick="MallApp.toggleDarkMode(); MallApp.toggleProfileDropdown(false);">
+                <button type="button" class="profile-menu-item" role="menuitem"
+                  onclick="MallApp.toggleDarkMode(); MallApp.toggleProfileDropdown(false);">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                   </svg>
                   <span>Dark mode toggle</span>
                 </button>
                 <div class="profile-menu-divider"></div>
-                <button type="button" class="profile-menu-item profile-logout-item" role="menuitem" onclick="MallApp.showToast('Mall Operations Session Active', 'info'); MallApp.toggleProfileDropdown(false);">
+                <button type="button" class="profile-menu-item profile-logout-item" role="menuitem"
+                  onclick="MallApp.showToast('Mall Operations Session Active', 'info'); MallApp.toggleProfileDropdown(false);">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
@@ -315,7 +336,8 @@
           <div class="header-page-title-wrap">
             <!-- Top: Breadcrumb "MallMatrix › Overview › Dashboard" (text-xs, gray, current page in dark semibold, chevron separators with equal spacing) -->
             <nav class="page-breadcrumbs" id="pageBreadcrumbs" aria-label="Breadcrumb">
-              <span class="breadcrumb-item"><a href="/dashboard" class="breadcrumb-link" onclick="MallApp.navigateRoute('/dashboard', event)">MallMatrix</a></span>
+              <span class="breadcrumb-item"><a href="/dashboard" class="breadcrumb-link"
+                  onclick="MallApp.navigateRoute('/dashboard', event)">MallMatrix</a></span>
               <span class="breadcrumb-separator">›</span>
               <span class="breadcrumb-item breadcrumb-category" id="breadcrumbCategory">Overview</span>
               <span class="breadcrumb-separator">›</span>
@@ -327,21 +349,26 @@
 
             <!-- Subtitle: Status message (text-sm, text-slate-500) with clickable purple links -->
             <p class="header-page-subtitle" id="pageMainSubtitle">
-              <a href="/inventory" class="header-purple-link" onclick="MallApp.navigateRoute('/inventory', event)"><span id="subtitleCritCount">4</span> critical items</a> and 
-              <a href="/tenants" class="header-purple-link" onclick="MallApp.navigateRoute('/tenants', event)">2 overdue rents</a> need your attention.
+              <a href="/inventory" class="header-purple-link" onclick="MallApp.navigateRoute('/inventory', event)"><span
+                  id="subtitleCritCount">4</span> critical items</a> and
+              <a href="/tenants" class="header-purple-link" onclick="MallApp.navigateRoute('/tenants', event)">2 overdue
+                rents</a> need your attention.
             </p>
           </div>
 
-          <!-- Right side: Page action buttons vertically aligned to h1 (Export dropdown + "+ Create New Order") -->
+          <!-- Right side: Page action buttons vertically aligned to h1 (Export dropdown + Page Primary Action) -->
           <div class="header-page-actions" id="headerPageActions">
             <div id="headerExportBtnWrap"></div>
-            <button type="button" class="btn-header-primary-order" id="headerCreateOrderBtn" onclick="MallApp.openProductModal()" aria-label="Create New Order">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>+ Create New Order</span>
-            </button>
+            <div id="headerPrimaryActionWrap">
+              <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn"
+                onclick="MallApp.openProductModal()" aria-label="Create New Order">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Create New Order</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -788,20 +815,6 @@
       <!-- VIEW 2: MANAGE STOCKS (INVENTORY FEATURE) -->
       <!-- ======================================================= -->
       <div class="view-panel" id="view-inventory">
-        <div class="panel-section-head">
-          <div>
-            <h2 class="section-title">Mall Multi-Tenant Stock Management</h2>
-            <p class="section-desc">Manage store SKUs, buffer thresholds, and live stock levels across all mall
-              departments.</p>
-          </div>
-          <div class="panel-actions flex items-center gap-3">
-            <div id="exportBtnInventoryWrap"></div>
-            <button class="btn-create-order" onclick="MallApp.openProductModal()">
-              <span>+ Add SKU Product</span>
-            </button>
-          </div>
-        </div>
-
         <!-- BULK ACTION BAR -->
         <div class="inv-bulk-bar" id="invBulkBar" style="display: none;">
           <div class="inv-bulk-left">
@@ -905,24 +918,6 @@
       <!-- VIEW 3: REORDERING SYSTEM FEATURE -->
       <!-- ======================================================= -->
       <div class="view-panel" id="view-reorder">
-        <div class="panel-section-head">
-          <div>
-            <h2 class="section-title">Automated Reordering System</h2>
-            <p class="section-desc">Safety stock triggers, lead-time analytics, and automated supplier PO generation.
-            </p>
-          </div>
-          <!-- Top-Right Actions: Export Button + Batch Reorder -->
-          <div class="panel-actions flex items-center gap-3">
-            <div id="exportBtnReorderWrap"></div>
-            <button type="button" class="btn-primary-reorder" onclick="MallApp.openBatchReorderModal()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-              </svg>
-              <span>Batch Reorder All Low Stock</span>
-            </button>
-          </div>
-        </div>
-
         <!-- REORDER METRICS STRIP -->
         <div class="reorder-metrics-strip">
           <div class="reorder-stat-card">
@@ -992,34 +987,26 @@
       <!-- VIEW 4: MANAGE SALES FEATURE -->
       <!-- ======================================================= -->
       <div class="view-panel" id="view-sales">
-        <div class="panel-section-head">
-          <div>
-            <h2 class="section-title">Manage Sales & POS Analytics</h2>
-            <p class="section-desc">Consolidated mall sales reports, store terminal volume, turnover velocity, and live
-              POS telemetry for Top 6 Stores.</p>
-          </div>
-          <!-- Actions: Export Button + Date Range Selector -->
-          <div class="panel-actions flex items-center gap-3 flex-wrap">
-            <div id="exportBtnSalesWrap"></div>
-            <div class="sales-date-selector-wrap">
-              <div class="sales-date-btn-group" id="salesDateRangeGroup">
-                <button type="button" class="sales-date-btn active" data-range="today"
-                  onclick="MallApp.setSalesDateRange('today')">Today</button>
-                <button type="button" class="sales-date-btn" data-range="7d" onclick="MallApp.setSalesDateRange('7d')">7
-                  Days</button>
-                <button type="button" class="sales-date-btn" data-range="30d"
-                  onclick="MallApp.setSalesDateRange('30d')">30 Days</button>
-                <button type="button" class="sales-date-btn" data-range="custom"
-                  onclick="MallApp.setSalesDateRange('custom')">Custom</button>
-              </div>
-              <!-- Custom date pickers -->
-              <div class="sales-custom-date-box" id="salesCustomDateBox" style="display: none;">
-                <input type="date" id="salesDateStart" class="clean-date-input" value="2026-03-01">
-                <span>to</span>
-                <input type="date" id="salesDateEnd" class="clean-date-input" value="2026-03-24">
-                <button type="button" class="clean-btn" style="padding: 4px 10px; font-size: 0.76rem;"
-                  onclick="MallApp.applyCustomDateRange()">Apply</button>
-              </div>
+        <!-- DATE RANGE SELECTOR (Right-aligned above content) -->
+        <div class="sales-date-toolbar">
+          <div class="sales-date-selector-wrap">
+            <div class="sales-date-btn-group" id="salesDateRangeGroup">
+              <button type="button" class="sales-date-btn active" data-range="today"
+                onclick="MallApp.setSalesDateRange('today')">Today</button>
+              <button type="button" class="sales-date-btn" data-range="7d" onclick="MallApp.setSalesDateRange('7d')">7
+                Days</button>
+              <button type="button" class="sales-date-btn" data-range="30d"
+                onclick="MallApp.setSalesDateRange('30d')">30 Days</button>
+              <button type="button" class="sales-date-btn" data-range="custom"
+                onclick="MallApp.setSalesDateRange('custom')">Custom</button>
+            </div>
+            <!-- Custom date pickers -->
+            <div class="sales-custom-date-box" id="salesCustomDateBox" style="display: none;">
+              <input type="date" id="salesDateStart" class="clean-date-input" value="2026-03-01">
+              <span>to</span>
+              <input type="date" id="salesDateEnd" class="clean-date-input" value="2026-03-24">
+              <button type="button" class="clean-btn" style="padding: 4px 10px; font-size: 0.76rem;"
+                onclick="MallApp.applyCustomDateRange()">Apply</button>
             </div>
           </div>
         </div>
@@ -1103,20 +1090,6 @@
       <!-- VIEW 5: STAFF MANAGEMENT FEATURE -->
       <!-- ======================================================= -->
       <div class="view-panel" id="view-staff">
-        <div class="panel-section-head">
-          <div>
-            <h2 class="section-title">Mall Operations Staff & Shift Roster</h2>
-            <p class="section-desc">Floor inventory auditors, dock receiving supervisors, and tenant compliance teams.
-            </p>
-          </div>
-          <div class="panel-actions flex items-center gap-3">
-            <div id="exportBtnStaffWrap"></div>
-            <button class="btn-create-order" onclick="MallApp.showToast('Staff schedule dispatch active', 'info')">
-              <span>+ Schedule Staff</span>
-            </button>
-          </div>
-        </div>
-
         <div class="dash-card">
           <div class="table-responsive">
             <table class="clean-table">
@@ -1142,20 +1115,6 @@
       <!-- VIEW 6: TENANT STORES FEATURE -->
       <!-- ======================================================= -->
       <div class="view-panel" id="view-tenants">
-        <div class="panel-section-head">
-          <div>
-            <h2 class="section-title">Mall Tenant Stores Directory</h2>
-            <p class="section-desc">48 integrated retail tenants, POS sync health, and store manager contacts.</p>
-          </div>
-          <div class="panel-actions flex items-center gap-3">
-            <div id="exportBtnTenantsWrap"></div>
-            <button class="btn-create-order"
-              onclick="MallApp.showToast('Tenant onboarding wizard initialized', 'info')">
-              <span>+ Onboard Tenant</span>
-            </button>
-          </div>
-        </div>
-
         <div class="tenant-grid-layout" id="tenantCardsGrid">
           <!-- Rendered dynamically -->
         </div>
@@ -1334,14 +1293,9 @@
       <!-- ======================================================= -->
       <div class="view-panel" id="view-export">
         <div class="export-center-wrapper">
-          <!-- TOP HERO BANNER -->
+          <!-- TOP HERO ACTIONS BANNER -->
           <div class="export-hero-banner">
-            <div class="export-hero-left">
-              <h2>Data Export Center</h2>
-              <p>Generate comprehensive reports, exports, and data snapshots across all mall operations. All data is
-                processed securely and directly in your browser.</p>
-            </div>
-            <div class="export-hero-actions">
+            <div class="export-hero-actions" style="margin-left: auto; width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap;">
               <button type="button" class="btn-export-full-report" onclick="MallApp.exportFullReportPDF()">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -1490,14 +1444,16 @@
               <div class="field-error-text" id="prodMinBufferError"></div>
             </div>
             <div class="form-group">
-              <label for="prodPrice">Unit Price (<span class="currency-symbol">$</span>) <span style="color:#DC2626;">*</span></label>
+              <label for="prodPrice">Unit Price (<span class="currency-symbol">$</span>) <span
+                  style="color:#DC2626;">*</span></label>
               <input type="number" id="prodPrice" step="0.01" min="0.01" required placeholder="120.00">
               <div class="field-error-text" id="prodPriceError"></div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="clean-btn" id="cancelProductModalBtn">Cancel</button>
-            <button type="submit" class="btn-create-order" id="submitProductBtn" disabled style="opacity: 0.5; cursor: not-allowed;">Submit Order</button>
+            <button type="submit" class="btn-create-order" id="submitProductBtn" disabled
+              style="opacity: 0.5; cursor: not-allowed;">Submit Order</button>
           </div>
         </form>
       </div>
@@ -1793,14 +1749,17 @@
     </div>
 
     <!-- 5. GLOBAL COMMAND PALETTE (CTRL/CMD+K) -->
-    <div class="cmd-palette-backdrop" id="commandPaletteModal" onclick="if(event.target === this) MallApp.closeCommandPalette()">
+    <div class="cmd-palette-backdrop" id="commandPaletteModal"
+      onclick="if(event.target === this) MallApp.closeCommandPalette()">
       <div class="cmd-palette-card" onclick="event.stopPropagation()">
         <div class="cmd-palette-search-row">
-          <svg class="cmd-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <svg class="cmd-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="commandPaletteInput" class="cmd-palette-input" placeholder="Type a SKU, store, PO ID, staff, or command..." autocomplete="off">
+          <input type="text" id="commandPaletteInput" class="cmd-palette-input"
+            placeholder="Type a SKU, store, PO ID, staff, or command..." autocomplete="off">
           <kbd class="cmd-esc-badge" onclick="MallApp.closeCommandPalette()">ESC</kbd>
         </div>
         <div class="cmd-palette-body" id="commandPaletteResults">

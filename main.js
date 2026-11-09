@@ -390,12 +390,12 @@ window.MallApp = {
         };
         const subtitles = {
           inventory: 'Manage store SKUs, buffer thresholds, and live stock levels across all mall departments.',
-          reorder: 'Real-time procurement queue, automated threshold triggers, and supplier restock fulfillment.',
-          sales: 'Store turnover rankings, gross revenue metrics, and active POS transaction velocity.',
-          staff: 'Floor supervisors, security leads, and audit personnel on active shifts.',
-          tenants: 'Directory of 48 mall tenant retail stores, leasing contracts, and POS integrations.',
+          reorder: 'Safety stock triggers, lead-time analytics, and automated supplier PO replenishment.',
+          sales: 'Consolidated mall sales reports, turnover velocity, and live POS telemetry for Top 6 Stores.',
+          staff: 'Floor inventory auditors, dock receiving supervisors, and tenant compliance teams on active shifts.',
+          tenants: 'Directory of 48 integrated retail tenants, lease compliance, and live POS sync health.',
           copilot: 'Autonomous intelligence agent for stock prediction, sales analysis, and operations.',
-          export: 'Download and export cross-department operational reports in CSV, Excel, or PDF.'
+          export: 'Generate comprehensive reports, exports, and data snapshots across all mall operations directly in your browser.'
         };
         mainTitle.textContent = titles[viewName] || 'MallMatrix Operations';
         if (mainSubtitle) {
@@ -405,8 +405,8 @@ window.MallApp = {
       }
     }
 
-    // Render header export button for this view
-    this.renderHeaderExportButton(viewName);
+    // Render header actions for this view
+    this.renderHeaderActions(viewName);
 
     // Close mobile sidebar if open
     this.closeMobileSidebar();
@@ -3370,25 +3370,89 @@ window.MallApp = {
   },
 
   renderAllExportButtons() {
-    this.renderInventoryExportButton();
-    this.renderReorderExportButton();
-    this.renderSalesExportButton();
-    this.renderStaffExportButton();
-    this.renderTenantsExportButton();
-    this.renderHeaderExportButton(MallState.activeView);
+    this.renderHeaderActions(MallState.activeView);
   },
 
   renderHeaderExportButton(viewName = MallState.activeView) {
-    let config = null;
-    if (viewName === 'inventory') config = this.getInventoryExportConfig();
-    else if (viewName === 'reorder') config = this.getReorderExportConfig();
-    else if (viewName === 'sales') config = this.getSalesExportConfig();
-    else if (viewName === 'staff') config = this.getStaffExportConfig();
-    else if (viewName === 'tenants') config = this.getTenantsExportConfig();
-    else config = this.getInventoryExportConfig(); // default for dashboard / copilot / export
+    this.renderHeaderActions(viewName);
+  },
 
-    if (config) {
-      this.renderExportDropdown('headerExportBtnWrap', config);
+  renderHeaderActions(viewName = MallState.activeView) {
+    const exportWrap = document.getElementById('headerExportBtnWrap');
+    const primaryWrap = document.getElementById('headerPrimaryActionWrap');
+    if (!exportWrap || !primaryWrap) return;
+
+    // 1. Single Export Button in Header (None on Export Center or Copilot)
+    if (viewName === 'export' || viewName === 'copilot') {
+      exportWrap.innerHTML = '';
+    } else {
+      let config = null;
+      if (viewName === 'inventory') config = this.getInventoryExportConfig();
+      else if (viewName === 'reorder') config = this.getReorderExportConfig();
+      else if (viewName === 'sales') config = this.getSalesExportConfig();
+      else if (viewName === 'staff') config = this.getStaffExportConfig();
+      else if (viewName === 'tenants') config = this.getTenantsExportConfig();
+      else config = this.getInventoryExportConfig(); // default for dashboard
+
+      if (config) {
+        this.renderExportDropdown('headerExportBtnWrap', config);
+      }
+    }
+
+    // 2. Page-Specific Primary Action Button in Header (Single icon + no "+" character in label)
+    if (viewName === 'dashboard') {
+      primaryWrap.innerHTML = `
+        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.openProductModal()" aria-label="Create New Order">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Create New Order</span>
+        </button>
+      `;
+    } else if (viewName === 'inventory') {
+      primaryWrap.innerHTML = `
+        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.openProductModal()" aria-label="Add SKU Product">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Add SKU Product</span>
+        </button>
+      `;
+    } else if (viewName === 'reorder') {
+      primaryWrap.innerHTML = `
+        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.openBatchReorderModal()" aria-label="Batch Reorder All Low Stock">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-.57-8.38l5.67-5.67"></path>
+          </svg>
+          <span>Batch Reorder All Low Stock</span>
+        </button>
+      `;
+    } else if (viewName === 'staff') {
+      primaryWrap.innerHTML = `
+        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.showToast('Staff schedule dispatch active', 'info')" aria-label="Schedule Staff">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Schedule Staff</span>
+        </button>
+      `;
+    } else if (viewName === 'tenants') {
+      primaryWrap.innerHTML = `
+        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.showToast('Tenant onboarding wizard initialized', 'info')" aria-label="Onboard Tenant">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Onboard Tenant</span>
+        </button>
+      `;
+    } else {
+      // Manage Sales (Export only!), Export Center, Copilot: No primary action button
+      primaryWrap.innerHTML = '';
     }
   },
 

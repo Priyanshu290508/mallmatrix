@@ -858,7 +858,8 @@ body {
   flex-shrink: 0;
 }
 
-/* Primary purple "+ Create New Order" button */
+/* Primary purple action buttons in header */
+.btn-header-primary-action,
 .btn-header-primary-order {
   display: inline-flex;
   align-items: center;
@@ -876,15 +877,24 @@ body {
   white-space: nowrap;
 }
 
+.btn-header-primary-action:hover,
 .btn-header-primary-order:hover {
   background-color: var(--solar-dark, #3D1EB8);
   box-shadow: 0 4px 12px rgba(84, 41, 255, 0.35);
   transform: translateY(-1px);
 }
 
+.btn-header-primary-action:focus-visible,
 .btn-header-primary-order:focus-visible {
   outline: 2px solid var(--solar-primary, #5429FF);
   outline-offset: 2px;
+}
+
+/* Sales Date Range Toolbar (right-aligned in page body) */
+.sales-date-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 /* Responsive Rules for Small Widths (360px to 768px) */
