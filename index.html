@@ -15,6 +15,22 @@
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
+        }
+      } catch (e) { }
+    })();
+  </script>
 </head>
 
 <body>
@@ -263,6 +279,30 @@
               </div>
             </div>
 
+            <!-- Light/Dark Mode Toggle: 36px square icon button, rounded-lg, matching ghost style -->
+            <button type="button" class="header-ghost-btn header-theme-toggle-btn" id="headerThemeToggleBtn"
+              onclick="MallApp.toggleTheme()" title="Switch to dark mode" aria-label="Switch to dark mode"
+              aria-pressed="false">
+              <!-- Moon Icon (Light mode: click to switch to dark) -->
+              <svg class="theme-icon theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <!-- Sun Icon (Dark mode: click to switch to light) -->
+              <svg class="theme-icon theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            </button>
+
             <!-- Vertical Divider: h-6 w-px bg-slate-200 -->
             <div class="header-divider" aria-hidden="true"></div>
 
@@ -283,7 +323,7 @@
                 </svg>
               </button>
 
-              <!-- Profile Dropdown (My Profile, Inventory Settings, Dark mode toggle, Log out in red separated by divider) -->
+              <!-- Profile Dropdown (My Profile, Inventory Settings, Dark mode toggle with switch, Log out in red separated by divider) -->
               <div class="profile-dropdown-menu" id="headerProfileDropdown" role="menu"
                 aria-label="User profile options" style="display: none;">
                 <button type="button" class="profile-menu-item" role="menuitem"
@@ -309,12 +349,17 @@
                   </svg>
                   <span>Inventory Settings</span>
                 </button>
-                <button type="button" class="profile-menu-item" role="menuitem"
-                  onclick="MallApp.toggleDarkMode(); MallApp.toggleProfileDropdown(false);">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                  </svg>
-                  <span>Dark mode toggle</span>
+                <button type="button" class="profile-menu-item profile-theme-toggle-row" id="profileThemeToggleBtn"
+                  role="menuitem" onclick="MallApp.toggleTheme()" aria-label="Toggle dark mode" aria-checked="false">
+                  <div class="profile-theme-row-content">
+                    <svg class="profile-theme-row-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <span>Dark mode</span>
+                  </div>
+                  <div class="theme-mini-switch" id="profileThemeSwitch" aria-hidden="true">
+                    <span class="theme-mini-switch-thumb"></span>
+                  </div>
                 </button>
                 <div class="profile-menu-divider"></div>
                 <button type="button" class="profile-menu-item profile-logout-item" role="menuitem"
@@ -1295,7 +1340,8 @@
         <div class="export-center-wrapper">
           <!-- TOP HERO ACTIONS BANNER -->
           <div class="export-hero-banner">
-            <div class="export-hero-actions" style="margin-left: auto; width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap;">
+            <div class="export-hero-actions"
+              style="margin-left: auto; width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap;">
               <button type="button" class="btn-export-full-report" onclick="MallApp.exportFullReportPDF()">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>

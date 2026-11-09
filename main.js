@@ -88,6 +88,7 @@ window.MallApp = {
   _currentPODetail: null,
 
   init() {
+    this.initTheme();
     this.loadStateFromStorage();
     this.bindNavigation();
     this.bindModals();
@@ -119,7 +120,7 @@ window.MallApp = {
   loadStateFromStorage() {
     try {
       MallState.currency = localStorage.getItem('mallmatrix_currency') || 'USD';
-      
+
       // Restore sidebar collapsed preference
       const isCollapsed = localStorage.getItem('mallmatrix_sidebar_collapsed') === 'true';
       if (isCollapsed) {
@@ -4509,9 +4510,85 @@ window.MallApp = {
     }
   },
 
+  // ========================================================
+  // THEME MANAGEMENT (Light / Dark Mode)
+  // ========================================================
+  initTheme() {
+    let savedTheme = localStorage.getItem('theme');
+    if (!savedTheme) {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      savedTheme = prefersDark ? 'dark' : 'light';
+    }
+    this.setTheme(savedTheme, false);
+
+    // Sync with OS preference changes if user hasn't explicitly set a preference
+    if (window.matchMedia) {
+      try {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+          if (!localStorage.getItem('theme')) {
+            this.setTheme(e.matches ? 'dark' : 'light', false);
+          }
+        });
+      } catch (err) { }
+    }
+
+    // Keyboard support (Enter and Space) on header button
+    const headerBtn = document.getElementById('headerThemeToggleBtn');
+    if (headerBtn) {
+      headerBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.toggleTheme();
+        }
+      });
+    }
+  },
+
+  setTheme(theme, showToastNotification = true) {
+    const isDark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+    // Update Header button
+    const headerBtn = document.getElementById('headerThemeToggleBtn');
+    if (headerBtn) {
+      headerBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+      const tooltip = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+      headerBtn.setAttribute('title', tooltip);
+      headerBtn.setAttribute('aria-label', tooltip);
+    }
+
+    // Update Profile dropdown switch & row
+    const switchEl = document.getElementById('profileThemeSwitch');
+    if (switchEl) {
+      switchEl.classList.toggle('active', isDark);
+    }
+    const profileBtn = document.getElementById('profileThemeToggleBtn');
+    if (profileBtn) {
+      profileBtn.setAttribute('aria-checked', isDark ? 'true' : 'false');
+    }
+
+    // Re-render chart canvases if visible to adapt colors
+    if (typeof this.renderRevenueBarChart === 'function') {
+      try { this.renderRevenueBarChart(); } catch (e) { }
+    }
+    if (typeof this.drawHourlyWaveChart === 'function') {
+      try { this.drawHourlyWaveChart(); } catch (e) { }
+    }
+
+    if (showToastNotification) {
+      this.showToast(isDark ? 'Dark mode enabled' : 'Light mode enabled', 'info');
+    }
+  },
+
+  toggleTheme() {
+    const isDark = document.documentElement.classList.contains('dark');
+    this.setTheme(isDark ? 'light' : 'dark', true);
+  },
+
   toggleDarkMode() {
-    const isDark = document.body.classList.toggle('dark-theme');
-    this.showToast(isDark ? 'Dark theme preview enabled' : 'Light theme restored', 'info');
+    this.toggleTheme();
   },
 
   // ========================================================
