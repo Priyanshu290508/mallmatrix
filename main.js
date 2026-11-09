@@ -34,6 +34,7 @@ import {
   getLowStockCount,
   getPendingPOCount,
   formatOrdinalDate,
+  formatShortDate,
   formatCurrency
 } from './src/data/mallData.js';
 
@@ -96,6 +97,7 @@ window.MallApp = {
     this.updateNotificationBadge();
     this.renderAll();
     this.checkRoute();
+    this.bindProfileDropdown();
 
     window.addEventListener('popstate', (e) => {
       const view = e.state?.view || 'dashboard';
@@ -363,7 +365,7 @@ window.MallApp = {
     const liveDateEl = document.getElementById('headerLiveDate');
 
     if (liveDateEl) {
-      liveDateEl.textContent = formatOrdinalDate(new Date());
+      liveDateEl.textContent = formatShortDate(new Date());
     }
 
     if (mainTitle) {
@@ -374,11 +376,11 @@ window.MallApp = {
         if (mainSubtitle) {
           const critCount = getCriticalStockCount(MallState.products);
           mainSubtitle.style.display = 'block';
-          mainSubtitle.textContent = `${critCount} critical items and 2 overdue rents need your attention.`;
+          mainSubtitle.innerHTML = `<a href="/inventory" class="header-purple-link" onclick="MallApp.navigateRoute('/inventory', event)"><span id="subtitleCritCount">${critCount}</span> critical items</a> and <a href="/tenants" class="header-purple-link" onclick="MallApp.navigateRoute('/tenants', event)">2 overdue rents</a> need your attention.`;
         }
       } else {
         const titles = {
-          inventory: 'Mall Inventory & Stock Management',
+          inventory: 'Mall Multi-Tenant Stock Management',
           reorder: 'Automated Reordering System',
           sales: 'Manage Sales & POS Analytics',
           staff: 'Staff & Shift Duty Roster',
@@ -386,12 +388,25 @@ window.MallApp = {
           copilot: 'MallMatrix AI Copilot Assistant',
           export: 'Data Export Center'
         };
+        const subtitles = {
+          inventory: 'Manage store SKUs, buffer thresholds, and live stock levels across all mall departments.',
+          reorder: 'Real-time procurement queue, automated threshold triggers, and supplier restock fulfillment.',
+          sales: 'Store turnover rankings, gross revenue metrics, and active POS transaction velocity.',
+          staff: 'Floor supervisors, security leads, and audit personnel on active shifts.',
+          tenants: 'Directory of 48 mall tenant retail stores, leasing contracts, and POS integrations.',
+          copilot: 'Autonomous intelligence agent for stock prediction, sales analysis, and operations.',
+          export: 'Download and export cross-department operational reports in CSV, Excel, or PDF.'
+        };
         mainTitle.textContent = titles[viewName] || 'MallMatrix Operations';
         if (mainSubtitle) {
-          mainSubtitle.style.display = 'none';
+          mainSubtitle.style.display = 'block';
+          mainSubtitle.textContent = subtitles[viewName] || 'Centralized operational command & intelligence';
         }
       }
     }
+
+    // Render header export button for this view
+    this.renderHeaderExportButton(viewName);
 
     // Close mobile sidebar if open
     this.closeMobileSidebar();
@@ -1330,7 +1345,7 @@ window.MallApp = {
     // 1. Live dynamic date
     const liveDateEl = document.getElementById('headerLiveDate');
     if (liveDateEl) {
-      liveDateEl.textContent = formatOrdinalDate(new Date());
+      liveDateEl.textContent = formatShortDate(new Date());
     }
 
     // 2. Dynamic greeting & status subtitle
@@ -1343,7 +1358,7 @@ window.MallApp = {
       if (mainSubtitle) {
         const critCount = getCriticalStockCount(MallState.products);
         mainSubtitle.style.display = 'block';
-        mainSubtitle.textContent = `${critCount} critical items and 2 overdue rents need your attention.`;
+        mainSubtitle.innerHTML = `<a href="/inventory" class="header-purple-link" onclick="MallApp.navigateRoute('/inventory', event)"><span id="subtitleCritCount">${critCount}</span> critical items</a> and <a href="/tenants" class="header-purple-link" onclick="MallApp.navigateRoute('/tenants', event)">2 overdue rents</a> need your attention.`;
       }
     }
 
@@ -3360,6 +3375,21 @@ window.MallApp = {
     this.renderSalesExportButton();
     this.renderStaffExportButton();
     this.renderTenantsExportButton();
+    this.renderHeaderExportButton(MallState.activeView);
+  },
+
+  renderHeaderExportButton(viewName = MallState.activeView) {
+    let config = null;
+    if (viewName === 'inventory') config = this.getInventoryExportConfig();
+    else if (viewName === 'reorder') config = this.getReorderExportConfig();
+    else if (viewName === 'sales') config = this.getSalesExportConfig();
+    else if (viewName === 'staff') config = this.getStaffExportConfig();
+    else if (viewName === 'tenants') config = this.getTenantsExportConfig();
+    else config = this.getInventoryExportConfig(); // default for dashboard / copilot / export
+
+    if (config) {
+      this.renderExportDropdown('headerExportBtnWrap', config);
+    }
   },
 
   renderInventoryExportButton() {
@@ -4339,6 +4369,85 @@ window.MallApp = {
     this.updateNotificationBadge();
     this.renderNotificationDropdown();
     this.showToast('All notifications marked as read', 'info');
+  },
+
+  bindProfileDropdown() {
+    const profileDropdown = document.getElementById('headerProfileDropdown');
+    if (profileDropdown) {
+      profileDropdown.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          this.toggleProfileDropdown(false);
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const items = Array.from(profileDropdown.querySelectorAll('.profile-menu-item'));
+          const idx = items.indexOf(document.activeElement);
+          if (e.key === 'ArrowDown') {
+            const next = (idx + 1) % items.length;
+            items[next].focus();
+          } else {
+            const prev = (idx - 1 + items.length) % items.length;
+            items[prev].focus();
+          }
+        }
+      });
+    }
+
+    // Scroll listener for sticky header subtle shadow
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('.dashboard-header');
+      if (header) {
+        header.classList.toggle('is-scrolled', window.scrollY > 10);
+      }
+    }, { passive: true });
+
+    // Global escape key listener
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.toggleProfileDropdown(false);
+        const notif = document.getElementById('notificationDropdown');
+        if (notif) notif.style.display = 'none';
+      }
+    });
+  },
+
+  toggleProfileDropdown(eOrForce) {
+    if (eOrForce && typeof eOrForce.stopPropagation === 'function') {
+      eOrForce.stopPropagation();
+    }
+    const wrap = document.getElementById('headerProfileMenuWrap');
+    const dropdown = document.getElementById('headerProfileDropdown');
+    const btn = document.getElementById('headerProfileBtn');
+    if (!dropdown || !btn) return;
+
+    const isCurrentlyOpen = dropdown.style.display === 'block';
+    const willOpen = typeof eOrForce === 'boolean' ? eOrForce : !isCurrentlyOpen;
+
+    if (willOpen) {
+      dropdown.style.display = 'block';
+      if (wrap) wrap.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+
+      // Close notification dropdown if open
+      const notifMenu = document.getElementById('notificationDropdown');
+      if (notifMenu) notifMenu.style.display = 'none';
+
+      const outsideHandler = (evt) => {
+        if (!dropdown.contains(evt.target) && !btn.contains(evt.target)) {
+          this.toggleProfileDropdown(false);
+          document.removeEventListener('click', outsideHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', outsideHandler), 10);
+    } else {
+      dropdown.style.display = 'none';
+      if (wrap) wrap.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  },
+
+  toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark-theme');
+    this.showToast(isDark ? 'Dark theme preview enabled' : 'Light theme restored', 'info');
   },
 
   // ========================================================

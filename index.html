@@ -189,94 +189,160 @@
 
     <!-- ==================== MAIN CONTENT AREA ==================== -->
     <main class="main-content">
-      <!-- TOP HEADER (Clean White with Date & Log out) -->
-      <header class="dashboard-header">
-        <div class="header-left">
-          <button class="mobile-toggle-btn" id="mobileMenuBtn" aria-label="Open Navigation">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <div class="welcome-title-wrap">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <h1 class="welcome-title" id="pageMainTitle">Good morning, Alex</h1>
-              <button class="icon-edit-btn title-edit-btn" title="Edit View Title" aria-label="Edit title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      <!-- ==================== TOP REDESIGNED TWO-ROW HEADER ==================== -->
+      <header class="dashboard-header" id="mainAppHeader">
+        <!-- ROW 1: UTILITY BAR (height 64px, white background, bottom border border-slate-200, px-6, flex items-center justify-between) -->
+        <div class="header-row-utility">
+          <!-- Left: Hamburger button (<1024px) + Global Search input -->
+          <div class="header-utility-left">
+            <button type="button" class="header-hamburger-btn mobile-toggle-btn" id="mobileMenuBtn" aria-label="Open Navigation" onclick="MallApp.toggleMobileSidebar()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+
+            <!-- Global Search Input (max-w-md, w-full, rounded-lg, light gray background, search icon on left, "Ctrl K" badge on right, truncates and never wraps) -->
+            <button type="button" class="header-search-bar" id="headerGlobalSearchBtn" onclick="MallApp.openCommandPalette()" aria-label="Search SKUs, stores, POs (Press Ctrl K)" title="Global Search (Ctrl+K)">
+              <div class="header-search-inner">
+                <svg class="header-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span class="header-search-placeholder">Search SKUs, stores, POs...</span>
+              </div>
+              <kbd class="header-search-badge">Ctrl K</kbd>
+            </button>
+          </div>
+
+          <!-- Right: Date chip, Refresh button, Notification bell, Vertical divider, Profile menu (flex items-center gap-3) -->
+          <div class="header-utility-right">
+            <!-- Date Chip: calendar icon + "9 Nov 2026" in short format, whitespace-nowrap, text-sm, subtle border, rounded-lg. Hide calendar icon under 640px -->
+            <div class="header-date-chip" id="headerDateChip">
+              <svg class="header-date-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span id="headerLiveDate">9 Nov 2026</span>
+            </div>
+
+            <!-- Refresh Icon Button: 36px square, ghost style, tooltip "Refresh data", spinning icon while refreshing -->
+            <button type="button" class="header-ghost-btn header-refresh-btn" id="headerRefreshDataBtn" onclick="MallApp.simulateRefresh()" title="Refresh data" aria-label="Refresh data">
+              <svg class="header-refresh-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+            </button>
+
+            <!-- Notification Bell Icon Button: 36px square, ghost style, small red count badge (16px circle) top-right, not covering icon -->
+            <div class="notification-dropdown-wrap" id="notificationDropdownWrap">
+              <button type="button" class="header-ghost-btn header-notification-btn" id="headerNotificationBtn" onclick="MallApp.toggleNotificationDropdown(event)" aria-label="Notifications" aria-haspopup="menu" aria-expanded="false" title="Notifications">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span class="notification-badge" id="notificationBadge">4</span>
+              </button>
+              <div class="notification-dropdown-menu" id="notificationDropdown" role="menu" aria-label="Notifications list" style="display: none;">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+            <!-- Vertical Divider: h-6 w-px bg-slate-200 -->
+            <div class="header-divider" aria-hidden="true"></div>
+
+            <!-- Profile Menu: circular 36px avatar + name "Alex Rivera" + role "Mall Operations Lead" below in small gray (hide under 768px) + chevron -->
+            <div class="header-profile-wrap" id="headerProfileMenuWrap">
+              <button type="button" class="header-profile-btn" id="headerProfileBtn" onclick="MallApp.toggleProfileDropdown(event)" aria-label="User profile menu" aria-haspopup="menu" aria-expanded="false">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80" alt="Alex Rivera" class="header-avatar-img">
+                <div class="header-profile-info">
+                  <span class="header-profile-name">Alex Rivera</span>
+                  <span class="header-profile-role">Mall Operations Lead</span>
+                </div>
+                <svg class="header-chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
+
+              <!-- Profile Dropdown (My Profile, Inventory Settings, Dark mode toggle, Log out in red separated by divider) -->
+              <div class="profile-dropdown-menu" id="headerProfileDropdown" role="menu" aria-label="User profile options" style="display: none;">
+                <button type="button" class="profile-menu-item" role="menuitem" onclick="MallApp.showToast('Profile: Alex Rivera (Mall Operations Lead)', 'info'); MallApp.toggleProfileDropdown(false);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <span>My Profile</span>
+                </button>
+                <button type="button" class="profile-menu-item" role="menuitem" onclick="MallApp.openSettingsModal(); MallApp.toggleProfileDropdown(false);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
+                  <span>Inventory Settings</span>
+                </button>
+                <button type="button" class="profile-menu-item" role="menuitem" onclick="MallApp.toggleDarkMode(); MallApp.toggleProfileDropdown(false);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                  </svg>
+                  <span>Dark mode toggle</span>
+                </button>
+                <div class="profile-menu-divider"></div>
+                <button type="button" class="profile-menu-item profile-logout-item" role="menuitem" onclick="MallApp.showToast('Mall Operations Session Active', 'info'); MallApp.toggleProfileDropdown(false);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  <span>Log out</span>
+                </button>
+              </div>
             </div>
-            <!-- Breadcrumbs under Page Title -->
+          </div>
+        </div>
+
+        <!-- ROW 2: PAGE HEADER (transparent background, px-6, py-5) -->
+        <div class="header-row-page">
+          <div class="header-page-title-wrap">
+            <!-- Top: Breadcrumb "MallMatrix › Overview › Dashboard" (text-xs, gray, current page in dark semibold, chevron separators with equal spacing) -->
             <nav class="page-breadcrumbs" id="pageBreadcrumbs" aria-label="Breadcrumb">
-              <span class="breadcrumb-item"><a href="/dashboard" onclick="MallApp.navigateRoute('/dashboard', event)">MallMatrix</a></span>
+              <span class="breadcrumb-item"><a href="/dashboard" class="breadcrumb-link" onclick="MallApp.navigateRoute('/dashboard', event)">MallMatrix</a></span>
               <span class="breadcrumb-separator">›</span>
               <span class="breadcrumb-item breadcrumb-category" id="breadcrumbCategory">Overview</span>
               <span class="breadcrumb-separator">›</span>
               <span class="breadcrumb-item breadcrumb-current" id="breadcrumbCurrent">Dashboard</span>
             </nav>
-            <p id="pageMainSubtitle" class="page-main-subtitle"
-              style="font-size: 0.82rem; color: #64748B; margin: 4px 0 0 0; font-weight: 500;">4 critical items and 2
-              overdue rents need your attention.</p>
+
+            <!-- Title: Dynamic greeting "Good evening, Alex" as h1 (text-2xl, font-bold, text-slate-900, whitespace-nowrap on desktop) -->
+            <h1 class="header-page-h1" id="pageMainTitle">Good evening, Alex</h1>
+
+            <!-- Subtitle: Status message (text-sm, text-slate-500) with clickable purple links -->
+            <p class="header-page-subtitle" id="pageMainSubtitle">
+              <a href="/inventory" class="header-purple-link" onclick="MallApp.navigateRoute('/inventory', event)"><span id="subtitleCritCount">4</span> critical items</a> and 
+              <a href="/tenants" class="header-purple-link" onclick="MallApp.navigateRoute('/tenants', event)">2 overdue rents</a> need your attention.
+            </p>
           </div>
-        </div>
 
-        <div class="header-right">
-          <!-- Global Search Trigger (Ctrl/Cmd+K) -->
-          <button type="button" class="header-search-trigger" id="headerGlobalSearchBtn" onclick="MallApp.openCommandPalette()" title="Global Search (Ctrl+K)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <span class="search-placeholder-text">Search SKUs, stores, POs...</span>
-            <kbd class="search-shortcut-badge">⌘K</kbd>
-          </button>
-
-          <!-- Refresh Telemetry Button (600ms Skeleton Simulation) -->
-          <button type="button" class="header-action-icon-btn" id="headerRefreshDataBtn" onclick="MallApp.simulateRefresh()" title="Sync Telemetry (Simulate 600ms load)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <polyline points="23 4 23 10 17 10"></polyline>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-            </svg>
-          </button>
-
-          <!-- Notification Bell with Red Badge & Dropdown -->
-          <div class="notification-dropdown-wrap" id="notificationDropdownWrap">
-            <button type="button" class="header-notification-btn" id="headerNotificationBtn" onclick="MallApp.toggleNotificationDropdown(event)" aria-label="Notifications" aria-haspopup="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          <!-- Right side: Page action buttons vertically aligned to h1 (Export dropdown + "+ Create New Order") -->
+          <div class="header-page-actions" id="headerPageActions">
+            <div id="headerExportBtnWrap"></div>
+            <button type="button" class="btn-header-primary-order" id="headerCreateOrderBtn" onclick="MallApp.openProductModal()" aria-label="Create New Order">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span class="notification-badge" id="notificationBadge">4</span>
+              <span>+ Create New Order</span>
             </button>
-            <div class="notification-dropdown-menu" id="notificationDropdown" role="menu" aria-label="Notifications list" style="display: none;">
-              <!-- Rendered dynamically -->
-            </div>
           </div>
-
-          <!-- Calendar Date Pill -->
-          <div class="header-date-pill">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span id="headerLiveDate">5th November 2026</span>
-          </div>
-
-          <!-- Log out Button -->
-          <button class="header-logout-btn" id="headerLogoutBtn"
-            onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            <span>Log out</span>
-          </button>
         </div>
       </header>
 

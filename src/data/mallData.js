@@ -372,6 +372,16 @@ export function getPendingPOCount(orders = initialPurchaseOrders) {
   return orders.filter(p => p.status === 'Pending').length;
 }
 
+// Short date formatter: "9 Nov 2026"
+export function formatShortDate(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const day = d.getDate();
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
 // Ordinal date formatter: "5th November 2026"
 export function formatOrdinalDate(date = new Date()) {
   const day = date.getDate();
