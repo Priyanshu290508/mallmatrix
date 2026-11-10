@@ -14,7 +14,11 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cabin:wght@500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/landing.css">
   <script>
     (function () {
       try {
@@ -34,14 +38,201 @@
 </head>
 
 <body>
-  <div class="app-layout">
+  <!-- ========================================================
+       1. LANDING PAGE VIEW (Rendered at "/")
+       ======================================================== -->
+  <div class="lp-root" id="view-landing" style="display: none;">
+    <!-- HERO SECTION (Full-Screen, Uncut Background Video) -->
+    <section class="lp-hero" aria-label="Hero Section">
+      <!-- Uncut, Opaque Background Video -->
+      <video class="lp-video-bg" autoplay loop muted playsinline aria-hidden="true">
+        <source
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260210_031346_d87182fb-b0af-4273-84d1-c6fd17d6bf0f.mp4"
+          type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+
+      <!-- Top Overlay Navbar -->
+      <header class="lp-navbar">
+        <!-- White Inline SVG Logo Wordmark -->
+        <a href="#top" class="lp-logo" aria-label="MallMatrix Home">
+          <svg class="lp-logo-icon" width="28" height="28" viewBox="0 0 28 28" fill="none"
+            xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="2" y="2" width="10" height="10" rx="3" fill="#FFFFFF" />
+            <rect x="16" y="2" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8" />
+            <rect x="2" y="16" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8" />
+            <rect x="16" y="16" width="10" height="10" rx="3" fill="#7B39FC" />
+          </svg>
+          <span class="lp-logo-text">MallMatrix</span>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="lp-desktop-nav" aria-label="Main Navigation">
+          <ul class="lp-nav-links">
+            <li><a href="#top" class="lp-nav-link">Home</a></li>
+            <li>
+              <a href="#features" class="lp-nav-link lp-nav-link-dropdown">
+                <span>Features</span>
+                <svg class="lp-chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </a>
+            </li>
+            <li><a href="/dashboard" class="lp-nav-link" onclick="MallApp.navigateRoute('/dashboard', event)">Dashboard</a></li>
+            <li><a href="#contact" class="lp-nav-link">Contact us</a></li>
+          </ul>
+        </nav>
+
+        <!-- Desktop Action Buttons -->
+        <div class="lp-nav-actions">
+          <a href="/dashboard" class="lp-btn-signin" onclick="MallApp.navigateRoute('/dashboard', event)">Sign In</a>
+          <a href="/dashboard" class="lp-btn-getstarted" onclick="MallApp.navigateRoute('/dashboard', event)">Get Started</a>
+        </div>
+
+        <!-- Mobile Hamburger Button -->
+        <button class="lp-hamburger-btn" id="lpHamburgerBtn" aria-label="Open navigation menu" aria-expanded="false"
+          aria-controls="lpMobileMenu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <!-- Mobile Full-Screen Overlay Menu -->
+      <div class="lp-mobile-menu" id="lpMobileMenu" role="dialog" aria-modal="true" aria-label="Mobile Navigation Menu"
+        hidden>
+        <div class="lp-mobile-menu-inner">
+          <div class="lp-mobile-menu-header">
+            <a href="#top" class="lp-logo lp-mobile-logo" aria-label="MallMatrix Home">
+              <svg class="lp-logo-icon" width="26" height="26" viewBox="0 0 28 28" fill="none"
+                xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="2" y="2" width="10" height="10" rx="3" fill="#FFFFFF" />
+                <rect x="16" y="2" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8" />
+                <rect x="2" y="16" width="10" height="10" rx="3" fill="#FFFFFF" fill-opacity="0.8" />
+                <rect x="16" y="16" width="10" height="10" rx="3" fill="#7B39FC" />
+              </svg>
+              <span class="lp-logo-text">MallMatrix</span>
+            </a>
+            <button class="lp-close-btn" id="lpCloseBtn" aria-label="Close navigation menu">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <nav class="lp-mobile-nav" aria-label="Mobile Links">
+            <ul class="lp-mobile-links">
+              <li><a href="#top" class="lp-mobile-link">Home</a></li>
+              <li><a href="#features" class="lp-mobile-link">Features</a></li>
+              <li><a href="/dashboard" class="lp-mobile-link" onclick="MallApp.navigateRoute('/dashboard', event)">Dashboard</a></li>
+              <li><a href="#contact" class="lp-mobile-link">Contact us</a></li>
+            </ul>
+          </nav>
+
+          <div class="lp-mobile-actions">
+            <a href="/dashboard" class="lp-btn-signin lp-mobile-btn" onclick="MallApp.navigateRoute('/dashboard', event)">Sign In</a>
+            <a href="/dashboard" class="lp-btn-getstarted lp-mobile-btn" onclick="MallApp.navigateRoute('/dashboard', event)">Get Started</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Centered Hero Main Content -->
+      <main class="lp-hero-content">
+        <!-- Headline with Italic "and" -->
+        <h1 class="lp-headline">
+          Orchestrate your mall's inventory instantly <span class="lp-headline-italic">and</span> effortlessly
+        </h1>
+
+        <!-- Subtext -->
+        <p class="lp-subtext">
+          Real-time POS telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs
+          before they happen and run your whole mall from one dashboard.
+        </p>
+
+        <!-- CTA Row -->
+        <div class="lp-cta-row">
+          <button type="button" class="lp-btn-demo" id="lpBookDemoBtn">Book a Free Demo</button>
+          <a href="/dashboard" class="lp-btn-start" onclick="MallApp.navigateRoute('/dashboard', event)">Get Started Now</a>
+        </div>
+      </main>
+    </section>
+
+    <!-- Interactive Demo Modal for "Book a Free Demo" -->
+    <div class="lp-modal-backdrop" id="lpDemoModal" role="dialog" aria-modal="true" aria-labelledby="lpDemoModalTitle"
+      hidden>
+      <div class="lp-modal-card">
+        <div class="lp-modal-head">
+          <h2 id="lpDemoModalTitle" class="lp-modal-title">Book a Free MallMatrix Demo</h2>
+          <button type="button" class="lp-modal-close" id="lpDemoModalClose" aria-label="Close demo booking modal">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <p class="lp-modal-desc">See how MallMatrix manages 48+ retail stores with automated reordering and live AI
+          Copilot telemetry.</p>
+        <form class="lp-modal-form" id="lpDemoForm">
+          <div class="lp-form-field">
+            <label for="lpDemoName" class="lp-form-label">Full Name</label>
+            <input type="text" id="lpDemoName" class="lp-form-input" placeholder="e.g. Alex Rivera" required>
+          </div>
+          <div class="lp-form-field">
+            <label for="lpDemoEmail" class="lp-form-label">Work Email</label>
+            <input type="email" id="lpDemoEmail" class="lp-form-input" placeholder="e.g. alex@grandmall.com" required>
+          </div>
+          <div class="lp-form-field">
+            <label for="lpDemoMall" class="lp-form-label">Mall / Property Name</label>
+            <input type="text" id="lpDemoMall" class="lp-form-input" placeholder="e.g. Grand Horizon Mall" required>
+          </div>
+          <button type="submit" class="lp-btn-demo lp-modal-submit">Confirm Demo Request</button>
+        </form>
+        <div class="lp-modal-success" id="lpDemoSuccess" hidden>
+          <svg class="lp-success-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#7B39FC"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <h3>Demo Request Confirmed!</h3>
+          <p>Our mall operations team will connect with you within 2 hours. You can also explore the live dashboard
+            directly.</p>
+          <a href="/dashboard" class="lp-btn-start" style="display:inline-block; margin-top:14px;" onclick="MallApp.navigateRoute('/dashboard', event)">Open Live
+            Dashboard</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating AI Copilot Button (bottom-right, links to dashboard AI Copilot view) -->
+    <a href="/copilot" class="lp-floating-copilot" title="Open MallMatrix AI Copilot" aria-label="Open AI Copilot" onclick="MallApp.navigateRoute('/copilot', event)">
+      <span class="lp-copilot-glow-ring"></span>
+      <span class="lp-copilot-sparkle-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/>
+          <path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/>
+        </svg>
+      </span>
+      <span class="lp-copilot-floating-text">AI Copilot</span>
+    </a>
+  </div>
+
+  <!-- ========================================================
+       2. MAIN APP LAYOUT (Rendered at "/dashboard", "/inventory", etc.)
+       ======================================================== -->
+  <div class="app-layout" id="appLayout">
     <!-- MOBILE OVERLAY BACKDROP -->
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <!-- ==================== SIDEBAR ==================== -->
     <aside class="sidebar" id="sidebar">
       <!-- SIDEBAR BRAND HEADER (Only Logo and Name) -->
-      <a href="./landing.html" class="sidebar-brand-header" title="Go to MallMatrix Landing Page">
+      <a href="/" class="sidebar-brand-header" title="Go to MallMatrix Landing Page" onclick="MallApp.navigateRoute('/', event)">
         <div class="brand-logo-wrap">
           <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="brand-logo-img">
         </div>
@@ -978,7 +1169,7 @@
           </div>
           <div class="reorder-stat-card">
             <span class="reorder-stat-label">Pending PO Valuation</span>
-            <div class="reorder-stat-val" id="reorderPendingVal">$30,350.00</div>
+            <div class="reorder-stat-val" id="reorderPendingVal"></div>
             <span class="reorder-stat-sub" style="color: #059669;">Ready for B2B supplier dispatch</span>
           </div>
           <div class="reorder-stat-card">
@@ -1165,8 +1356,96 @@
       <!-- ======================================================= -->
       <!-- VIEW 6: TENANT STORES FEATURE -->
       <!-- ======================================================= -->
-      <div class="view-panel" id="view-tenants">
-        <div class="tenant-grid-layout" id="tenantCardsGrid">
+      <div class="view-panel" id="view-tenants" style="padding-bottom: 96px;">
+        <!-- SUMMARY STRIP (4 COMPACT STAT CARDS) -->
+        <div class="tenant-summary-strip" id="tenantSummaryStrip">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- TOOLBAR (Search, Floor, Category, Status, Sort, Count & Clear link, Grid/List toggle) -->
+        <div class="tenant-toolbar" id="tenantToolbar">
+          <div class="tenant-toolbar-left">
+            <div class="tenant-search-wrap">
+              <svg class="tenant-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="tenantSearchInput" class="tenant-search-input"
+                placeholder="Search store, floor or manager..." autocomplete="off">
+            </div>
+            <div class="tenant-filters-group">
+              <select id="tenantFloorFilter" class="tenant-select-filter" aria-label="Filter by floor">
+                <option value="all">All floors</option>
+                <option value="Ground">Ground</option>
+                <option value="Floor 1">Floor 1</option>
+                <option value="Floor 2">Floor 2</option>
+              </select>
+              <select id="tenantCategoryFilter" class="tenant-select-filter" aria-label="Filter by category">
+                <option value="all">All categories</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Footwear">Footwear</option>
+                <option value="Cosmetics">Cosmetics</option>
+                <option value="Dining">Dining</option>
+              </select>
+              <select id="tenantStatusFilter" class="tenant-select-filter" aria-label="Filter by status">
+                <option value="all">All statuses</option>
+                <option value="Active">Active</option>
+                <option value="Offline">Offline</option>
+                <option value="Lease Expiring">Lease expiring</option>
+              </select>
+              <select id="tenantSortFilter" class="tenant-select-filter" aria-label="Sort stores">
+                <option value="name-asc">Name A-Z</option>
+                <option value="sales-desc">Sales high-low</option>
+                <option value="stock-desc">Stock high-low</option>
+                <option value="lease-asc">Lease ending soonest</option>
+              </select>
+            </div>
+          </div>
+          <div class="tenant-toolbar-right">
+            <div class="tenant-filter-count-row">
+              <span class="tenant-showing-text" id="tenantShowingCount">Showing 48 of 48 stores</span>
+              <button type="button" id="tenantClearFiltersBtn" class="tenant-clear-filters-link" style="display: none;"
+                onclick="MallApp.clearTenantFilters()">Clear filters</button>
+            </div>
+            <div class="tenant-view-toggle" role="group" aria-label="View toggle">
+              <button type="button" id="tenantViewGridBtn" class="tenant-view-btn active" title="Grid View"
+                aria-label="Grid View" onclick="MallApp.setTenantViewMode('grid')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+              <button type="button" id="tenantViewListBtn" class="tenant-view-btn" title="List View"
+                aria-label="List View" onclick="MallApp.setTenantViewMode('list')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN CONTENT AREA: GRID VIEW OR LIST VIEW -->
+        <div id="tenantMainContainer">
+          <div class="tenant-grid-layout" id="tenantCardsGrid">
+            <!-- Rendered dynamically -->
+          </div>
+          <div class="tenant-list-layout table-responsive" id="tenantListContainer" style="display: none;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- PAGINATION BAR -->
+        <div class="tenant-pagination-bar" id="tenantPaginationBar">
           <!-- Rendered dynamically -->
         </div>
       </div>
@@ -1853,8 +2132,158 @@
       </div>
     </aside>
 
+    <!-- 4. TENANT STORE DETAIL SLIDE-OVER DRAWER -->
+    <div class="inv-drawer-backdrop" id="tenantDrawerBackdrop" onclick="MallApp.closeTenantDrawer()" aria-hidden="true">
+    </div>
+    <aside class="inv-restock-drawer tenant-detail-drawer" id="tenantDetailDrawer" role="dialog" aria-modal="true"
+      aria-labelledby="tenantDrawerTitle" aria-hidden="true" tabindex="-1">
+      <div class="inv-drawer-header po-drawer-header">
+        <div class="po-drawer-title-group">
+          <div class="po-drawer-id-line">
+            <h3 class="inv-drawer-title" id="tenantDrawerTitle">Store Name</h3>
+            <div id="tenantDrawerStatusBadge"></div>
+          </div>
+          <span class="po-drawer-subtitle" id="tenantDrawerLocation">Location</span>
+        </div>
+        <button type="button" class="inv-drawer-close" onclick="MallApp.closeTenantDrawer()"
+          aria-label="Close store details">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="inv-drawer-body tenant-drawer-body" id="tenantDrawerBody">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="inv-drawer-footer tenant-drawer-footer" id="tenantDrawerFooter">
+        <!-- Rendered dynamically -->
+      </div>
+    </aside>
+
+    <!-- 5. ONBOARD TENANT MODAL -->
+    <div class="modal-backdrop" id="onboardTenantModal"
+      onclick="if(event.target === this) MallApp.closeOnboardTenantModal()" role="dialog" aria-modal="true"
+      aria-labelledby="onboardTenantTitle" aria-hidden="true">
+      <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 580px;">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title" id="onboardTenantTitle">Onboard New Retail Tenant</h3>
+            <p class="modal-desc" style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0 0;">
+              Register a new tenant store, assign floor location, and configure initial lease agreement.
+            </p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="MallApp.closeOnboardTenantModal()"
+            aria-label="Close modal">&times;</button>
+        </div>
+
+        <form id="onboardTenantForm" class="modal-form" novalidate onsubmit="MallApp.submitOnboardTenant(event)">
+          <div class="form-row">
+            <div class="form-group" style="flex: 1.4;">
+              <label for="onboardStoreName">Store Name <span style="color: var(--danger);">*</span></label>
+              <input type="text" id="onboardStoreName" placeholder="e.g. Lacoste Heritage" required autocomplete="off">
+              <div class="field-error-text" id="onboardStoreNameError"></div>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="onboardCategory">Category <span style="color: var(--danger);">*</span></label>
+              <select id="onboardCategory" required>
+                <option value="Fashion">Fashion & Apparel</option>
+                <option value="Electronics">Consumer Electronics</option>
+                <option value="Footwear">Footwear & Sports</option>
+                <option value="Cosmetics">Cosmetics & Fragrances</option>
+                <option value="Dining">Dining & Specialty Food</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label for="onboardFloor">Floor Location <span style="color: var(--danger);">*</span></label>
+              <select id="onboardFloor" required>
+                <option value="Ground">Ground Floor</option>
+                <option value="Floor 1" selected>Floor 1</option>
+                <option value="Floor 2">Floor 2</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="onboardUnit">Unit Number / Zone <span style="color: var(--danger);">*</span></label>
+              <input type="text" id="onboardUnit" placeholder="e.g. #125, Central Atrium" required autocomplete="off">
+              <div class="field-error-text" id="onboardUnitError"></div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label for="onboardManager">Store Manager <span style="color: var(--danger);">*</span></label>
+              <input type="text" id="onboardManager" placeholder="e.g. Sarah Connor" required autocomplete="off">
+              <div class="field-error-text" id="onboardManagerError"></div>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="onboardPhone">Contact Phone <span style="color: var(--danger);">*</span></label>
+              <input type="tel" id="onboardPhone" placeholder="+1 (555) 234-5678" required autocomplete="off">
+              <div class="field-error-text" id="onboardPhoneError"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="onboardEmail">Manager Email <span style="color: var(--danger);">*</span></label>
+            <input type="email" id="onboardEmail" placeholder="manager@store-mall.com" required autocomplete="off">
+            <div class="field-error-text" id="onboardEmailError"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label for="onboardLeaseStart">Lease Start Date <span style="color: var(--danger);">*</span></label>
+              <input type="date" id="onboardLeaseStart" required>
+              <div class="field-error-text" id="onboardLeaseStartError"></div>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="onboardLeaseEnd">Lease End Date <span style="color: var(--danger);">*</span></label>
+              <input type="date" id="onboardLeaseEnd" required>
+              <div class="field-error-text" id="onboardLeaseEndError"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="onboardMonthlyRent">Monthly Base Rent (USD) <span style="color: var(--danger);">*</span></label>
+            <input type="number" id="onboardMonthlyRent" min="100" step="50" placeholder="e.g. 7500" required>
+            <div class="field-error-text" id="onboardMonthlyRentError"></div>
+          </div>
+
+          <div class="modal-footer"
+            style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <button type="button" class="clean-btn" onclick="MallApp.closeOnboardTenantModal()">Cancel</button>
+            <button type="submit" class="btn-create-order" id="onboardSubmitBtn" disabled
+              style="opacity: 0.5; cursor: not-allowed;">
+              Complete Onboarding
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- TOAST NOTIFICATIONS -->
     <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <!-- ========================================================
+       3. 404 NOT FOUND VIEW (Rendered on unknown routes)
+       ======================================================== -->
+  <div class="not-found-view" id="view-not-found" style="display: none;">
+    <div class="not-found-card">
+      <div class="not-found-code">404</div>
+      <h1 class="not-found-title">Page not found</h1>
+      <p class="not-found-desc">The page you are looking for doesn't exist or has been moved.</p>
+      <a href="/dashboard" class="not-found-btn" onclick="MallApp.navigateRoute('/dashboard', event)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Go to dashboard</span>
+      </a>
+    </div>
   </div>
 
   <script type="module" src="/main.js"></script>

@@ -1994,7 +1994,241 @@ body.has-overlay-open .floating-copilot-pill {
   color: #FFFFFF;
 }
 
-/* Tenant Grid Layout */
+/* ========================================================
+   TENANT STORES DIRECTORY (Summary, Toolbar, Cards, Table, Drawer)
+   ======================================================== */
+
+/* 1. Summary Strip (4 Compact Stat Cards) */
+.tenant-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.tenant-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.tenant-stat-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.tenant-stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tenant-stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.tenant-stat-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tenant-stat-badge.badge-success {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--success);
+}
+
+.tenant-stat-badge.badge-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+.tenant-stat-badge.badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+}
+
+.tenant-stat-number {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.tenant-stat-subtext {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.tenant-stat-card.alert-danger {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: linear-gradient(to bottom right, var(--surface), rgba(239, 68, 68, 0.04));
+}
+
+.tenant-stat-card.alert-warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(to bottom right, var(--surface), rgba(245, 158, 11, 0.04));
+}
+
+/* 2. Toolbar */
+.tenant-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.tenant-toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.tenant-search-wrap {
+  position: relative;
+  min-width: 240px;
+  flex: 1;
+  max-width: 320px;
+}
+
+.tenant-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.tenant-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tenant-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.tenant-filters-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tenant-select-filter {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.tenant-select-filter:focus {
+  border-color: var(--accent);
+}
+
+.tenant-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tenant-filter-count-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tenant-showing-text {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tenant-clear-filters-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.tenant-clear-filters-link:hover {
+  color: var(--accent-hover);
+}
+
+.tenant-view-toggle {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.tenant-view-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.tenant-view-btn.active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* 3. Tenant Grid Layout & Card */
 .tenant-grid-layout {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2002,17 +2236,32 @@ body.has-overlay-open .floating-copilot-pill {
 }
 
 .tenant-clean-card {
-  background: #FFFFFF;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.2s;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  outline: none;
 }
 
 .tenant-clean-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.tenant-clean-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tenant-clean-card.tenant-card-offline {
+  border-left: 3px solid var(--danger);
 }
 
 .tenant-card-top {
@@ -2022,17 +2271,602 @@ body.has-overlay-open .floating-copilot-pill {
   margin-bottom: 12px;
 }
 
+.tenant-card-top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .tenant-badge-pill {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background-color: var(--green-bg);
-  color: var(--green-main);
-  font-weight: 800;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.tenant-card-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.tenant-action-menu-wrap {
+  position: relative;
+}
+
+.tenant-card-menu-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.tenant-card-menu-btn:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.tenant-action-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tenant-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.tenant-action-item:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tenant-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.tenant-card-location {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.tenant-card-category {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.tenant-offline-strip {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  color: var(--danger);
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tenant-card-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: auto;
+  margin-bottom: 12px;
+}
+
+.tenant-metric-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.tenant-metric-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tenant-sales-spark-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tenant-sparkline-svg {
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.tenant-stock-health-box {
+  margin-bottom: 14px;
+}
+
+.tenant-health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  margin-bottom: 4px;
+}
+
+.tenant-health-title {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tenant-health-pct {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tenant-health-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.tenant-health-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.tenant-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.tenant-footer-pos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tenant-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-online {
+  background-color: var(--success);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.dot-offline {
+  background-color: var(--danger);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.dot-delayed {
+  background-color: var(--warning);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+/* 4. List View Table */
+.tenant-list-layout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.tenant-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tenant-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.tenant-table thead th:hover {
+  color: var(--text);
+}
+
+.tenant-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.tenant-table tbody tr:hover {
+  background: var(--bg);
+}
+
+.tenant-table tbody td {
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+/* 5. Pagination Bar */
+.tenant-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.tenant-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tenant-page-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tenant-page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tenant-page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
+}
+
+.tenant-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tenant-page-size-select {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* 6. Store Detail Slide-over Drawer */
+.tenant-detail-drawer {
+  width: 520px;
+}
+
+.tenant-drawer-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tenant-drawer-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.tenant-drawer-section-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tenant-drawer-contact-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tenant-drawer-contact-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.tenant-drawer-contact-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.tenant-drawer-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tenant-drawer-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tenant-drawer-action-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
+}
+
+.tenant-drawer-action-btn.primary:hover {
+  background: var(--accent-hover);
+}
+
+.tenant-drawer-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tenant-drawer-kpi {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.tenant-drawer-kpi-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.tenant-drawer-kpi-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tenant-drawer-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tenant-drawer-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  transition: border-color 0.15s;
+}
+
+.tenant-drawer-item-card:hover {
+  border-color: var(--accent);
+}
+
+.tenant-drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* 7. Modal Inline Validation */
+.field-error-text {
+  font-size: 0.72rem;
+  color: var(--danger);
+  margin-top: 4px;
+  display: none;
+}
+
+.field-error-text.visible {
+  display: block;
+}
+
+.form-group input.has-error,
+.form-group select.has-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* 8. Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .tenant-summary-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tenant-grid-layout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .tenant-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tenant-toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tenant-search-wrap {
+    max-width: 100%;
+  }
+
+  .tenant-filters-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tenant-toolbar-right {
+    justify-content: space-between;
+  }
+
+  .tenant-detail-drawer {
+    width: 100vw;
+  }
+}
+
+/* 9. Dark Mode Theme Overrides */
+html.dark .tenant-clean-card,
+html.dark .tenant-stat-card,
+html.dark .tenant-toolbar,
+html.dark .tenant-list-layout,
+html.dark .tenant-pagination-bar,
+html.dark .tenant-drawer-section,
+html.dark .tenant-detail-drawer,
+html.dark .tenant-action-dropdown {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+html.dark .tenant-search-input,
+html.dark .tenant-select-filter,
+html.dark .tenant-page-btn,
+html.dark .tenant-page-size-select,
+html.dark .tenant-health-bar-track,
+html.dark .tenant-drawer-kpi,
+html.dark .tenant-drawer-item-card,
+html.dark .tenant-drawer-action-btn {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+html.dark .tenant-table thead th {
+  background: #121218;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+html.dark .tenant-table tbody tr:hover {
+  background: #171720;
 }
 
 /* ========================================================
@@ -7740,4 +8574,459 @@ html.dark .tenant-clean-card>div {
 html.dark .tenant-badge-pill {
   background-color: var(--accent-soft) !important;
   color: var(--accent-text) !important;
+}
+
+/* ==========================================================================
+   DARK MODE COMPREHENSIVE OVERRIDES (Export, Reordering, Drawers, Modals, Tooltips)
+   ========================================================================== */
+
+/* 1. Export button and its dropdown menu across ALL pages */
+html.dark .export-dropdown-btn {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+}
+
+html.dark .export-dropdown-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .export-dropdown-btn:disabled {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+  opacity: 0.45 !important;
+}
+
+html.dark .export-dropdown-menu {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .export-menu-item {
+  color: var(--text) !important;
+}
+
+html.dark .export-menu-item:hover,
+html.dark .export-menu-item:focus-visible {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text) !important;
+}
+
+html.dark .export-item-icon {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark .export-menu-badge {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--border) !important;
+  color: var(--accent-text) !important;
+}
+
+html.dark .export-scope-toggle {
+  background: var(--bg) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .export-scope-btn {
+  color: var(--text-muted) !important;
+}
+
+html.dark .export-scope-btn.active {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* 2. Reordering page: Stat cards, pills, chips, search, select, table text */
+html.dark .reorder-stat-card {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+
+html.dark .reorder-stat-label {
+  color: var(--text-muted) !important;
+}
+
+html.dark .reorder-stat-val {
+  color: var(--text) !important;
+}
+
+html.dark .reorder-metrics-strip .reorder-stat-card:nth-child(1) .reorder-stat-sub {
+  color: #FBBF24 !important;
+}
+
+html.dark .reorder-metrics-strip .reorder-stat-card:nth-child(2) .reorder-stat-sub {
+  color: #4ADE80 !important;
+}
+
+html.dark .reorder-metrics-strip .reorder-stat-card:nth-child(3) .reorder-stat-sub {
+  color: var(--text-muted) !important;
+}
+
+html.dark .reorder-metrics-strip .reorder-stat-card:nth-child(4) .reorder-stat-sub {
+  color: #4ADE80 !important;
+}
+
+html.dark .reorder-queue-badge {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark .reorder-po-code {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .reorder-items-text {
+  color: var(--text) !important;
+}
+
+html.dark .reorder-value-text {
+  color: var(--text) !important;
+}
+
+html.dark .reorder-vendor-cell strong {
+  color: var(--text) !important;
+}
+
+html.dark .reorder-sub-tenant {
+  color: var(--text-muted) !important;
+}
+
+html.dark .reorder-tenant-badge {
+  color: var(--text-muted) !important;
+}
+
+html.dark .reorder-reason-text {
+  color: var(--text-muted) !important;
+}
+
+html.dark .reorder-reason-text svg {
+  color: #FBBF24 !important;
+}
+
+html.dark .reorder-table th {
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+html.dark .reorder-table td {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+html.dark .reorder-table-row:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html.dark #reorderSearchInput,
+html.dark #reorderStatusFilter {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark #reorderSearchInput::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Reorder Status Badges (12-15% tint, light readable text) */
+html.dark .po-badge-pending {
+  background-color: rgba(251, 191, 36, 0.15) !important;
+  color: #FDE68A !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+  box-shadow: none !important;
+}
+
+html.dark .po-badge-approved {
+  background-color: rgba(96, 165, 250, 0.15) !important;
+  color: #93C5FD !important;
+  border: 1px solid rgba(96, 165, 250, 0.3) !important;
+  box-shadow: none !important;
+}
+
+html.dark .po-badge-shipped {
+  background-color: var(--accent-soft) !important;
+  color: var(--accent-text) !important;
+  border: 1px solid rgba(109, 77, 242, 0.3) !important;
+  box-shadow: none !important;
+}
+
+html.dark .po-badge-delivered {
+  background-color: rgba(74, 222, 128, 0.15) !important;
+  color: #86EFAC !important;
+  border: 1px solid rgba(74, 222, 128, 0.3) !important;
+  box-shadow: none !important;
+}
+
+html.dark .po-badge-rejected {
+  background-color: rgba(248, 113, 113, 0.15) !important;
+  color: #FCA5A5 !important;
+  border: 1px solid rgba(248, 113, 113, 0.3) !important;
+  box-shadow: none !important;
+}
+
+html.dark .btn-action-archive {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--border) !important;
+}
+
+html.dark .btn-action-archive:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text) !important;
+}
+
+/* 3. PO Detail Drawer in Dark Mode */
+html.dark #poDetailDrawer,
+html.dark .po-detail-drawer {
+  background: var(--surface) !important;
+  border-left: 1px solid var(--border) !important;
+  box-shadow: -12px 0 45px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .po-drawer-header,
+html.dark #poDetailDrawer .inv-drawer-header {
+  background: var(--surface) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+html.dark .po-drawer-body,
+html.dark #poDetailDrawer .inv-drawer-body {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+html.dark .po-drawer-footer,
+html.dark #poDetailDrawer .inv-drawer-footer {
+  background: var(--surface) !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+html.dark .po-drawer-title-group h3 {
+  color: var(--text) !important;
+}
+
+html.dark .po-drawer-subtitle {
+  color: var(--text-muted) !important;
+}
+
+html.dark .po-reason-callout {
+  background: rgba(251, 191, 36, 0.12) !important;
+  border: 1px solid rgba(251, 191, 36, 0.25) !important;
+}
+
+html.dark .po-reason-header {
+  color: #FBBF24 !important;
+}
+
+html.dark .po-reason-text {
+  color: #FDE68A !important;
+}
+
+html.dark .po-timeline-block {
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
+}
+
+html.dark .po-section-heading {
+  color: var(--text-muted) !important;
+}
+
+html.dark .po-step-marker {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark .po-step-label {
+  color: var(--text) !important;
+}
+
+html.dark .po-step-time {
+  color: var(--text-muted) !important;
+}
+
+html.dark .po-step-line {
+  background: var(--border) !important;
+}
+
+html.dark .po-meta-box-sub {
+  color: var(--text-muted) !important;
+}
+
+html.dark .po-item-name {
+  color: var(--text) !important;
+}
+
+html.dark .po-item-sku {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text-muted) !important;
+}
+
+/* 4. Tooltips, Modals, Header Chips, Sidebar Collapse, Date Range in Dark Mode */
+html.dark .chart-tooltip-box,
+html.dark .recharts-tooltip-box {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .chart-tooltip-box div,
+html.dark .recharts-tooltip-box div {
+  color: var(--text) !important;
+}
+
+html.dark .modal-box {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .header-date-chip {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .sidebar-collapse-toggle-btn {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .sidebar-collapse-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text) !important;
+}
+
+html.dark .sales-date-btn-group {
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
+}
+
+html.dark .sales-date-btn {
+  color: var(--text-muted) !important;
+}
+
+html.dark .sales-date-btn:hover {
+  color: var(--text) !important;
+}
+
+html.dark .sales-date-btn.active {
+  background: var(--accent) !important;
+  color: #FFFFFF !important;
+}
+
+html.dark .sales-custom-date-box {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .toast {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .btn-clear-history {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark .btn-clear-history:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text) !important;
+}
+
+html.dark .cmd-palette-footer {
+  background: var(--surface) !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+html.dark .cmd-footer-keys kbd {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+/* ==========================================================================
+   404 NOT FOUND VIEW
+   ========================================================================== */
+.not-found-view {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.not-found-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 48px 40px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.not-found-code {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.not-found-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.not-found-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.not-found-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--accent);
+  color: #FFFFFF !important;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 12px 24px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.not-found-btn:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
 }

@@ -97,23 +97,19 @@ window.MallApp = {
     this.bindCommandPalette();
     this.updateNotificationBadge();
     this.renderAll();
+    this.initLanding();
     this.checkRoute();
     this.bindProfileDropdown();
 
     window.addEventListener('popstate', (e) => {
-      const view = e.state?.view || 'dashboard';
-      this.switchView(view, false);
+      this.checkRoute();
     });
 
     window.addEventListener('hashchange', () => this.checkRoute());
 
-    // Initial 600ms load simulation with skeletons
-    this.simulateRefresh(600);
-
-    // Ensure Copilot button is visible on initial dashboard load
-    const copilotBtn = document.getElementById('floatingCopilotBtn');
-    if (copilotBtn) {
-      copilotBtn.style.display = MallState.activeView === 'copilot' ? 'none' : 'flex';
+    // Initial 600ms load simulation with skeletons only on app views
+    if (MallState.activeView !== 'landing' && MallState.activeView !== 'not-found') {
+      this.simulateRefresh(600);
     }
   },
 
@@ -189,6 +185,120 @@ window.MallApp = {
     } catch (e) { }
   },
 
+  initLanding() {
+    const hamburgerBtn = document.getElementById('lpHamburgerBtn');
+    const closeBtn = document.getElementById('lpCloseBtn');
+    const mobileMenu = document.getElementById('lpMobileMenu');
+    const mobileLinks = document.querySelectorAll('.lp-mobile-link, .lp-mobile-btn');
+
+    let isMenuOpen = false;
+
+    const openMobileMenu = () => {
+      if (!mobileMenu || !hamburgerBtn) return;
+      isMenuOpen = true;
+      mobileMenu.removeAttribute('hidden');
+      void mobileMenu.offsetWidth;
+      mobileMenu.classList.add('lp-menu-active');
+      hamburgerBtn.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+      if (closeBtn) closeBtn.focus();
+    };
+
+    const closeMobileMenu = () => {
+      if (!mobileMenu || !hamburgerBtn) return;
+      isMenuOpen = false;
+      mobileMenu.classList.remove('lp-menu-active');
+      hamburgerBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      setTimeout(() => {
+        if (!isMenuOpen) {
+          mobileMenu.setAttribute('hidden', '');
+        }
+      }, 250);
+      hamburgerBtn.focus();
+    };
+
+    if (hamburgerBtn) {
+      hamburgerBtn.addEventListener('click', () => {
+        if (isMenuOpen) closeMobileMenu();
+        else openMobileMenu();
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeMobileMenu);
+    }
+
+    mobileLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        if (isMenuOpen) closeMobileMenu();
+      });
+    });
+
+    const bookDemoBtn = document.getElementById('lpBookDemoBtn');
+    const demoModal = document.getElementById('lpDemoModal');
+    const demoModalClose = document.getElementById('lpDemoModalClose');
+    const demoForm = document.getElementById('lpDemoForm');
+    const demoSuccess = document.getElementById('lpDemoSuccess');
+
+    let isModalOpen = false;
+
+    const openDemoModal = () => {
+      if (!demoModal) return;
+      isModalOpen = true;
+      demoModal.removeAttribute('hidden');
+      void demoModal.offsetWidth;
+      demoModal.classList.add('lp-modal-open');
+      document.body.style.overflow = 'hidden';
+      const nameInput = document.getElementById('lpDemoName');
+      if (nameInput) nameInput.focus();
+    };
+
+    const closeDemoModal = () => {
+      if (!demoModal) return;
+      isModalOpen = false;
+      demoModal.classList.remove('lp-modal-open');
+      document.body.style.overflow = '';
+      setTimeout(() => {
+        if (!isModalOpen) {
+          demoModal.setAttribute('hidden', '');
+        }
+      }, 250);
+      if (bookDemoBtn) bookDemoBtn.focus();
+    };
+
+    if (bookDemoBtn) {
+      bookDemoBtn.addEventListener('click', openDemoModal);
+    }
+
+    if (demoModalClose) {
+      demoModalClose.addEventListener('click', closeDemoModal);
+    }
+
+    if (demoModal) {
+      demoModal.addEventListener('click', (e) => {
+        if (e.target === demoModal) closeDemoModal();
+      });
+    }
+
+    if (demoForm) {
+      demoForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        demoForm.style.display = 'none';
+        if (demoSuccess) {
+          demoSuccess.removeAttribute('hidden');
+        }
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        if (isModalOpen) closeDemoModal();
+        else if (isMenuOpen) closeMobileMenu();
+      }
+    });
+  },
+
   // 1. NAVIGATION & ROUTING
   bindNavigation() {
     const navItems = document.querySelectorAll('.sidebar-menu .menu-item');
@@ -257,20 +367,33 @@ window.MallApp = {
   },
 
   navigateRoute(pathOrView, event) {
-    if (event) event.preventDefault();
+    if (event) {
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
     let view = String(pathOrView).replace(/^\//, '').toLowerCase();
     if (view === 'reordering') view = 'reorder';
-    if (!view || view === 'dashboard') view = 'dashboard';
+    if (!view || view === 'landing' || view === 'home') {
+      view = 'landing';
+    }
     this.switchView(view, true);
   },
 
   checkRoute() {
     const hash = (window.location.hash || '').toLowerCase().replace('#', '').replace(/^\//, '');
     let path = (window.location.pathname || '').toLowerCase().replace(/^\//, '');
+    if (path.endsWith('.html')) {
+      path = path.replace(/\.html$/, '');
+    }
+    if (path.endsWith('/')) {
+      path = path.replace(/\/$/, '');
+    }
 
     const target = hash || path;
     const ROUTE_MAP = {
-      '': 'dashboard',
+      '': 'landing',
+      'landing': 'landing',
+      'home': 'landing',
       'dashboard': 'dashboard',
       'inventory': 'inventory',
       'reordering': 'reorder',
@@ -282,7 +405,7 @@ window.MallApp = {
       'copilot': 'copilot'
     };
 
-    const resolved = ROUTE_MAP[target] || 'dashboard';
+    const resolved = ROUTE_MAP[target] || 'not-found';
     this.switchView(resolved, false);
   },
 
@@ -308,21 +431,63 @@ window.MallApp = {
   },
 
   switchView(viewName, pushHistory = true) {
-    if (!viewName) viewName = 'dashboard';
+    if (!viewName) viewName = 'landing';
     if (viewName === 'reordering') viewName = 'reorder';
     MallState.activeView = viewName;
 
     // Push state to browser history for native back/forward buttons and bookmarks
     if (pushHistory) {
-      const routePath = '/' + (viewName === 'reorder' ? 'reordering' : viewName);
+      let routePath = '/dashboard';
+      if (viewName === 'landing') {
+        routePath = '/';
+      } else if (viewName === 'reorder') {
+        routePath = '/reordering';
+      } else if (viewName === 'not-found') {
+        routePath = window.location.pathname || '/404';
+      } else {
+        routePath = '/' + viewName;
+      }
+
       if (window.location.pathname !== routePath) {
         try {
           window.history.pushState({ view: viewName }, '', routePath);
         } catch (e) {
-          window.location.hash = '#' + routePath.replace(/^\//, '');
+          window.location.hash = '#' + (routePath === '/' ? '' : routePath.replace(/^\//, ''));
         }
       }
     }
+
+    const landingEl = document.getElementById('view-landing');
+    const appLayoutEl = document.getElementById('appLayout');
+    const notFoundEl = document.getElementById('view-not-found');
+    const floatingCopilotBtn = document.getElementById('floatingCopilotBtn');
+
+    if (viewName === 'landing') {
+      if (landingEl) landingEl.style.display = 'block';
+      if (appLayoutEl) appLayoutEl.style.display = 'none';
+      if (notFoundEl) notFoundEl.style.display = 'none';
+      if (floatingCopilotBtn) floatingCopilotBtn.style.display = 'none';
+      document.title = "MallMatrix — Orchestrate Your Mall's Inventory Instantly and Effortlessly";
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    if (viewName === 'not-found') {
+      if (landingEl) landingEl.style.display = 'none';
+      if (appLayoutEl) appLayoutEl.style.display = 'none';
+      if (notFoundEl) notFoundEl.style.display = 'flex';
+      if (floatingCopilotBtn) floatingCopilotBtn.style.display = 'none';
+      document.title = "Page Not Found — MallMatrix";
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    // App views
+    if (landingEl) landingEl.style.display = 'none';
+    if (notFoundEl) notFoundEl.style.display = 'none';
+    if (appLayoutEl) appLayoutEl.style.display = 'flex';
+
+    document.title = "MallMatrix — Mall Inventory & Stock Management Platform";
 
     // Update active menu item
     document.querySelectorAll('.sidebar-menu .menu-item').forEach(item => {
@@ -350,7 +515,7 @@ window.MallApp = {
     } else if (viewName === 'staff') {
       this.renderStaffTable();
     } else if (viewName === 'tenants') {
-      this.renderTenantCards();
+      this.renderTenantDirectory();
     }
 
     // Keep bottom-right Copilot button visible on all views except the copilot view itself
@@ -509,6 +674,9 @@ window.MallApp = {
         this.closePODetailDrawer();
         this.closeBatchReorderModal();
         this.closeRejectModal();
+        this.closeTenantDrawer();
+        this.closeOnboardTenantModal();
+        this.closeAllTenantMenus();
         const prodModal = document.getElementById('newProductModal');
         if (prodModal && prodModal.classList.contains('open')) {
           prodModal.classList.remove('open');
@@ -1327,7 +1495,7 @@ window.MallApp = {
     this.renderRevenueBarChart();
     this.renderSalesLeaderboard();
     this.renderStaffTable();
-    this.renderTenantCards();
+    this.renderTenantDirectory();
     this.renderAllExportButtons();
     this.renderExportCenter();
     if (this._activeRestockSku) {
@@ -2316,13 +2484,13 @@ window.MallApp = {
 
     // Line items table HTML
     const lineItems = po.lineItems && po.lineItems.length > 0 ? po.lineItems : [
-      { name: po.items, sku: 'SKU-REORDER', qty: 1, price: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0, subtotal: parseFloat((po.value || '$0').replace(/[^0-9.-]+/g, '')) || 0 }
+      { name: po.items, sku: 'SKU-REORDER', qty: 1, price: typeof po.value === 'number' ? po.value : (parseFloat(String(po.value || 0).replace(/[^0-9.-]+/g, '')) || 0), subtotal: typeof po.value === 'number' ? po.value : (parseFloat(String(po.value || 0).replace(/[^0-9.-]+/g, '')) || 0) }
     ];
 
     let lineRowsHtml = lineItems.map(item => `
       <tr>
-        <td><strong style="font-weight: 700; color: #0F172A;">${this.escapeHTML(item.name)}</strong></td>
-        <td><span style="font-family: monospace; font-size: 0.74rem; color: #475569; background: #F1F5F9; padding: 2px 7px; border-radius: 4px; white-space: nowrap;">${this.escapeHTML(item.sku || 'SKU-000')}</span></td>
+        <td><strong class="po-item-name" style="font-weight: 700;">${this.escapeHTML(item.name)}</strong></td>
+        <td><span class="po-item-sku" style="font-family: monospace; font-size: 0.74rem; padding: 2px 7px; border-radius: 4px; white-space: nowrap;">${this.escapeHTML(item.sku || 'SKU-000')}</span></td>
         <td><strong>${item.qty}</strong></td>
         <td style="white-space: nowrap;">${this.formatCurrency(item.price)}</td>
         <td style="text-align: right; font-weight: 700; white-space: nowrap;">${this.formatCurrency(item.subtotal)}</td>
@@ -2592,10 +2760,21 @@ window.MallApp = {
     const mult = this._salesDateMultiplier || 1.0;
     const isINR = MallState.currency === 'INR';
     const currencySymbol = isINR ? '₹' : '$';
-    const tenants = MallState.tenants.map(t => ({
+
+    const totalRev = MallState.tenants.reduce((acc, cur) => acc + Math.round((cur.salesAmount || 0) * mult), 0);
+    const totalRevEl = document.getElementById('salesChartTotalRevenue');
+    if (totalRevEl) {
+      totalRevEl.textContent = this.formatCurrency(totalRev);
+    }
+
+    const topStores = [...MallState.tenants]
+      .sort((a, b) => (b.salesAmount || 0) - (a.salesAmount || 0))
+      .slice(0, 6);
+
+    const tenants = topStores.map(t => ({
       name: t.name,
       shortName: t.name.replace(' Store', '').replace(' Flagship', '').replace(' Experience', '').replace(' Luxury', '').replace(' Retail', '').replace(' Reserve', ''),
-      amount: Math.round(t.salesAmount * mult),
+      amount: Math.round((t.salesAmount || 0) * mult),
       unit: t.unit
     }));
 
@@ -2653,12 +2832,6 @@ window.MallApp = {
         </g>
       `;
     });
-
-    const totalRev = tenants.reduce((acc, cur) => acc + cur.amount, 0);
-    const totalRevEl = document.getElementById('salesChartTotalRevenue');
-    if (totalRevEl) {
-      totalRevEl.textContent = this.formatCurrency(totalRev);
-    }
 
     container.innerHTML = `
       <svg viewBox="0 0 ${width} ${height}" class="sales-recharts-svg" preserveAspectRatio="xMidYMid meet">
@@ -2907,29 +3080,338 @@ window.MallApp = {
     this.renderStaffExportButton();
   },
 
+  // ========================================================
+  // VIEW 6: MALL TENANT STORES DIRECTORY (48 INTEGRATED STORES)
+  // ========================================================
+
+  _tenantSearch: '',
+  _tenantFloor: 'all',
+  _tenantCategory: 'all',
+  _tenantStatus: 'all',
+  _tenantSort: 'name-asc',
+  _tenantViewMode: localStorage.getItem('mallmatrix_tenant_view') || 'grid',
+  _tenantPage: 1,
+  _tenantPageSize: 12,
+  _activeTenantDetailId: null,
+  _activeTenantMenuId: null,
+  _tenantLoading: false,
+  _tenantError: null,
+  _tenantControlsBound: false,
+
+  renderTenantDirectory() {
+    this.bindTenantControls();
+    this.renderTenantSummaryStrip();
+    this.renderTenantCards();
+  },
+
+  bindTenantControls() {
+    if (this._tenantControlsBound) return;
+
+    const searchInput = document.getElementById('tenantSearchInput');
+    const floorFilter = document.getElementById('tenantFloorFilter');
+    const categoryFilter = document.getElementById('tenantCategoryFilter');
+    const statusFilter = document.getElementById('tenantStatusFilter');
+    const sortFilter = document.getElementById('tenantSortFilter');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this._tenantSearch = e.target.value.trim().toLowerCase();
+        this._tenantPage = 1;
+        this.renderTenantCards();
+      });
+    }
+
+    if (floorFilter) {
+      floorFilter.addEventListener('change', (e) => {
+        this._tenantFloor = e.target.value;
+        this._tenantPage = 1;
+        this.renderTenantCards();
+      });
+    }
+
+    if (categoryFilter) {
+      categoryFilter.addEventListener('change', (e) => {
+        this._tenantCategory = e.target.value;
+        this._tenantPage = 1;
+        this.renderTenantCards();
+      });
+    }
+
+    if (statusFilter) {
+      statusFilter.addEventListener('change', (e) => {
+        this._tenantStatus = e.target.value;
+        this._tenantPage = 1;
+        this.renderTenantCards();
+      });
+    }
+
+    if (sortFilter) {
+      sortFilter.addEventListener('change', (e) => {
+        this._tenantSort = e.target.value;
+        this._tenantPage = 1;
+        this.renderTenantCards();
+      });
+    }
+
+    // Dismiss open action menus on document click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.tenant-action-menu-wrap')) {
+        this.closeAllTenantMenus();
+      }
+    });
+
+    this.bindOnboardTenantValidation();
+    this._tenantControlsBound = true;
+  },
+
+  renderTenantSummaryStrip() {
+    const strip = document.getElementById('tenantSummaryStrip');
+    if (!strip) return;
+
+    const tenants = MallState.tenants || [];
+    const totalStores = tenants.length;
+    const posOnline = tenants.filter(t => t.posStatus === 'online').length;
+    const posOffline = tenants.filter(t => t.posStatus === 'offline').length;
+    const expiringCount = tenants.filter(t => this.isLeaseExpiringSoon(t.leaseEnd)).length;
+
+    strip.innerHTML = `
+      <div class="tenant-stat-card">
+        <div class="tenant-stat-card-header">
+          <span class="tenant-stat-label">Total Stores</span>
+          <span class="tenant-stat-badge">All Floors</span>
+        </div>
+        <div class="tenant-stat-number">${totalStores}</div>
+        <div class="tenant-stat-subtext">Integrated retail units</div>
+      </div>
+
+      <div class="tenant-stat-card">
+        <div class="tenant-stat-card-header">
+          <span class="tenant-stat-label">POS Online</span>
+          <span class="tenant-stat-badge badge-success">Optimal</span>
+        </div>
+        <div class="tenant-stat-number" style="color: var(--success);">${posOnline}</div>
+        <div class="tenant-stat-subtext">Live telemetry stream active</div>
+      </div>
+
+      <div class="tenant-stat-card ${posOffline > 0 ? 'alert-danger' : ''}">
+        <div class="tenant-stat-card-header">
+          <span class="tenant-stat-label">POS Offline</span>
+          <span class="tenant-stat-badge ${posOffline > 0 ? 'badge-danger' : 'badge-success'}">
+            ${posOffline > 0 ? 'Requires Action' : 'All Connected'}
+          </span>
+        </div>
+        <div class="tenant-stat-number" style="${posOffline > 0 ? 'color: var(--danger);' : ''}">${posOffline}</div>
+        <div class="tenant-stat-subtext">${posOffline > 0 ? 'Telemetry link interrupted' : 'Zero telemetry breaches'}</div>
+      </div>
+
+      <div class="tenant-stat-card ${expiringCount > 0 ? 'alert-warning' : ''}">
+        <div class="tenant-stat-card-header">
+          <span class="tenant-stat-label">Leases Expiring (90d)</span>
+          <span class="tenant-stat-badge ${expiringCount > 0 ? 'badge-warning' : 'badge-success'}">
+            ${expiringCount > 0 ? 'Renewal Due' : 'All Current'}
+          </span>
+        </div>
+        <div class="tenant-stat-number" style="${expiringCount > 0 ? 'color: var(--warning);' : ''}">${expiringCount}</div>
+        <div class="tenant-stat-subtext">Upcoming renewals in 90 days</div>
+      </div>
+    `;
+  },
+
+  isLeaseExpiringSoon(leaseEndStr) {
+    if (!leaseEndStr) return false;
+    // Known 4 stores expiring in simulated Nov 2026 - Feb 2027 window
+    const parts = leaseEndStr.split(' ');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const months = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+      const month = months[parts[1]];
+      const year = parseInt(parts[2], 10);
+      if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+        const leaseDate = new Date(year, month, day);
+        const refDate = new Date(2026, 10, 10); // Simulated mall time: Nov 10, 2026
+        const diffDays = (leaseDate - refDate) / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 120;
+      }
+    }
+    return false;
+  },
+
+  clearTenantFilters() {
+    this._tenantSearch = '';
+    this._tenantFloor = 'all';
+    this._tenantCategory = 'all';
+    this._tenantStatus = 'all';
+    this._tenantSort = 'name-asc';
+    this._tenantPage = 1;
+
+    const sIn = document.getElementById('tenantSearchInput');
+    const fIn = document.getElementById('tenantFloorFilter');
+    const cIn = document.getElementById('tenantCategoryFilter');
+    const stIn = document.getElementById('tenantStatusFilter');
+    const sortIn = document.getElementById('tenantSortFilter');
+
+    if (sIn) sIn.value = '';
+    if (fIn) fIn.value = 'all';
+    if (cIn) cIn.value = 'all';
+    if (stIn) stIn.value = 'all';
+    if (sortIn) sortIn.value = 'name-asc';
+
+    this.renderTenantCards();
+    this.showToast('Tenant filters reset to default', 'info');
+  },
+
+  setTenantViewMode(mode) {
+    this._tenantViewMode = mode;
+    localStorage.setItem('mallmatrix_tenant_view', mode);
+
+    const gridBtn = document.getElementById('tenantViewGridBtn');
+    const listBtn = document.getElementById('tenantViewListBtn');
+    if (gridBtn && listBtn) {
+      gridBtn.classList.toggle('active', mode === 'grid');
+      listBtn.classList.toggle('active', mode === 'list');
+    }
+
+    if (mode === 'list' && this._tenantPageSize === 12) {
+      this._tenantPageSize = 15;
+    } else if (mode === 'grid' && this._tenantPageSize === 15) {
+      this._tenantPageSize = 12;
+    }
+
+    this._tenantPage = 1;
+    this.renderTenantCards();
+  },
+
+  getFilteredTenants() {
+    let list = [...(MallState.tenants || [])];
+
+    // 1. Search Query
+    if (this._tenantSearch) {
+      const q = this._tenantSearch;
+      list = list.filter(t => {
+        return (
+          t.name.toLowerCase().includes(q) ||
+          t.unit.toLowerCase().includes(q) ||
+          (t.floor && t.floor.toLowerCase().includes(q)) ||
+          (t.manager && t.manager.toLowerCase().includes(q)) ||
+          (t.category && t.category.toLowerCase().includes(q)) ||
+          (t.email && t.email.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    // 2. Floor Filter
+    if (this._tenantFloor && this._tenantFloor !== 'all') {
+      list = list.filter(t => t.floor === this._tenantFloor);
+    }
+
+    // 3. Category Filter
+    if (this._tenantCategory && this._tenantCategory !== 'all') {
+      list = list.filter(t => (t.category || '').toLowerCase() === this._tenantCategory.toLowerCase());
+    }
+
+    // 4. Status Filter
+    if (this._tenantStatus && this._tenantStatus !== 'all') {
+      if (this._tenantStatus === 'Active') {
+        list = list.filter(t => t.status === 'Active' && t.posStatus !== 'offline');
+      } else if (this._tenantStatus === 'Offline') {
+        list = list.filter(t => t.posStatus === 'offline' || t.status === 'Offline');
+      } else if (this._tenantStatus === 'Lease Expiring') {
+        list = list.filter(t => t.status === 'Lease Expiring' || this.isLeaseExpiringSoon(t.leaseEnd));
+      }
+    }
+
+    // 5. Sorting
+    const sort = this._tenantSort || 'name-asc';
+    list.sort((a, b) => {
+      if (sort === 'name-asc') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sort === 'sales-desc') {
+        return (b.salesAmount || 0) - (a.salesAmount || 0);
+      }
+      if (sort === 'stock-desc') {
+        const stockA = a.skuCount || parseInt(a.skus, 10) || 0;
+        const stockB = b.skuCount || parseInt(b.skus, 10) || 0;
+        return stockB - stockA;
+      }
+      if (sort === 'lease-asc') {
+        const parseD = str => {
+          if (!str) return 9999999999999;
+          const p = str.split(' ');
+          const months = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+          return new Date(parseInt(p[2], 10), months[p[1]] || 0, parseInt(p[0], 10)).getTime();
+        };
+        return parseD(a.leaseEnd) - parseD(b.leaseEnd);
+      }
+      return 0;
+    });
+
+    return list;
+  },
+
   renderTenantCards() {
     const grid = document.getElementById('tenantCardsGrid');
-    if (!grid) return;
+    const listWrap = document.getElementById('tenantListContainer');
+    const paginationBar = document.getElementById('tenantPaginationBar');
+    const countEl = document.getElementById('tenantShowingCount');
+    const clearBtn = document.getElementById('tenantClearFiltersBtn');
 
-    if (MallState.isLoading) {
-      grid.innerHTML = Array(6).fill(0).map(() => `
-        <div class="tenant-clean-card" style="pointer-events: none;">
-          <div class="tenant-card-top" style="justify-content: space-between;">
-            <div class="skeleton-shimmer skeleton-circle" style="width: 36px; height: 36px;"></div>
-            <div class="skeleton-shimmer skeleton-pill" style="width: 70px;"></div>
-          </div>
-          <div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 16px; margin: 12px 0 6px 0;"></div>
-          <div class="skeleton-shimmer skeleton-bar" style="width: 190px; height: 12px; margin-bottom: 16px;"></div>
-          <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-light); padding-top: 10px;">
-            <div class="skeleton-shimmer skeleton-bar" style="width: 60px; height: 20px;"></div>
-            <div class="skeleton-shimmer skeleton-bar" style="width: 60px; height: 20px;"></div>
-          </div>
-        </div>
-      `).join('');
+    if (!grid || !listWrap) return;
+
+    if (MallState.isLoading || this._tenantLoading) {
+      this.renderTenantSkeletons();
       return;
     }
 
-    if (!MallState.tenants.length) {
+    if (this._tenantError) {
+      grid.style.display = 'grid';
+      listWrap.style.display = 'none';
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1;">
+          <div class="empty-state-wrap" style="border-color: rgba(239, 68, 68, 0.3);">
+            <div class="empty-state-icon" style="color: var(--danger);">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <h4 class="empty-state-title" style="color: var(--danger);">Telemetry Sync Failed</h4>
+            <p class="empty-state-desc">${this.escapeHTML(this._tenantError)}</p>
+            <button type="button" class="btn-table-action" style="margin-top: 12px; padding: 8px 16px;" onclick="MallApp.retryTenantLoad()">
+              Retry Sync
+            </button>
+          </div>
+        </div>
+      `;
+      if (paginationBar) paginationBar.innerHTML = '';
+      return;
+    }
+
+    const filtered = this.getFilteredTenants();
+    const totalTenants = (MallState.tenants || []).length;
+
+    // Update Showing count
+    if (countEl) {
+      countEl.textContent = `Showing ${filtered.length} of ${totalTenants} stores`;
+    }
+
+    // Toggle Clear Filters link
+    const isFiltered = (
+      Boolean(this._tenantSearch) ||
+      this._tenantFloor !== 'all' ||
+      this._tenantCategory !== 'all' ||
+      this._tenantStatus !== 'all' ||
+      this._tenantSort !== 'name-asc'
+    );
+    if (clearBtn) {
+      clearBtn.style.display = isFiltered ? 'inline-block' : 'none';
+    }
+
+    // Empty state
+    if (!filtered.length) {
+      grid.style.display = 'grid';
+      listWrap.style.display = 'none';
       grid.innerHTML = `
         <div style="grid-column: 1 / -1;">
           <div class="empty-state-wrap">
@@ -2938,49 +3420,1026 @@ window.MallApp = {
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               </svg>
             </div>
-            <h4 class="empty-state-title">No tenant stores found</h4>
-            <p class="empty-state-desc">No stores match the active tenant filter criteria.</p>
+            <h4 class="empty-state-title">No matching tenant stores found</h4>
+            <p class="empty-state-desc">Try clearing or adjusting your search keyword and filter criteria.</p>
+            <button type="button" class="btn-table-action" style="margin-top: 12px; padding: 6px 14px;" onclick="MallApp.clearTenantFilters()">
+              Reset All Filters
+            </button>
           </div>
+        </div>
+      `;
+      if (paginationBar) paginationBar.innerHTML = '';
+      return;
+    }
+
+    // Pagination calculations
+    const pageSize = this._tenantPageSize;
+    const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+    if (this._tenantPage > totalPages) this._tenantPage = totalPages;
+    if (this._tenantPage < 1) this._tenantPage = 1;
+
+    const startIndex = (this._tenantPage - 1) * pageSize;
+    const pageItems = filtered.slice(startIndex, startIndex + pageSize);
+
+    // Render Grid vs List
+    if (this._tenantViewMode === 'list') {
+      grid.style.display = 'none';
+      listWrap.style.display = 'block';
+      this.renderTenantListView(pageItems);
+    } else {
+      grid.style.display = 'grid';
+      listWrap.style.display = 'none';
+      this.renderTenantGridView(pageItems);
+    }
+
+    // Render Pagination Bar
+    this.renderTenantPagination(filtered.length, startIndex, pageSize, totalPages);
+
+    // Refresh Header Export dropdown
+    this.renderTenantsExportButton();
+  },
+
+  renderTenantGridView(items) {
+    const grid = document.getElementById('tenantCardsGrid');
+    if (!grid) return;
+
+    grid.innerHTML = items.map(t => {
+      const isOffline = t.posStatus === 'offline' || t.status === 'Offline';
+      const isExpiring = !isOffline && (t.status === 'Lease Expiring' || this.isLeaseExpiringSoon(t.leaseEnd));
+
+      let statusBadge = `<span class="status-pill pill-delivered">Active</span>`;
+      if (isOffline) {
+        statusBadge = `<span class="status-pill pill-cancelled">Offline</span>`;
+      } else if (isExpiring) {
+        statusBadge = `<span class="status-pill pill-delayed">Lease Expiring</span>`;
+      }
+
+      const dotClass = isOffline ? 'dot-offline' : (t.posStatus === 'delayed' ? 'dot-delayed' : 'dot-online');
+      const health = t.stockHealth !== undefined ? t.stockHealth : 92;
+      let healthColor = 'var(--success)';
+      if (health < 75) healthColor = 'var(--danger)';
+      else if (health < 88) healthColor = 'var(--warning)';
+
+      const initials = t.name.replace(/[^A-Za-z0-9]/g, '').substring(0, 2).toUpperCase();
+
+      return `
+        <div class="tenant-clean-card ${isOffline ? 'tenant-card-offline' : ''}"
+          tabindex="0"
+          role="button"
+          aria-label="View store details for ${this.escapeHTML(t.name)}"
+          onclick="MallApp.openTenantDrawer('${t.id}')"
+          onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); MallApp.openTenantDrawer('${t.id}'); }">
+          
+          <div class="tenant-card-top">
+            <div class="tenant-card-top-left">
+              <div class="tenant-badge-pill">${initials}</div>
+              <div>
+                <div class="tenant-card-name">${this.escapeHTML(t.name)}</div>
+                <div class="tenant-card-location">${this.escapeHTML(t.unit)}</div>
+              </div>
+            </div>
+            <div class="tenant-card-top-right">
+              ${statusBadge}
+              <div class="tenant-action-menu-wrap">
+                <button type="button" class="tenant-card-menu-btn" aria-label="Store quick actions" onclick="event.stopPropagation(); MallApp.toggleTenantCardMenu(event, '${t.id}')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="1.5"></circle>
+                    <circle cx="19" cy="12" r="1.5"></circle>
+                    <circle cx="5" cy="12" r="1.5"></circle>
+                  </svg>
+                </button>
+                <div class="tenant-action-dropdown" id="tenantMenu-${t.id}" style="display: none;" onclick="event.stopPropagation()">
+                  <button type="button" class="tenant-action-item" onclick="MallApp.openTenantDrawer('${t.id}'); MallApp.closeAllTenantMenus();">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>View details</span>
+                  </button>
+                  <a href="tel:${t.phone || ''}" class="tenant-action-item" onclick="MallApp.closeAllTenantMenus()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <span>Call manager</span>
+                  </a>
+                  <a href="mailto:${t.email || ''}" class="tenant-action-item" onclick="MallApp.closeAllTenantMenus()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <span>Email manager</span>
+                  </a>
+                  <button type="button" class="tenant-action-item" onclick="MallApp.exportSingleStore('${t.id}', 'csv'); MallApp.closeAllTenantMenus();">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Export report (CSV)</span>
+                  </button>
+                  <button type="button" class="tenant-action-item" onclick="MallApp.exportSingleStore('${t.id}', 'pdf'); MallApp.closeAllTenantMenus();">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Export report (PDF)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tenant-card-category">${this.escapeHTML(t.category || 'Retail')}</div>
+
+          ${isOffline ? `
+            <div class="tenant-offline-strip">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>POS offline since ${t.offlineSince || '14:20'}. Sales may be missing.</span>
+            </div>
+          ` : ''}
+
+          <div class="tenant-card-metrics">
+            <div>
+              <div class="tenant-metric-label">Active Stock</div>
+              <div class="tenant-metric-value">${this.escapeHTML(t.skus || (t.skuCount ? `${t.skuCount} SKUs` : 'N/A'))}</div>
+            </div>
+            <div style="text-align: right;">
+              <div class="tenant-metric-label">Sales Today</div>
+              <div class="tenant-sales-spark-wrap">
+                <span class="tenant-metric-value" style="color: var(--success);">${this.formatCurrency(t.salesAmount || 0)}</span>
+                ${this.renderTenantSparkline(t.sparkline, isOffline)}
+              </div>
+            </div>
+          </div>
+
+          <div class="tenant-stock-health-box">
+            <div class="tenant-health-header">
+              <span class="tenant-health-title">Stock health</span>
+              <span class="tenant-health-pct" style="color: ${healthColor};">${health}%</span>
+            </div>
+            <div class="tenant-health-bar-track">
+              <div class="tenant-health-bar-fill" style="width: ${health}%; background: ${healthColor};"></div>
+            </div>
+          </div>
+
+          <div class="tenant-card-footer">
+            <div class="tenant-footer-pos">
+              <span class="tenant-dot ${dotClass}"></span>
+              <span>POS synced ${this.escapeHTML(t.lastSync || 'Just now')}</span>
+            </div>
+            <div>Lease ends ${this.escapeHTML(t.leaseEnd || 'N/A')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  renderTenantSparkline(sparkline = [20, 22, 21, 25, 24, 27, 26], isOffline = false) {
+    if (!sparkline || sparkline.length < 2) return '';
+    const min = Math.min(...sparkline);
+    const max = Math.max(...sparkline);
+    const range = (max - min) || 1;
+    const w = 46;
+    const h = 18;
+    const step = w / (sparkline.length - 1);
+    const points = sparkline.map((v, i) => {
+      const x = (i * step).toFixed(1);
+      const y = (h - ((v - min) / range) * (h - 4) - 2).toFixed(1);
+      return `${x},${y}`;
+    }).join(' ');
+
+    const strokeColor = isOffline ? 'var(--danger)' : 'var(--accent)';
+    return `
+      <svg class="tenant-sparkline-svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+        <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+      </svg>
+    `;
+  },
+
+  renderTenantListView(items) {
+    const listWrap = document.getElementById('tenantListContainer');
+    if (!listWrap) return;
+
+    listWrap.innerHTML = `
+      <table class="tenant-table" aria-label="Tenant Stores Directory">
+        <thead>
+          <tr>
+            <th onclick="MallApp.sortTenantTable('name')" title="Sort by Store">Store Name</th>
+            <th onclick="MallApp.sortTenantTable('floor')" title="Sort by Floor">Floor</th>
+            <th onclick="MallApp.sortTenantTable('category')" title="Sort by Category">Category</th>
+            <th onclick="MallApp.sortTenantTable('stock')" title="Sort by Stock">Active SKUs</th>
+            <th onclick="MallApp.sortTenantTable('sales')" title="Sort by Sales">Sales Today</th>
+            <th onclick="MallApp.sortTenantTable('pos')" title="Sort by POS Status">POS Sync</th>
+            <th onclick="MallApp.sortTenantTable('lease')" title="Sort by Lease End">Lease Ends</th>
+            <th>Status</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(t => {
+      const isOffline = t.posStatus === 'offline' || t.status === 'Offline';
+      const isExpiring = !isOffline && (t.status === 'Lease Expiring' || this.isLeaseExpiringSoon(t.leaseEnd));
+
+      let statusBadge = `<span class="status-pill pill-delivered">Active</span>`;
+      if (isOffline) {
+        statusBadge = `<span class="status-pill pill-cancelled">Offline</span>`;
+      } else if (isExpiring) {
+        statusBadge = `<span class="status-pill pill-delayed">Expiring</span>`;
+      }
+
+      const dotClass = isOffline ? 'dot-offline' : (t.posStatus === 'delayed' ? 'dot-delayed' : 'dot-online');
+      const initials = t.name.replace(/[^A-Za-z0-9]/g, '').substring(0, 2).toUpperCase();
+
+      return `
+              <tr onclick="MallApp.openTenantDrawer('${t.id}')">
+                <td>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="tenant-badge-pill" style="width: 32px; height: 32px; font-size: 0.78rem;">${initials}</div>
+                    <div>
+                      <div style="font-weight: 700; color: var(--text);">${this.escapeHTML(t.name)}</div>
+                      <div style="font-size: 0.74rem; color: var(--text-muted);">${this.escapeHTML(t.unit)}</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span style="font-weight: 500;">${this.escapeHTML(t.floor || 'Floor 1')}</span></td>
+                <td><span style="font-size: 0.78rem; color: var(--accent); font-weight: 600;">${this.escapeHTML(t.category)}</span></td>
+                <td><span style="font-weight: 600;">${this.escapeHTML(t.skus || `${t.skuCount} SKUs`)}</span></td>
+                <td><span style="font-weight: 700; color: var(--success);">${this.formatCurrency(t.salesAmount || 0)}</span></td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem;">
+                    <span class="tenant-dot ${dotClass}"></span>
+                    <span>${this.escapeHTML(t.posStatus ? t.posStatus.toUpperCase() : 'ONLINE')}</span>
+                  </div>
+                </td>
+                <td><span style="font-size: 0.78rem; color: var(--text-muted);">${this.escapeHTML(t.leaseEnd || 'N/A')}</span></td>
+                <td>${statusBadge}</td>
+                <td style="text-align: right;" onclick="event.stopPropagation()">
+                  <div class="tenant-action-menu-wrap" style="display: inline-block;">
+                    <button type="button" class="tenant-card-menu-btn" aria-label="Row actions" onclick="event.stopPropagation(); MallApp.toggleTenantCardMenu(event, '${t.id}')">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="1.5"></circle>
+                        <circle cx="19" cy="12" r="1.5"></circle>
+                        <circle cx="5" cy="12" r="1.5"></circle>
+                      </svg>
+                    </button>
+                    <div class="tenant-action-dropdown" id="tenantMenu-${t.id}" style="display: none;" onclick="event.stopPropagation()">
+                      <button type="button" class="tenant-action-item" onclick="MallApp.openTenantDrawer('${t.id}'); MallApp.closeAllTenantMenus();">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>View details</span>
+                      </button>
+                      <a href="tel:${t.phone || ''}" class="tenant-action-item" onclick="MallApp.closeAllTenantMenus()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        <span>Call manager</span>
+                      </a>
+                      <a href="mailto:${t.email || ''}" class="tenant-action-item" onclick="MallApp.closeAllTenantMenus()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <span>Email manager</span>
+                      </a>
+                      <button type="button" class="tenant-action-item" onclick="MallApp.exportSingleStore('${t.id}', 'csv'); MallApp.closeAllTenantMenus();">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>Export report (CSV)</span>
+                      </button>
+                      <button type="button" class="tenant-action-item" onclick="MallApp.exportSingleStore('${t.id}', 'pdf'); MallApp.closeAllTenantMenus();">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        <span>Export report (PDF)</span>
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
+    }).join('')}
+        </tbody>
+      </table>
+    `;
+  },
+
+  sortTenantTable(col) {
+    if (col === 'name') {
+      this._tenantSort = this._tenantSort === 'name-asc' ? 'name-desc' : 'name-asc';
+    } else if (col === 'sales') {
+      this._tenantSort = this._tenantSort === 'sales-desc' ? 'sales-asc' : 'sales-desc';
+    } else if (col === 'stock') {
+      this._tenantSort = this._tenantSort === 'stock-desc' ? 'stock-asc' : 'stock-desc';
+    } else if (col === 'lease') {
+      this._tenantSort = this._tenantSort === 'lease-asc' ? 'lease-desc' : 'lease-asc';
+    } else {
+      this._tenantSort = 'name-asc';
+    }
+
+    const sortFilter = document.getElementById('tenantSortFilter');
+    if (sortFilter) {
+      if (['name-asc', 'sales-desc', 'stock-desc', 'lease-asc'].includes(this._tenantSort)) {
+        sortFilter.value = this._tenantSort;
+      }
+    }
+
+    this.renderTenantCards();
+  },
+
+  renderTenantPagination(totalItems, startIndex, pageSize, totalPages) {
+    const bar = document.getElementById('tenantPaginationBar');
+    if (!bar) return;
+
+    if (totalItems <= pageSize && totalPages <= 1) {
+      bar.innerHTML = `
+        <div class="tenant-showing-text">Showing all ${totalItems} stores</div>
+        <div class="tenant-page-controls">
+          <label style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            Per page:
+            <select class="tenant-page-size-select" onchange="MallApp.setTenantPageSize(Number(this.value))">
+              <option value="12" ${pageSize === 12 ? 'selected' : ''}>12</option>
+              <option value="24" ${pageSize === 24 ? 'selected' : ''}>24</option>
+              <option value="48" ${pageSize === 48 ? 'selected' : ''}>48</option>
+            </select>
+          </label>
         </div>
       `;
       return;
     }
 
-    grid.innerHTML = MallState.tenants.map(t => `
-      <div class="tenant-clean-card">
-        <div class="tenant-card-top">
-          <div class="tenant-badge-pill">${t.name.substring(0, 2).toUpperCase()}</div>
-          <span class="status-pill pill-delivered">${t.status}</span>
+    const endIdx = Math.min(startIndex + pageSize, totalItems);
+
+    let pagesHtml = '';
+    for (let p = 1; p <= totalPages; p++) {
+      pagesHtml += `
+        <button type="button" class="tenant-page-btn ${p === this._tenantPage ? 'active' : ''}" onclick="MallApp.setTenantPage(${p})">
+          ${p}
+        </button>
+      `;
+    }
+
+    bar.innerHTML = `
+      <div class="tenant-showing-text">
+        Showing <b>${startIndex + 1}–${endIdx}</b> of <b>${totalItems}</b> stores
+      </div>
+      <div class="tenant-page-controls">
+        <label style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-right: 8px;">
+          Per page:
+          <select class="tenant-page-size-select" onchange="MallApp.setTenantPageSize(Number(this.value))">
+            <option value="12" ${pageSize === 12 ? 'selected' : ''}>12</option>
+            <option value="24" ${pageSize === 24 ? 'selected' : ''}>24</option>
+            <option value="48" ${pageSize === 48 ? 'selected' : ''}>48</option>
+          </select>
+        </label>
+        <button type="button" class="tenant-page-btn" ${this._tenantPage === 1 ? 'disabled' : ''} onclick="MallApp.setTenantPage(${this._tenantPage - 1})">
+          Previous
+        </button>
+        ${pagesHtml}
+        <button type="button" class="tenant-page-btn" ${this._tenantPage === totalPages ? 'disabled' : ''} onclick="MallApp.setTenantPage(${this._tenantPage + 1})">
+          Next
+        </button>
+      </div>
+    `;
+  },
+
+  setTenantPage(page) {
+    this._tenantPage = page;
+    this.renderTenantCards();
+    const panel = document.getElementById('view-tenants');
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  },
+
+  setTenantPageSize(size) {
+    this._tenantPageSize = size || 12;
+    this._tenantPage = 1;
+    this.renderTenantCards();
+  },
+
+  toggleTenantCardMenu(event, id) {
+    event.stopPropagation();
+    const menu = document.getElementById(`tenantMenu-${id}`);
+    const isCurrentlyOpen = menu && menu.style.display === 'flex';
+
+    this.closeAllTenantMenus();
+
+    if (menu && !isCurrentlyOpen) {
+      menu.style.display = 'flex';
+      this._activeTenantMenuId = id;
+    }
+  },
+
+  closeAllTenantMenus() {
+    document.querySelectorAll('.tenant-action-dropdown').forEach(d => {
+      d.style.display = 'none';
+    });
+    this._activeTenantMenuId = null;
+  },
+
+  renderTenantSkeletons() {
+    const grid = document.getElementById('tenantCardsGrid');
+    const listWrap = document.getElementById('tenantListContainer');
+    if (grid) {
+      grid.innerHTML = Array(6).fill(0).map(() => `
+        <div class="tenant-clean-card" style="pointer-events: none;">
+          <div class="tenant-card-top" style="justify-content: space-between;">
+            <div class="skeleton-shimmer skeleton-circle" style="width: 40px; height: 40px; border-radius: 10px;"></div>
+            <div class="skeleton-shimmer skeleton-pill" style="width: 70px;"></div>
+          </div>
+          <div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 16px; margin: 12px 0 6px 0;"></div>
+          <div class="skeleton-shimmer skeleton-bar" style="width: 190px; height: 12px; margin-bottom: 16px;"></div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; margin-bottom: 12px;">
+            <div class="skeleton-shimmer skeleton-bar" style="width: 65px; height: 18px;"></div>
+            <div class="skeleton-shimmer skeleton-bar" style="width: 75px; height: 18px;"></div>
+          </div>
+          <div class="skeleton-shimmer skeleton-bar" style="width: 100%; height: 6px; border-radius: 999px; margin-bottom: 12px;"></div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px;">
+            <div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 12px;"></div>
+            <div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 12px;"></div>
+          </div>
         </div>
-        <div style="font-size: 1.05rem; font-weight: 700; color: #111827; margin-bottom: 2px;">${this.escapeHTML(t.name)}</div>
-        <div style="font-size: 0.76rem; color: #94A3B8; margin-bottom: 12px;">${this.escapeHTML(t.unit)}</div>
-        <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-light); padding-top: 10px;">
-          <div>
-            <div style="font-size: 0.72rem; color: #8A98A5;">Active Stock</div>
-            <div style="font-weight: 700;">${t.skus}</div>
+      `).join('');
+    }
+    if (listWrap && this._tenantViewMode === 'list') {
+      listWrap.innerHTML = `
+        <table class="tenant-table">
+          <tbody>
+            ${Array(6).fill(0).map(() => `
+              <tr class="skeleton-row">
+                <td><div class="skeleton-shimmer skeleton-bar" style="width: 140px; height: 16px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-bar" style="width: 70px; height: 14px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 14px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-bar" style="width: 60px; height: 14px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-bar" style="width: 70px; height: 14px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-pill" style="width: 70px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-bar" style="width: 80px; height: 14px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-pill" style="width: 60px;"></div></td>
+                <td><div class="skeleton-shimmer skeleton-circle" style="width: 24px; height: 24px; margin-left: auto;"></div></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+  },
+
+  retryTenantLoad() {
+    this._tenantError = null;
+    this._tenantLoading = true;
+    this.renderTenantSkeletons();
+    setTimeout(() => {
+      this._tenantLoading = false;
+      this.renderTenantCards();
+      this.showToast('Tenant store telemetry reconnected', 'success');
+    }, 400);
+  },
+
+  // --------------------------------------------------------
+  // TENANT STORE DETAIL DRAWER IMPLEMENTATION
+  // --------------------------------------------------------
+
+  openTenantDrawer(id) {
+    const store = (MallState.tenants || []).find(t => t.id === id);
+    if (!store) {
+      this.showToast('Store details not found', 'error');
+      return;
+    }
+
+    this._activeTenantDetailId = id;
+
+    const drawer = document.getElementById('tenantDetailDrawer');
+    const backdrop = document.getElementById('tenantDrawerBackdrop');
+    const titleEl = document.getElementById('tenantDrawerTitle');
+    const locationEl = document.getElementById('tenantDrawerLocation');
+    const statusBadgeEl = document.getElementById('tenantDrawerStatusBadge');
+    const bodyEl = document.getElementById('tenantDrawerBody');
+    const footerEl = document.getElementById('tenantDrawerFooter');
+
+    if (!drawer || !backdrop || !titleEl || !locationEl || !bodyEl || !footerEl) return;
+
+    titleEl.textContent = store.name;
+    locationEl.textContent = `${store.floor || 'Floor 1'} · ${store.unit || 'Unit #'} · ${store.category || 'Retail'}`;
+
+    const isOffline = store.posStatus === 'offline' || store.status === 'Offline';
+    const isExpiring = !isOffline && (store.status === 'Lease Expiring' || this.isLeaseExpiringSoon(store.leaseEnd));
+    let badgeHtml = `<span class="status-pill pill-delivered">Active Lease</span>`;
+    if (isOffline) {
+      badgeHtml = `<span class="status-pill pill-cancelled">POS Offline</span>`;
+    } else if (isExpiring) {
+      badgeHtml = `<span class="status-pill pill-delayed">Lease Expiring Soon</span>`;
+    }
+    if (statusBadgeEl) statusBadgeEl.innerHTML = badgeHtml;
+
+    // Related low-stock items from inventory
+    const lowStockItems = (MallState.products || [])
+      .filter(p => p.tenant === store.name)
+      .sort((a, b) => (a.stock / (a.minBuffer || 1)) - (b.stock / (b.minBuffer || 1)))
+      .slice(0, 5);
+
+    // Build Drawer Body with 5 Sections
+    bodyEl.innerHTML = `
+      <!-- SECTION 1: STORE CONTACT & MANAGER -->
+      <div class="tenant-drawer-section">
+        <div class="tenant-drawer-section-title">
+          <span>Store Management & Contact</span>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">${this.escapeHTML(store.contact || '')}</span>
+        </div>
+        <div class="tenant-drawer-contact-card">
+          <div class="tenant-drawer-contact-avatar">
+            ${store.manager ? store.manager.substring(0, 2).toUpperCase() : 'SM'}
           </div>
           <div>
-            <div style="font-size: 0.72rem; color: #8A98A5;">Sales Today</div>
-            <div style="font-weight: 700; color: var(--green-main);">${this.formatCurrency(t.salesAmount)}</div>
+            <div style="font-weight: 700; color: var(--text); font-size: 0.95rem;">${this.escapeHTML(store.manager || 'Store Manager')}</div>
+            <div style="font-size: 0.76rem; color: var(--text-muted);">Lead Tenant Store Representative</div>
+          </div>
+        </div>
+        <div class="tenant-drawer-kpi-grid" style="margin-bottom: 12px;">
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Phone Direct</div>
+            <a href="tel:${store.phone || ''}" style="font-size: 0.82rem; color: var(--accent); font-weight: 600; text-decoration: none;">
+              ${this.escapeHTML(store.phone || 'N/A')}
+            </a>
+          </div>
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Official Email</div>
+            <a href="mailto:${store.email || ''}" style="font-size: 0.82rem; color: var(--accent); font-weight: 600; text-decoration: none; overflow: hidden; text-overflow: ellipsis; display: block;">
+              ${this.escapeHTML(store.email || 'N/A')}
+            </a>
+          </div>
+        </div>
+        <div class="tenant-drawer-contact-actions">
+          <a href="tel:${store.phone || ''}" class="tenant-drawer-action-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span>Call Manager</span>
+          </a>
+          <a href="mailto:${store.email || ''}" class="tenant-drawer-action-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            <span>Email Manager</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- SECTION 2: LEASE & BILLING COMPLIANCE -->
+      <div class="tenant-drawer-section">
+        <div class="tenant-drawer-section-title">
+          <span>Lease Agreement & Billing</span>
+          <span class="status-pill ${store.rentStatus === 'Overdue' ? 'pill-cancelled' : 'pill-delivered'}">
+            ${store.rentStatus === 'Overdue' ? 'Rent Overdue' : 'Rent Paid'}
+          </span>
+        </div>
+        <div class="tenant-drawer-kpi-grid">
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Lease Effective Term</div>
+            <div class="tenant-drawer-kpi-value" style="font-size: 0.85rem;">${this.escapeHTML(store.leaseStart || '01 Jan 2024')} – ${this.escapeHTML(store.leaseEnd || '31 Dec 2028')}</div>
+          </div>
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Monthly Base Rent</div>
+            <div class="tenant-drawer-kpi-value" style="color: ${store.rentStatus === 'Overdue' ? 'var(--danger)' : 'var(--text)'};">
+              ${this.formatCurrency(store.monthlyRent || 0)}
+            </div>
           </div>
         </div>
       </div>
-    `).join('');
 
-    this.renderTenantsExportButton();
+      <!-- SECTION 3: POS TELEMETRY & HARDWARE -->
+      <div class="tenant-drawer-section">
+        <div class="tenant-drawer-section-title">
+          <span>POS Hardware & Telemetry Health</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted);">${store.terminals || 4} Active Terminals</span>
+        </div>
+        ${isOffline ? `
+          <div class="tenant-offline-strip" style="margin-bottom: 12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>POS terminal stream offline since ${store.offlineSince || '14:20'}. Telemetry packets queued locally.</span>
+          </div>
+        ` : ''}
+        <div class="tenant-drawer-kpi-grid">
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Sync Connection</div>
+            <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.85rem;">
+              <span class="tenant-dot ${isOffline ? 'dot-offline' : (store.posStatus === 'delayed' ? 'dot-delayed' : 'dot-online')}"></span>
+              <span>${String(store.posStatus || 'online').toUpperCase()}</span>
+            </div>
+          </div>
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Last Successful Heartbeat</div>
+            <div class="tenant-drawer-kpi-value" style="font-size: 0.85rem;">${this.escapeHTML(store.lastSync || '4 min ago')}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: SALES PERFORMANCE & 7-DAY MINI CHART -->
+      <div class="tenant-drawer-section">
+        <div class="tenant-drawer-section-title">
+          <span>Today's Sales Performance</span>
+          <span style="color: var(--success); font-weight: 700;">${store.changePct !== undefined ? (store.changePct >= 0 ? `+${store.changePct}%` : `${store.changePct}%`) : '+12.5%'}</span>
+        </div>
+        <div class="tenant-drawer-kpi-grid" style="margin-bottom: 14px;">
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Gross Revenue Today</div>
+            <div class="tenant-drawer-kpi-value" style="color: var(--success);">${this.formatCurrency(store.salesAmount || 0)}</div>
+          </div>
+          <div class="tenant-drawer-kpi">
+            <div class="tenant-drawer-kpi-label">Retail Units Sold</div>
+            <div class="tenant-drawer-kpi-value">${store.unitsSold || 0} items</div>
+          </div>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">
+          7-Day Sales Velocity (Mon – Sun)
+        </div>
+        ${this.renderTenantDrawerMiniChart(store.sparkline, store.salesAmount)}
+      </div>
+
+      <!-- SECTION 5: LOW-STOCK INVENTORY ALERTS (TOP 5) -->
+      <div class="tenant-drawer-section">
+        <div class="tenant-drawer-section-title">
+          <span>Priority Low-Stock Alerts (Top 5)</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted);">Live SKU telemetry</span>
+        </div>
+        ${lowStockItems.length ? `
+          <div class="tenant-drawer-items-list">
+            ${lowStockItems.map(item => `
+              <div class="tenant-drawer-item-card">
+                <div style="flex: 1; min-width: 0; padding-right: 8px;">
+                  <div style="font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    ${this.escapeHTML(item.name)}
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">
+                    ${item.sku} · Stock: <b style="color: ${item.stock <= item.minBuffer ? 'var(--danger)' : 'var(--text)'};">${item.stock}</b> / Buffer: ${item.minBuffer}
+                  </div>
+                </div>
+                <button type="button" class="btn-table-action" style="padding: 4px 8px; font-size: 0.72rem; white-space: nowrap;" onclick="MallApp.filterInventoryByStore('${this.escapeHTML(store.name)}', '${item.sku}')">
+                  Filter in Inventory
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div style="font-size: 0.8rem; color: var(--text-muted); padding: 8px 0;">
+            All inventory SKUs for ${this.escapeHTML(store.name)} are currently well above safety replenishment buffer levels.
+          </div>
+        `}
+      </div>
+    `;
+
+    // Footer Buttons
+    footerEl.innerHTML = `
+      <button type="button" class="btn-table-action" style="padding: 8px 16px; font-size: 0.82rem;" onclick="MallApp.exportSingleStore('${store.id}', 'pdf')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download Report
+      </button>
+      <button type="button" class="tenant-drawer-action-btn primary" onclick="MallApp.closeTenantDrawer()">
+        Close
+      </button>
+    `;
+
+    drawer.classList.add('open');
+    backdrop.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    this.setOverlayOpen(true);
+
+    drawer.focus();
+  },
+
+  closeTenantDrawer() {
+    const drawer = document.getElementById('tenantDetailDrawer');
+    const backdrop = document.getElementById('tenantDrawerBackdrop');
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+    if (backdrop) backdrop.classList.remove('open');
+
+    this._activeTenantDetailId = null;
+    this.setOverlayOpen(false);
+  },
+
+  renderTenantDrawerMiniChart(sparkline = [20, 22, 21, 25, 24, 27, 26], salesAmount = 10000) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const maxVal = Math.max(...sparkline) || 1;
+
+    return `
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 90px; padding: 10px 8px 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+        ${sparkline.map((val, idx) => {
+      const heightPct = Math.round((val / maxVal) * 65) + 15;
+      const isToday = idx === sparkline.length - 1;
+      const barBg = isToday ? 'var(--accent)' : 'var(--border)';
+      return `
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end;">
+              <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">${val}</span>
+              <div style="width: 100%; max-width: 24px; height: ${heightPct}%; background: ${barBg}; border-radius: 4px 4px 0 0; transition: height 0.3s;"></div>
+              <span style="font-size: 0.68rem; color: ${isToday ? 'var(--accent)' : 'var(--text-muted)'}; font-weight: ${isToday ? '700' : '500'};">${days[idx] || ''}</span>
+            </div>
+          `;
+    }).join('')}
+      </div>
+    `;
+  },
+
+  filterInventoryByStore(storeName, sku) {
+    this.closeTenantDrawer();
+    this.switchView('inventory');
+
+    const searchInput = document.getElementById('inventorySearchInput');
+    if (searchInput) {
+      searchInput.value = sku || storeName;
+    }
+
+    this._invPage = 1;
+    this.renderInventoryTable();
+    this.showToast(`Filtered inventory by ${storeName}${sku ? ` (${sku})` : ''}`, 'info');
+  },
+
+  exportSingleStore(id, format = 'csv') {
+    const store = (MallState.tenants || []).find(t => t.id === id);
+    if (!store) {
+      this.showToast('Store not found for export', 'error');
+      return;
+    }
+
+    const columns = [
+      { key: 'name', label: 'Store Name' },
+      { key: 'category', label: 'Category' },
+      { key: 'floor', label: 'Floor' },
+      { key: 'unit', label: 'Unit Location' },
+      { key: 'manager', label: 'Manager Name' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'email', label: 'Email' },
+      { key: 'skuCount', label: 'Active SKUs', excelType: 'number' },
+      { key: 'salesAmount', label: 'Sales Today', format: v => this.formatCurrency(v), excelType: 'number' },
+      { key: 'unitsSold', label: 'Units Sold', excelType: 'number' },
+      { key: 'stockHealth', label: 'Stock Health %', format: v => `${v}%`, excelType: 'number' },
+      { key: 'posStatus', label: 'POS Status', format: v => String(v || '').toUpperCase() },
+      { key: 'lastSync', label: 'Last Sync' },
+      { key: 'status', label: 'Status' },
+      { key: 'leaseStart', label: 'Lease Start' },
+      { key: 'leaseEnd', label: 'Lease End' },
+      { key: 'monthlyRent', label: 'Monthly Rent', format: v => this.formatCurrency(v), excelType: 'number' },
+      { key: 'rentStatus', label: 'Rent Status' }
+    ];
+
+    const cleanName = store.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const filename = `${cleanName}_summary_report.${format}`;
+
+    try {
+      if (format === 'pdf') {
+        exportToPDF(`${store.name} Store Summary Report`, [store], columns, filename);
+        this.showToast(`${store.name} report exported as PDF`, 'success');
+      } else {
+        exportToCSV([store], columns, filename);
+        this.showToast(`${store.name} report exported as CSV`, 'success');
+      }
+    } catch (err) {
+      console.error('Failed to export store:', err);
+      this.showToast(`Export failed: ${err.message}`, 'error');
+    }
+  },
+
+  // --------------------------------------------------------
+  // ONBOARD NEW TENANT MODAL IMPLEMENTATION
+  // --------------------------------------------------------
+
+  openOnboardTenantModal() {
+    const modal = document.getElementById('onboardTenantModal');
+    if (!modal) return;
+
+    const form = document.getElementById('onboardTenantForm');
+    if (form) form.reset();
+
+    // Clear inline error texts and styles
+    modal.querySelectorAll('.field-error-text').forEach(el => {
+      el.textContent = '';
+      el.classList.remove('visible');
+    });
+    modal.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+
+    const submitBtn = document.getElementById('onboardSubmitBtn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.5';
+      submitBtn.style.cursor = 'not-allowed';
+    }
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    this.setOverlayOpen(true);
+
+    const firstInput = document.getElementById('onboardStoreName');
+    if (firstInput) setTimeout(() => firstInput.focus(), 100);
+  },
+
+  closeOnboardTenantModal() {
+    const modal = document.getElementById('onboardTenantModal');
+    if (modal) {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    this.setOverlayOpen(false);
+  },
+
+  bindOnboardTenantValidation() {
+    const form = document.getElementById('onboardTenantForm');
+    if (!form) return;
+
+    const fields = [
+      'onboardStoreName',
+      'onboardCategory',
+      'onboardFloor',
+      'onboardUnit',
+      'onboardManager',
+      'onboardPhone',
+      'onboardEmail',
+      'onboardLeaseStart',
+      'onboardLeaseEnd',
+      'onboardMonthlyRent'
+    ];
+
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => this.validateOnboardTenantForm());
+        el.addEventListener('blur', () => this.validateOnboardTenantForm());
+      }
+    });
+  },
+
+  validateOnboardTenantForm() {
+    const nameEl = document.getElementById('onboardStoreName');
+    const catEl = document.getElementById('onboardCategory');
+    const floorEl = document.getElementById('onboardFloor');
+    const unitEl = document.getElementById('onboardUnit');
+    const mgrEl = document.getElementById('onboardManager');
+    const phoneEl = document.getElementById('onboardPhone');
+    const emailEl = document.getElementById('onboardEmail');
+    const startEl = document.getElementById('onboardLeaseStart');
+    const endEl = document.getElementById('onboardLeaseEnd');
+    const rentEl = document.getElementById('onboardMonthlyRent');
+    const submitBtn = document.getElementById('onboardSubmitBtn');
+
+    let isValid = true;
+
+    const setError = (el, errorId, msg) => {
+      const errEl = document.getElementById(errorId);
+      if (msg) {
+        isValid = false;
+        if (el) el.classList.add('has-error');
+        if (errEl) {
+          errEl.textContent = msg;
+          errEl.classList.add('visible');
+        }
+      } else {
+        if (el) el.classList.remove('has-error');
+        if (errEl) {
+          errEl.textContent = '';
+          errEl.classList.remove('visible');
+        }
+      }
+    };
+
+    // Store Name: required, min 2 chars, unique
+    const nameVal = (nameEl ? nameEl.value : '').trim();
+    if (!nameVal) {
+      setError(nameEl, 'onboardStoreNameError', 'Store name is required');
+    } else if (nameVal.length < 2) {
+      setError(nameEl, 'onboardStoreNameError', 'Must be at least 2 characters');
+    } else if ((MallState.tenants || []).some(t => t.name.toLowerCase() === nameVal.toLowerCase())) {
+      setError(nameEl, 'onboardStoreNameError', 'A store with this name already exists');
+    } else {
+      setError(nameEl, 'onboardStoreNameError', '');
+    }
+
+    // Unit: required
+    const unitVal = (unitEl ? unitEl.value : '').trim();
+    if (!unitVal) {
+      setError(unitEl, 'onboardUnitError', 'Unit number or zone is required');
+    } else {
+      setError(unitEl, 'onboardUnitError', '');
+    }
+
+    // Manager: required
+    const mgrVal = (mgrEl ? mgrEl.value : '').trim();
+    if (!mgrVal) {
+      setError(mgrEl, 'onboardManagerError', 'Manager name is required');
+    } else if (mgrVal.length < 2) {
+      setError(mgrEl, 'onboardManagerError', 'Must be at least 2 characters');
+    } else {
+      setError(mgrEl, 'onboardManagerError', '');
+    }
+
+    // Phone: required, valid phone
+    const phoneVal = (phoneEl ? phoneEl.value : '').trim();
+    const phoneRegex = /^[\d\s\+\-\(\)]{7,20}$/;
+    if (!phoneVal) {
+      setError(phoneEl, 'onboardPhoneError', 'Contact phone number is required');
+    } else if (!phoneRegex.test(phoneVal)) {
+      setError(phoneEl, 'onboardPhoneError', 'Enter a valid telephone number (e.g. +1 555-234-5678)');
+    } else {
+      setError(phoneEl, 'onboardPhoneError', '');
+    }
+
+    // Email: required, valid email
+    const emailVal = (emailEl ? emailEl.value : '').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailVal) {
+      setError(emailEl, 'onboardEmailError', 'Manager email address is required');
+    } else if (!emailRegex.test(emailVal)) {
+      setError(emailEl, 'onboardEmailError', 'Enter a valid email address');
+    } else {
+      setError(emailEl, 'onboardEmailError', '');
+    }
+
+    // Lease Start Date
+    const startVal = startEl ? startEl.value : '';
+    if (!startVal) {
+      setError(startEl, 'onboardLeaseStartError', 'Lease start date is required');
+    } else {
+      setError(startEl, 'onboardLeaseStartError', '');
+    }
+
+    // Lease End Date
+    const endVal = endEl ? endEl.value : '';
+    if (!endVal) {
+      setError(endEl, 'onboardLeaseEndError', 'Lease end date is required');
+    } else if (startVal && new Date(endVal) <= new Date(startVal)) {
+      setError(endEl, 'onboardLeaseEndError', 'End date must be after start date');
+    } else {
+      setError(endEl, 'onboardLeaseEndError', '');
+    }
+
+    // Monthly Rent: number >= 100
+    const rentVal = parseFloat(rentEl ? rentEl.value : '');
+    if (isNaN(rentVal) || rentVal < 100) {
+      setError(rentEl, 'onboardMonthlyRentError', 'Enter monthly rent (minimum $100)');
+    } else {
+      setError(rentEl, 'onboardMonthlyRentError', '');
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = !isValid;
+      submitBtn.style.opacity = isValid ? '1' : '0.5';
+      submitBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+    }
+
+    return isValid;
+  },
+
+  submitOnboardTenant(event) {
+    if (event) event.preventDefault();
+
+    if (!this.validateOnboardTenantForm()) {
+      this.showToast('Please resolve all form errors before submitting', 'warning');
+      return;
+    }
+
+    const nameVal = document.getElementById('onboardStoreName').value.trim();
+    const catVal = document.getElementById('onboardCategory').value;
+    const floorVal = document.getElementById('onboardFloor').value;
+    const unitVal = document.getElementById('onboardUnit').value.trim();
+    const mgrVal = document.getElementById('onboardManager').value.trim();
+    const phoneVal = document.getElementById('onboardPhone').value.trim();
+    const emailVal = document.getElementById('onboardEmail').value.trim();
+    const startVal = document.getElementById('onboardLeaseStart').value;
+    const endVal = document.getElementById('onboardLeaseEnd').value;
+    const rentVal = parseFloat(document.getElementById('onboardMonthlyRent').value) || 5000;
+
+    const formatDateStr = (dStr) => {
+      if (!dStr) return 'N/A';
+      const d = new Date(dStr);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    };
+
+    const newTenant = {
+      id: `ten-${Date.now()}`,
+      name: nameVal,
+      unit: `${unitVal}, ${floorVal}`,
+      floor: floorVal,
+      category: catVal,
+      department: `${catVal} Department`,
+      skus: '120 SKUs',
+      skuCount: 120,
+      stockHealth: 100,
+      salesToday: '$0',
+      salesAmount: 0,
+      unitsSold: 0,
+      turnoverRate: 0,
+      changePct: 0,
+      sparkline: [12, 14, 15, 14, 16, 18, 20],
+      posStatus: 'online',
+      lastSync: 'Just now',
+      manager: mgrVal,
+      phone: phoneVal,
+      email: emailVal,
+      contact: phoneVal,
+      status: 'Active',
+      leaseStart: formatDateStr(startVal),
+      leaseEnd: formatDateStr(endVal),
+      monthlyRent: rentVal,
+      rentStatus: 'Paid',
+      terminals: 2,
+      offlineSince: null
+    };
+
+    MallState.tenants.unshift(newTenant);
+
+    this.closeOnboardTenantModal();
+    this.showToast(`Retail store "${nameVal}" onboarded successfully!`, 'success');
+
+    this.renderTenantDirectory();
   },
 
   // ========================================================
   // DATA EXPORT SYSTEM & EXPORT CENTER IMPLEMENTATION
   // ========================================================
-
-  checkRoute() {
-    const hash = (window.location.hash || '').toLowerCase().replace('#', '');
-    const path = (window.location.pathname || '').toLowerCase();
-    if (hash === 'export' || path.endsWith('/export')) {
-      this.switchView('export');
-    }
-  },
 
   // 1. MODULE EXPORT CONFIGURATIONS
   getInventoryExportConfig() {
@@ -3130,21 +4589,49 @@ window.MallApp = {
     return {
       moduleKey: 'tenants',
       moduleTitle: 'Tenant Stores',
-      getData: () => [...MallState.tenants],
+      getData: () => this.getFilteredTenants(),
       getAllData: () => [...MallState.tenants],
       columns: [
-        { key: 'name', label: 'Store' },
-        { key: 'unit', label: 'Location' },
-        { key: 'manager', label: 'Manager' },
-        { key: 'contact', label: 'Contact' },
-        {
-          key: 'posStatus',
-          label: 'POS Sync Status',
-          format: val => String(val || 'online').toUpperCase()
-        },
-        { key: 'status', label: 'Lease status' }
+        { key: 'name', label: 'Store Name' },
+        { key: 'category', label: 'Category' },
+        { key: 'floor', label: 'Floor' },
+        { key: 'unit', label: 'Unit' },
+        { key: 'manager', label: 'Store Manager' },
+        { key: 'phone', label: 'Phone' },
+        { key: 'email', label: 'Email' },
+        { key: 'skuCount', label: 'Active SKUs', excelType: 'number' },
+        { key: 'salesAmount', label: 'Sales Today', format: val => this.formatCurrency(val), excelType: 'number' },
+        { key: 'unitsSold', label: 'Units Sold', excelType: 'number' },
+        { key: 'stockHealth', label: 'Stock Health %', format: val => `${val}%`, excelType: 'number' },
+        { key: 'posStatus', label: 'POS Status', format: val => String(val || '').toUpperCase() },
+        { key: 'lastSync', label: 'Last POS Sync' },
+        { key: 'status', label: 'Status' },
+        { key: 'leaseEnd', label: 'Lease Expiration' },
+        { key: 'monthlyRent', label: 'Monthly Rent', format: val => this.formatCurrency(val), excelType: 'number' },
+        { key: 'rentStatus', label: 'Rent Status' }
       ],
-      getSummaryRow: null
+      getSummaryRow: (rows) => {
+        const totalSales = rows.reduce((sum, r) => sum + (r.salesAmount || 0), 0);
+        return {
+          name: 'TOTALS',
+          category: '',
+          floor: '',
+          unit: `${rows.length} Stores`,
+          manager: '',
+          phone: '',
+          email: '',
+          skuCount: rows.reduce((sum, r) => sum + (r.skuCount || 0), 0),
+          salesAmount: this.formatCurrency(totalSales),
+          unitsSold: rows.reduce((sum, r) => sum + (r.unitsSold || 0), 0),
+          stockHealth: '',
+          posStatus: '',
+          lastSync: '',
+          status: '',
+          leaseEnd: '',
+          monthlyRent: '',
+          rentStatus: ''
+        };
+      }
     };
   },
 
@@ -3452,7 +4939,7 @@ window.MallApp = {
       `;
     } else if (viewName === 'tenants') {
       primaryWrap.innerHTML = `
-        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.showToast('Tenant onboarding wizard initialized', 'info')" aria-label="Onboard Tenant">
+        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.openOnboardTenantModal()" aria-label="Onboard Tenant">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -4006,6 +5493,8 @@ window.MallApp = {
         </tr>
       `).join('');
     }
+
+    this.renderTenantSkeletons();
   },
 
   showErrorBanner(message) {
