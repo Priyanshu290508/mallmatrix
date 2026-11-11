@@ -38,6 +38,24 @@ import {
   formatCurrency
 } from './src/data/mallData.js';
 
+import {
+  login as authLogin,
+  logout as authLogout,
+  isAuthenticated,
+  getCurrentUser
+} from './src/services/auth.js';
+
+import {
+  getProfile,
+  saveProfile,
+  getSavedAvatar,
+  saveAvatar,
+  removeAvatar,
+  terminateSessionById,
+  terminateOtherSessions,
+  DEFAULT_PROFILE
+} from './src/services/profile.js';
+
 const MallState = {
   activeView: 'dashboard',
   isLoading: false,
@@ -59,7 +77,13 @@ const MallState = {
   tenants: initialStores.map(t => ({ ...t })),
 
   // Staff Directory (Derived from single source)
-  staff: initialStaff.map(s => ({ ...s }))
+  staff: initialStaff.map(s => ({ ...s })),
+
+  // Profile View State
+  profileActiveTab: 'personal',
+  profileEditSections: {},
+  profileTimelineFilter: 'all',
+  profileTimelineCount: 5
 };
 
 // Global Application Controller
@@ -98,6 +122,7 @@ window.MallApp = {
     this.updateNotificationBadge();
     this.renderAll();
     this.initLanding();
+    this.updateUserProfile();
     this.checkRoute();
     this.bindProfileDropdown();
 
@@ -108,7 +133,7 @@ window.MallApp = {
     window.addEventListener('hashchange', () => this.checkRoute());
 
     // Initial 600ms load simulation with skeletons only on app views
-    if (MallState.activeView !== 'landing' && MallState.activeView !== 'not-found') {
+    if (MallState.activeView !== 'landing' && MallState.activeView !== 'login' && MallState.activeView !== 'not-found') {
       this.simulateRefresh(600);
     }
   },
@@ -371,11 +396,50 @@ window.MallApp = {
       if (typeof event.preventDefault === 'function') event.preventDefault();
       if (typeof event.stopPropagation === 'function') event.stopPropagation();
     }
-    let view = String(pathOrView).replace(/^\//, '').toLowerCase();
+
+    // Check unsaved profile changes
+    if (MallState.activeView === 'profile' && Object.values(MallState.profileEditSections || {}).some(Boolean)) {
+      if (!confirm('You have unsaved changes in your profile. Are you sure you want to discard them?')) {
+        return;
+      }
+      MallState.profileEditSections = {};
+    }
+
+    const rawTarget = String(pathOrView || '').replace(/^\/+/, '');
+    const cleanPath = rawTarget.split('?')[0].split('#')[0].toLowerCase();
+    const targetQuery = rawTarget.includes('?') ? rawTarget.split('?')[1] : '';
+    if (targetQuery) {
+      try {
+        const qParams = new URLSearchParams(targetQuery);
+        const tabParam = qParams.get('tab');
+        if (tabParam && ['personal', 'work', 'contact', 'security', 'preferences', 'activity'].includes(tabParam)) {
+          MallState.profileActiveTab = tabParam;
+        }
+      } catch (e) {}
+    }
+
+    let view = cleanPath;
     if (view === 'reordering') view = 'reorder';
     if (!view || view === 'landing' || view === 'home') {
       view = 'landing';
     }
+
+    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
+
+    // If user is already authenticated and navigates to login, redirect to dashboard
+    if (view === 'login' && isAuthenticated()) {
+      view = 'dashboard';
+    }
+
+    // If user is not authenticated and attempts to access a protected view, remember path & go to login
+    if (PROTECTED_VIEWS.includes(view) && !isAuthenticated()) {
+      const returnPath = '/' + (view === 'reorder' ? 'reordering' : view);
+      try {
+        sessionStorage.setItem('mallmatrix_redirect_after_login', returnPath);
+      } catch (e) {}
+      view = 'login';
+    }
+
     this.switchView(view, true);
   },
 
@@ -389,11 +453,22 @@ window.MallApp = {
       path = path.replace(/\/$/, '');
     }
 
+    // Inspect URL search params for tab state
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam && ['personal', 'work', 'contact', 'security', 'preferences', 'activity'].includes(tabParam)) {
+        MallState.profileActiveTab = tabParam;
+      }
+    } catch (e) {}
+
     const target = hash || path;
     const ROUTE_MAP = {
       '': 'landing',
       'landing': 'landing',
       'home': 'landing',
+      'login': 'login',
+      'signin': 'login',
       'dashboard': 'dashboard',
       'inventory': 'inventory',
       'reordering': 'reorder',
@@ -402,10 +477,29 @@ window.MallApp = {
       'staff': 'staff',
       'tenants': 'tenants',
       'export': 'export',
-      'copilot': 'copilot'
+      'copilot': 'copilot',
+      'profile': 'profile'
     };
 
     const resolved = ROUTE_MAP[target] || 'not-found';
+    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
+
+    // If user is already authenticated and visits /login, redirect to /dashboard
+    if (resolved === 'login' && isAuthenticated()) {
+      this.switchView('dashboard', true);
+      return;
+    }
+
+    // If user is not authenticated and attempts to access a protected view, redirect to /login
+    if (PROTECTED_VIEWS.includes(resolved) && !isAuthenticated()) {
+      const returnPath = window.location.pathname || ('/' + (resolved === 'reorder' ? 'reordering' : resolved));
+      try {
+        sessionStorage.setItem('mallmatrix_redirect_after_login', returnPath);
+      } catch (e) {}
+      this.switchView('login', true);
+      return;
+    }
+
     this.switchView(resolved, false);
   },
 
@@ -422,7 +516,8 @@ window.MallApp = {
       staff: { category: 'Operations', current: 'Staff & Shift Roster' },
       tenants: { category: 'Directory', current: 'Tenant Retail Stores' },
       export: { category: 'Reports', current: 'Data Export Center' },
-      copilot: { category: 'Intelligence', current: 'MallMatrix AI' }
+      copilot: { category: 'Intelligence', current: 'MallMatrix AI' },
+      profile: { category: 'Account', current: 'My Profile' }
     };
 
     const breadcrumb = BREADCRUMB_MAP[viewName] || { category: 'Overview', current: 'Dashboard' };
@@ -440,8 +535,13 @@ window.MallApp = {
       let routePath = '/dashboard';
       if (viewName === 'landing') {
         routePath = '/';
+      } else if (viewName === 'login') {
+        routePath = '/login';
       } else if (viewName === 'reorder') {
         routePath = '/reordering';
+      } else if (viewName === 'profile') {
+        const tab = MallState.profileActiveTab || 'personal';
+        routePath = tab === 'personal' ? '/profile' : `/profile?tab=${tab}`;
       } else if (viewName === 'not-found') {
         routePath = window.location.pathname || '/404';
       } else {
@@ -458,12 +558,14 @@ window.MallApp = {
     }
 
     const landingEl = document.getElementById('view-landing');
+    const loginEl = document.getElementById('view-login');
     const appLayoutEl = document.getElementById('appLayout');
     const notFoundEl = document.getElementById('view-not-found');
     const floatingCopilotBtn = document.getElementById('floatingCopilotBtn');
 
     if (viewName === 'landing') {
       if (landingEl) landingEl.style.display = 'block';
+      if (loginEl) loginEl.style.display = 'none';
       if (appLayoutEl) appLayoutEl.style.display = 'none';
       if (notFoundEl) notFoundEl.style.display = 'none';
       if (floatingCopilotBtn) floatingCopilotBtn.style.display = 'none';
@@ -472,8 +574,21 @@ window.MallApp = {
       return;
     }
 
+    if (viewName === 'login') {
+      if (landingEl) landingEl.style.display = 'none';
+      if (loginEl) loginEl.style.display = 'flex';
+      if (appLayoutEl) appLayoutEl.style.display = 'none';
+      if (notFoundEl) notFoundEl.style.display = 'none';
+      if (floatingCopilotBtn) floatingCopilotBtn.style.display = 'none';
+      document.title = "Sign In — MallMatrix";
+      this.resetLoginForm();
+      window.scrollTo(0, 0);
+      return;
+    }
+
     if (viewName === 'not-found') {
       if (landingEl) landingEl.style.display = 'none';
+      if (loginEl) loginEl.style.display = 'none';
       if (appLayoutEl) appLayoutEl.style.display = 'none';
       if (notFoundEl) notFoundEl.style.display = 'flex';
       if (floatingCopilotBtn) floatingCopilotBtn.style.display = 'none';
@@ -484,7 +599,9 @@ window.MallApp = {
 
     // App views
     if (landingEl) landingEl.style.display = 'none';
+    if (loginEl) loginEl.style.display = 'none';
     if (notFoundEl) notFoundEl.style.display = 'none';
+    if (appLayoutEl) appLayoutEl.style.display = 'flex';
     if (appLayoutEl) appLayoutEl.style.display = 'flex';
 
     document.title = "MallMatrix — Mall Inventory & Stock Management Platform";
@@ -496,7 +613,9 @@ window.MallApp = {
 
     // Switch view panel
     document.querySelectorAll('.view-panel').forEach(panel => {
-      panel.classList.toggle('active', panel.id === `view-${viewName}`);
+      const isActive = panel.id === `view-${viewName}`;
+      panel.classList.toggle('active', isActive);
+      panel.style.display = isActive ? 'block' : 'none';
     });
 
     // Update Breadcrumbs
@@ -516,6 +635,8 @@ window.MallApp = {
       this.renderStaffTable();
     } else if (viewName === 'tenants') {
       this.renderTenantDirectory();
+    } else if (viewName === 'profile') {
+      this.renderProfileView();
     }
 
     // Keep bottom-right Copilot button visible on all views except the copilot view itself
@@ -552,7 +673,8 @@ window.MallApp = {
           staff: 'Staff & Shift Duty Roster',
           tenants: 'Mall Tenant Stores Directory',
           copilot: 'MallMatrix AI Copilot Assistant',
-          export: 'Data Export Center'
+          export: 'Data Export Center',
+          profile: 'My Profile'
         };
         const subtitles = {
           inventory: 'Manage store SKUs, buffer thresholds, and live stock levels across all mall departments.',
@@ -561,7 +683,8 @@ window.MallApp = {
           staff: 'Floor inventory auditors, dock receiving supervisors, and tenant compliance teams on active shifts.',
           tenants: 'Directory of 48 integrated retail tenants, lease compliance, and live POS sync health.',
           copilot: 'Autonomous intelligence agent for stock prediction, sales analysis, and operations.',
-          export: 'Generate comprehensive reports, exports, and data snapshots across all mall operations directly in your browser.'
+          export: 'Generate comprehensive reports, exports, and data snapshots across all mall operations directly in your browser.',
+          profile: 'View and manage your personal details, security and preferences.'
         };
         mainTitle.textContent = titles[viewName] || 'MallMatrix Operations';
         if (mainSubtitle) {
@@ -1498,6 +1621,7 @@ window.MallApp = {
     this.renderTenantDirectory();
     this.renderAllExportButtons();
     this.renderExportCenter();
+    this.renderProfileView();
     if (this._activeRestockSku) {
       const p = MallState.products.find(item => item.sku === this._activeRestockSku);
       const unitPriceEl = document.getElementById('invDrawerUnitPrice');
@@ -4879,8 +5003,19 @@ window.MallApp = {
     const primaryWrap = document.getElementById('headerPrimaryActionWrap');
     if (!exportWrap || !primaryWrap) return;
 
-    // 1. Single Export Button in Header (None on Export Center or Copilot)
-    if (viewName === 'export' || viewName === 'copilot') {
+    // 1. Single Export Button in Header
+    if (viewName === 'profile') {
+      exportWrap.innerHTML = `
+        <button type="button" class="btn-export-profile-data" onclick="MallApp.exportProfileData('json')" aria-label="Export my data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Export my data</span>
+        </button>
+      `;
+    } else if (viewName === 'export' || viewName === 'copilot') {
       exportWrap.innerHTML = '';
     } else {
       let config = null;
@@ -5969,6 +6104,7 @@ window.MallApp = {
         this.toggleProfileDropdown(false);
         const notif = document.getElementById('notificationDropdown');
         if (notif) notif.style.display = 'none';
+        this.closeDeleteAccountModal();
       }
     });
   },
@@ -6123,6 +6259,2182 @@ window.MallApp = {
   clearStaffFilters() {
     this.renderStaffTable();
     this.showToast('Staff filters reset', 'info');
+  },
+
+  // --------------------------------------------------------
+  // AUTHENTICATION & LOGIN PAGE
+  // --------------------------------------------------------
+
+  validateLoginForm() {
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const submitBtn = document.getElementById('loginSubmitBtn');
+    const emailError = document.getElementById('loginEmailError');
+    const passwordError = document.getElementById('loginPasswordError');
+    if (!emailInput || !passwordInput || !submitBtn) return false;
+
+    const email = (emailInput.value || '').trim();
+    const password = passwordInput.value || '';
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let isEmailValid = true;
+    let isPasswordValid = true;
+
+    if (emailInput.dataset.touched === 'true') {
+      if (!email) {
+        if (emailError) emailError.textContent = 'Email is required';
+        emailInput.classList.add('has-error');
+        emailInput.setAttribute('aria-invalid', 'true');
+        isEmailValid = false;
+      } else if (!emailRegex.test(email)) {
+        if (emailError) emailError.textContent = 'Please enter a valid email address';
+        emailInput.classList.add('has-error');
+        emailInput.setAttribute('aria-invalid', 'true');
+        isEmailValid = false;
+      } else {
+        if (emailError) emailError.textContent = '';
+        emailInput.classList.remove('has-error');
+        emailInput.setAttribute('aria-invalid', 'false');
+      }
+    } else {
+      isEmailValid = email && emailRegex.test(email);
+    }
+
+    if (passwordInput.dataset.touched === 'true') {
+      if (!password) {
+        if (passwordError) passwordError.textContent = 'Password is required';
+        passwordInput.classList.add('has-error');
+        passwordInput.setAttribute('aria-invalid', 'true');
+        isPasswordValid = false;
+      } else if (password.length < 6) {
+        if (passwordError) passwordError.textContent = 'Password must be at least 6 characters';
+        passwordInput.classList.add('has-error');
+        passwordInput.setAttribute('aria-invalid', 'true');
+        isPasswordValid = false;
+      } else {
+        if (passwordError) passwordError.textContent = '';
+        passwordInput.classList.remove('has-error');
+        passwordInput.setAttribute('aria-invalid', 'false');
+      }
+    } else {
+      isPasswordValid = password && password.length >= 6;
+    }
+
+    const formValid = emailRegex.test(email) && password.length >= 6;
+    submitBtn.disabled = !formValid;
+    return formValid;
+  },
+
+  onFieldBlur(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.dataset.touched = 'true';
+      this.validateLoginForm();
+    }
+  },
+
+  togglePasswordVisibility() {
+    const passwordInput = document.getElementById('loginPassword');
+    const toggleBtn = document.getElementById('loginPasswordToggleBtn');
+    if (!passwordInput || !toggleBtn) return;
+
+    const eyeOpen = toggleBtn.querySelector('.login-eye-open');
+    const eyeSlashed = toggleBtn.querySelector('.login-eye-slashed');
+
+    const isPassword = passwordInput.type === 'password';
+    passwordInput.type = isPassword ? 'text' : 'password';
+
+    if (eyeOpen) eyeOpen.style.display = isPassword ? 'none' : 'block';
+    if (eyeSlashed) eyeSlashed.style.display = isPassword ? 'block' : 'none';
+    toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    toggleBtn.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+  },
+
+  handleForgotPassword(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    this.showToast('Password reset is coming soon', 'info');
+  },
+
+  fillDemoCredentials() {
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    if (emailInput) {
+      emailInput.value = 'admin@mallmatrix.com';
+      emailInput.dataset.touched = 'true';
+    }
+    if (passwordInput) {
+      passwordInput.value = 'Admin@123';
+      passwordInput.dataset.touched = 'true';
+    }
+    const alertBox = document.getElementById('loginAlertError');
+    if (alertBox) alertBox.style.display = 'none';
+    this.validateLoginForm();
+  },
+
+  async submitLogin(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const rememberInput = document.getElementById('loginRemember');
+    const submitBtn = document.getElementById('loginSubmitBtn');
+    const submitText = document.getElementById('loginSubmitText');
+    const submitSpinner = document.getElementById('loginSubmitSpinner');
+    const alertBox = document.getElementById('loginAlertError');
+    const alertText = document.getElementById('loginAlertErrorText');
+
+    if (!emailInput || !passwordInput) return;
+
+    // Mark both fields touched so validation errors show if invalid
+    emailInput.dataset.touched = 'true';
+    passwordInput.dataset.touched = 'true';
+
+    if (!this.validateLoginForm()) return;
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const remember = rememberInput ? rememberInput.checked : false;
+
+    // Set loading state
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitText) submitText.style.display = 'none';
+    if (submitSpinner) submitSpinner.style.display = 'inline-flex';
+    if (alertBox) alertBox.style.display = 'none';
+
+    try {
+      const result = await authLogin(email, password, remember);
+
+      if (result.success) {
+        this.updateUserProfile();
+        this.showToast(`Welcome back, ${result.user?.name || 'Alex'}!`, 'success');
+
+        // Redirect to intended route or default to /dashboard
+        let redirectTarget = '/dashboard';
+        try {
+          const saved = sessionStorage.getItem('mallmatrix_redirect_after_login');
+          if (saved && saved !== '/' && saved !== '/login') {
+            redirectTarget = saved;
+            sessionStorage.removeItem('mallmatrix_redirect_after_login');
+          }
+        } catch (err) {}
+
+        this.navigateRoute(redirectTarget);
+      } else {
+        if (alertBox) {
+          if (alertText) alertText.textContent = result.error || 'Incorrect email or password';
+          alertBox.style.display = 'flex';
+        }
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      if (alertBox) {
+        if (alertText) alertText.textContent = 'An unexpected error occurred. Please try again.';
+        alertBox.style.display = 'flex';
+      }
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+      if (submitText) submitText.style.display = 'inline-block';
+      if (submitSpinner) submitSpinner.style.display = 'none';
+      this.validateLoginForm();
+    }
+  },
+
+  resetLoginForm() {
+    const form = document.getElementById('loginForm');
+    if (form) form.reset();
+
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const emailError = document.getElementById('loginEmailError');
+    const passwordError = document.getElementById('loginPasswordError');
+    const alertBox = document.getElementById('loginAlertError');
+    const submitBtn = document.getElementById('loginSubmitBtn');
+    const submitText = document.getElementById('loginSubmitText');
+    const submitSpinner = document.getElementById('loginSubmitSpinner');
+
+    if (emailInput) {
+      emailInput.dataset.touched = 'false';
+      emailInput.classList.remove('has-error');
+      emailInput.setAttribute('aria-invalid', 'false');
+    }
+    if (passwordInput) {
+      passwordInput.dataset.touched = 'false';
+      passwordInput.classList.remove('has-error');
+      passwordInput.setAttribute('aria-invalid', 'false');
+      passwordInput.type = 'password';
+    }
+    const toggleBtn = document.getElementById('loginPasswordToggleBtn');
+    if (toggleBtn) {
+      const eyeOpen = toggleBtn.querySelector('.login-eye-open');
+      const eyeSlashed = toggleBtn.querySelector('.login-eye-slashed');
+      if (eyeOpen) eyeOpen.style.display = 'block';
+      if (eyeSlashed) eyeSlashed.style.display = 'none';
+      toggleBtn.setAttribute('aria-label', 'Show password');
+      toggleBtn.setAttribute('title', 'Show password');
+    }
+    if (emailError) emailError.textContent = '';
+    if (passwordError) passwordError.textContent = '';
+    if (alertBox) alertBox.style.display = 'none';
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitText) submitText.style.display = 'inline-block';
+    if (submitSpinner) submitSpinner.style.display = 'none';
+  },
+
+  logout() {
+    authLogout();
+    this.showToast('Logged out successfully', 'info');
+    this.navigateRoute('/login');
+  },
+
+  updateUserProfile() {
+    const user = getCurrentUser();
+    const name = user ? user.name : 'Alex Rivera';
+    const role = user ? user.role : 'Mall Operations Lead';
+    const avatar = (user && user.avatar) ? user.avatar : '/mallmatrix_logo.jpg';
+
+    document.querySelectorAll('.header-profile-name').forEach(el => el.textContent = name);
+    document.querySelectorAll('.header-profile-role').forEach(el => el.textContent = role);
+    document.querySelectorAll('.user-footer-name').forEach(el => el.textContent = name);
+    document.querySelectorAll('.user-footer-role').forEach(el => el.textContent = role);
+    document.querySelectorAll('.user-avatar-preview').forEach(el => {
+      if (el.tagName === 'IMG') el.src = avatar;
+    });
+  },
+
+  handleHeaderProfileClick(event) {
+    if (event) event.stopPropagation();
+    const target = event ? event.target : null;
+    const chevron = target && target.closest('.header-chevron-icon');
+    if (chevron) {
+      this.toggleProfileDropdown(event);
+    } else {
+      this.toggleProfileDropdown(false);
+      this.navigateRoute('/profile');
+    }
+  },
+
+  // ========================================================
+  // PROFILE PAGE CONTROLLER & TAB SYSTEM
+  // ========================================================
+  renderProfileView() {
+    const container = document.getElementById('view-profile');
+    if (!container) return;
+    container.style.display = 'block';
+
+    if (MallState.isLoading) {
+      container.innerHTML = this.getProfileSkeletonHTML();
+      return;
+    }
+
+    if (MallState.hasError) {
+      container.innerHTML = `
+        <div class="profile-card" style="text-align: center; padding: 48px 24px; max-width: 500px; margin: 40px auto;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(239,68,68,0.12); color: #EF4444; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">Failed to Load Profile</h3>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 24px;">An error occurred while loading your profile data. Please try again.</p>
+          <button type="button" class="btn-create-order" onclick="MallApp.simulateRefresh(400)">Retry</button>
+        </div>
+      `;
+      return;
+    }
+
+    const profile = getProfile();
+    const avatar = getSavedAvatar();
+    const activeTab = MallState.profileActiveTab || 'personal';
+
+    container.innerHTML = `
+      <div class="profile-page-container">
+        <div class="profile-grid-layout">
+          <!-- LEFT: Profile summary card -->
+          ${this.getProfileSummaryCardHTML(profile, avatar)}
+
+          <!-- RIGHT: Tabs & Panels -->
+          <div class="profile-tabs-wrapper">
+            <!-- Tabs Nav -->
+            <nav class="profile-tabs-nav" role="tablist" aria-label="Profile Sections">
+              <button type="button" role="tab" class="profile-tab-btn ${activeTab === 'personal' ? 'active' : ''}" 
+                id="tab-personal" aria-selected="${activeTab === 'personal'}" aria-controls="panel-personal"
+                onclick="MallApp.setProfileTab('personal')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Personal info</span>
+              </button>
+
+              <button type="button" role="tab" class="profile-tab-btn ${activeTab === 'work' ? 'active' : ''}" 
+                id="tab-work" aria-selected="${activeTab === 'work'}" aria-controls="panel-work"
+                onclick="MallApp.setProfileTab('work')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                <span>Work details</span>
+              </button>
+
+              <button type="button" role="tab" class="profile-tab-btn ${activeTab === 'contact' ? 'active' : ''}" 
+                id="tab-contact" aria-selected="${activeTab === 'contact'}" aria-controls="panel-contact"
+                onclick="MallApp.setProfileTab('contact')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                <span>Contact & emergency</span>
+              </button>
+
+              <button type="button" role="tab" class="profile-tab-btn ${activeTab === 'security' ? 'active' : ''}" 
+                id="tab-security" aria-selected="${activeTab === 'security'}" aria-controls="panel-security"
+                onclick="MallApp.setProfileTab('security')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Security</span>
+              </button>
+
+              <button type="button" role="tab" class="profile-tab-btn ${activeTab === 'preferences' ? 'active' : ''}" 
+                id="tab-preferences" aria-selected="${activeTab === 'preferences'}" aria-controls="panel-preferences"
+                onclick="MallApp.setProfileTab('preferences')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Preferences</span>
+              </button>
+
+              <button type="button" role="tab" class="profile-tab-btn ${activeTab === 'activity' ? 'active' : ''}" 
+                id="tab-activity" aria-selected="${activeTab === 'activity'}" aria-controls="panel-activity"
+                onclick="MallApp.setProfileTab('activity')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Activity</span>
+              </button>
+            </nav>
+
+            <!-- Active Tab Panel -->
+            <div class="profile-tab-panel active" role="tabpanel" id="panel-${activeTab}" aria-labelledby="tab-${activeTab}">
+              ${this.getProfileTabContentHTML(activeTab, profile)}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  getProfileSummaryCardHTML(profile, avatar) {
+    const defaultAvatarUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=192&auto=format&fit=crop&q=80';
+    const hasPhoto = Boolean(avatar);
+    const photoSrc = avatar || defaultAvatarUrl;
+    const fullName = profile.displayName || `${profile.firstName} ${profile.lastName}`.trim();
+    const initials = (profile.firstName?.[0] || 'A') + (profile.lastName?.[0] || 'R');
+
+    return `
+      <aside class="profile-summary-card" aria-label="Profile Summary">
+        <div class="profile-avatar-center">
+          <div class="profile-avatar-wrapper">
+            ${hasPhoto 
+              ? `<img src="${photoSrc}" alt="${this.escapeHTML(fullName)}" class="profile-avatar-img user-avatar-preview">`
+              : `<div class="profile-avatar-initials">${initials}</div>`
+            }
+          </div>
+          <div class="profile-avatar-actions">
+            <button type="button" class="profile-photo-btn" onclick="document.getElementById('profileAvatarFileInput').click()" aria-label="Change photo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <span>Change photo</span>
+            </button>
+            ${hasPhoto ? `
+              <button type="button" class="profile-photo-remove-btn" onclick="MallApp.removeAvatarPhoto()" title="Remove photo" aria-label="Remove photo">
+                Remove
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="profile-user-headline">
+          <h2 class="profile-user-fullname">${this.escapeHTML(fullName)}</h2>
+          <p class="profile-user-jobtitle">${this.escapeHTML(profile.role)}</p>
+          <div style="margin-top: 8px;">
+            <span class="profile-status-chip active">
+              <span class="profile-status-dot"></span>
+              <span>Active</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="profile-quick-facts">
+          <div class="profile-fact-row">
+            <span class="profile-fact-label">Employee ID</span>
+            <span class="profile-fact-val" style="font-family: monospace;">${this.escapeHTML(profile.employeeId)}</span>
+          </div>
+          <div class="profile-fact-row">
+            <span class="profile-fact-label">Department</span>
+            <span class="profile-fact-val">${this.escapeHTML(profile.department)}</span>
+          </div>
+          <div class="profile-fact-row">
+            <span class="profile-fact-label">Location</span>
+            <span class="profile-fact-val">${this.escapeHTML(profile.location)}</span>
+          </div>
+          <div class="profile-fact-row">
+            <span class="profile-fact-label">Member since</span>
+            <span class="profile-fact-val">${this.escapeHTML(profile.memberSince)}</span>
+          </div>
+          <div class="profile-fact-row">
+            <span class="profile-fact-label">Last login</span>
+            <span class="profile-fact-val">${this.escapeHTML(profile.lastLogin)}</span>
+          </div>
+        </div>
+
+        <div class="profile-stats-strip">
+          <div class="profile-stat-box">
+            <span class="profile-stat-num">${(profile.stats?.ordersHandled || 1420).toLocaleString()}</span>
+            <span class="profile-stat-label">Orders handled</span>
+          </div>
+          <div class="profile-stat-box">
+            <span class="profile-stat-num">${(profile.stats?.posApproved || 89).toLocaleString()}</span>
+            <span class="profile-stat-label">POs approved</span>
+          </div>
+          <div class="profile-stat-box">
+            <span class="profile-stat-num">${(profile.stats?.reportsExported || 34).toLocaleString()}</span>
+            <span class="profile-stat-label">Reports exported</span>
+          </div>
+        </div>
+      </aside>
+    `;
+  },
+
+  getProfileTabContentHTML(activeTab, profile) {
+    const avatar = getSavedAvatar();
+
+    if (activeTab === 'personal') {
+      const isBasicEditing = Boolean(MallState.profileEditSections.personal_basic);
+      const isContactEditing = Boolean(MallState.profileEditSections.personal_contact);
+      const isAddressEditing = Boolean(MallState.profileEditSections.personal_address);
+      const isBioEditing = Boolean(MallState.profileEditSections.personal_bio);
+      const bioLen = (profile.bio || '').length;
+
+      // Completion calculation
+      const fields = [
+        profile.firstName, profile.lastName, profile.displayName,
+        profile.email, profile.phone, profile.address, profile.city,
+        profile.country, profile.bio, profile.emergencyContactName,
+        avatar ? 'photo' : null, profile.twoFactorEnabled ? '2fa' : null
+      ];
+      const filledCount = fields.filter(Boolean).length;
+      const completionPct = Math.round((filledCount / 12) * 100);
+
+      const recentActivities = (profile.activities || []).slice(0, 5);
+
+      return `
+        <!-- Row 1: Four compact stat cards in responsive grid -->
+        <div class="profile-stat-grid">
+          <div class="profile-metric-card">
+            <span class="profile-metric-label">Orders Handled</span>
+            <span class="profile-metric-val">${(profile.stats?.ordersHandled || 1420).toLocaleString()}</span>
+            <span class="profile-metric-helper">+12% vs last month</span>
+          </div>
+          <div class="profile-metric-card">
+            <span class="profile-metric-label">POs Approved</span>
+            <span class="profile-metric-val">${(profile.stats?.posApproved || 89).toLocaleString()}</span>
+            <span class="profile-metric-helper">5 pending review</span>
+          </div>
+          <div class="profile-metric-card">
+            <span class="profile-metric-label">Reports Exported</span>
+            <span class="profile-metric-val">${(profile.stats?.reportsExported || 34).toLocaleString()}</span>
+            <span class="profile-metric-helper">Last exported today</span>
+          </div>
+          <div class="profile-metric-card">
+            <span class="profile-metric-label">Last Login</span>
+            <span class="profile-metric-val" style="font-size: 1.25rem;">${this.escapeHTML(profile.lastLogin || '11 Nov, 17:08')}</span>
+            <span class="profile-metric-helper">Chrome on macOS (Current)</span>
+          </div>
+        </div>
+
+        <!-- Row 2: Two-column grid (2fr left, 1fr right on >= 1280px) -->
+        <div class="profile-row-two-grid">
+          <!-- LEFT COLUMN: Separate editable cards -->
+          <div class="profile-col-left">
+
+            <!-- Card A: Basic details -->
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <div>
+                  <h3 class="profile-card-title">Basic details</h3>
+                  <p class="profile-card-subtitle">Official identity and personal demographic information</p>
+                </div>
+                <div class="profile-card-actions">
+                  ${!isBasicEditing ? `
+                    <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('personal_basic', true)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+                  ` : `
+                    <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('personal_basic')">Cancel</button>
+                    <button type="button" class="profile-btn-save" id="saveBtn_personal_basic" onclick="MallApp.saveProfileSection('personal_basic')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      <span>Save</span>
+                    </button>
+                  `}
+                </div>
+              </div>
+
+              <form id="form_personal_basic" onsubmit="event.preventDefault(); MallApp.saveProfileSection('personal_basic');" novalidate>
+                <div class="profile-form-grid">
+                  <div class="profile-form-group">
+                    <label for="profFirstName" class="profile-form-label">First Name <span style="color:#DC2626;">*</span></label>
+                    <input type="text" id="profFirstName" class="profile-form-input" value="${this.escapeHTML(profile.firstName)}" 
+                      ${!isBasicEditing ? 'disabled' : ''} required oninput="MallApp.validateBasicForm()">
+                    <div class="profile-field-error" id="err_profFirstName"></div>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profLastName" class="profile-form-label">Last Name <span style="color:#DC2626;">*</span></label>
+                    <input type="text" id="profLastName" class="profile-form-input" value="${this.escapeHTML(profile.lastName)}" 
+                      ${!isBasicEditing ? 'disabled' : ''} required oninput="MallApp.validateBasicForm()">
+                    <div class="profile-field-error" id="err_profLastName"></div>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profDisplayName" class="profile-form-label">Display Name <span style="color:#DC2626;">*</span></label>
+                    <input type="text" id="profDisplayName" class="profile-form-input" value="${this.escapeHTML(profile.displayName)}" 
+                      ${!isBasicEditing ? 'disabled' : ''} required oninput="MallApp.validateBasicForm()">
+                    <div class="profile-field-error" id="err_profDisplayName"></div>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profDob" class="profile-form-label">Date of Birth</label>
+                    <input type="date" id="profDob" class="profile-form-input" value="${this.escapeHTML(profile.dob)}" 
+                      ${!isBasicEditing ? 'disabled' : ''}>
+                  </div>
+
+                  <div class="profile-form-group profile-field-full">
+                    <label for="profGender" class="profile-form-label">Gender</label>
+                    <select id="profGender" class="profile-form-select" ${!isBasicEditing ? 'disabled' : ''}>
+                      <option value="Male" ${profile.gender === 'Male' ? 'selected' : ''}>Male</option>
+                      <option value="Female" ${profile.gender === 'Female' ? 'selected' : ''}>Female</option>
+                      <option value="Non-binary" ${profile.gender === 'Non-binary' ? 'selected' : ''}>Non-binary</option>
+                      <option value="Prefer not to say" ${profile.gender === 'Prefer not to say' ? 'selected' : ''}>Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Card B: Contact details -->
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <div>
+                  <h3 class="profile-card-title">Contact details</h3>
+                  <p class="profile-card-subtitle">Primary channels for correspondence and alerts</p>
+                </div>
+                <div class="profile-card-actions">
+                  ${!isContactEditing ? `
+                    <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('personal_contact', true)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+                  ` : `
+                    <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('personal_contact')">Cancel</button>
+                    <button type="button" class="profile-btn-save" id="saveBtn_personal_contact" onclick="MallApp.saveProfileSection('personal_contact')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      <span>Save</span>
+                    </button>
+                  `}
+                </div>
+              </div>
+
+              <form id="form_personal_contact" onsubmit="event.preventDefault(); MallApp.saveProfileSection('personal_contact');" novalidate>
+                <div class="profile-form-grid">
+                  <div class="profile-form-group">
+                    <label for="profEmail" class="profile-form-label">Email Address <span style="color:#DC2626;">*</span></label>
+                    <input type="email" id="profEmail" class="profile-form-input" value="${this.escapeHTML(profile.email)}" 
+                      ${!isContactEditing ? 'disabled' : ''} required oninput="MallApp.validatePersonalContactForm()">
+                    <div class="profile-field-error" id="err_profEmail"></div>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profPhone" class="profile-form-label">Phone Number <span style="color:#DC2626;">*</span></label>
+                    <input type="tel" id="profPhone" class="profile-form-input" value="${this.escapeHTML(profile.phone)}" 
+                      ${!isContactEditing ? 'disabled' : ''} required oninput="MallApp.validatePersonalContactForm()">
+                    <div class="profile-field-error" id="err_profPhone"></div>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profAltPhone" class="profile-form-label">Alternate Phone</label>
+                    <input type="tel" id="profAltPhone" class="profile-form-input" value="${this.escapeHTML(profile.altPhone || '+1 (555) 345-6789')}" 
+                      ${!isContactEditing ? 'disabled' : ''}>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profPrefMethod" class="profile-form-label">Preferred Contact Method</label>
+                    <select id="profPrefMethod" class="profile-form-select" ${!isContactEditing ? 'disabled' : ''}>
+                      <option value="Work Email & Phone" ${profile.preferredContactMethod === 'Work Email & Phone' ? 'selected' : ''}>Work Email & Phone</option>
+                      <option value="Phone Call Only" ${profile.preferredContactMethod === 'Phone Call Only' ? 'selected' : ''}>Phone Call Only</option>
+                      <option value="SMS Only" ${profile.preferredContactMethod === 'SMS Only' ? 'selected' : ''}>SMS Only</option>
+                      <option value="Personal Email" ${profile.preferredContactMethod === 'Personal Email' ? 'selected' : ''}>Personal Email</option>
+                    </select>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Card C: Address -->
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <div>
+                  <h3 class="profile-card-title">Address</h3>
+                  <p class="profile-card-subtitle">Residential location and mailing postal address</p>
+                </div>
+                <div class="profile-card-actions">
+                  ${!isAddressEditing ? `
+                    <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('personal_address', true)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+                  ` : `
+                    <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('personal_address')">Cancel</button>
+                    <button type="button" class="profile-btn-save" onclick="MallApp.saveProfileSection('personal_address')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      <span>Save</span>
+                    </button>
+                  `}
+                </div>
+              </div>
+
+              <form id="form_personal_address" onsubmit="event.preventDefault(); MallApp.saveProfileSection('personal_address');">
+                <div class="profile-form-grid">
+                  <div class="profile-form-group profile-field-full">
+                    <label for="profAddress" class="profile-form-label">Address Line</label>
+                    <input type="text" id="profAddress" class="profile-form-input" value="${this.escapeHTML(profile.address)}" 
+                      ${!isAddressEditing ? 'disabled' : ''}>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profCity" class="profile-form-label">City</label>
+                    <input type="text" id="profCity" class="profile-form-input" value="${this.escapeHTML(profile.city)}" 
+                      ${!isAddressEditing ? 'disabled' : ''}>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profState" class="profile-form-label">State / Province</label>
+                    <input type="text" id="profState" class="profile-form-input" value="${this.escapeHTML(profile.state)}" 
+                      ${!isAddressEditing ? 'disabled' : ''}>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profPinCode" class="profile-form-label">PIN / Postal Code</label>
+                    <input type="text" id="profPinCode" class="profile-form-input" value="${this.escapeHTML(profile.pinCode)}" 
+                      ${!isAddressEditing ? 'disabled' : ''}>
+                  </div>
+
+                  <div class="profile-form-group">
+                    <label for="profCountry" class="profile-form-label">Country</label>
+                    <input type="text" id="profCountry" class="profile-form-input" value="${this.escapeHTML(profile.country)}" 
+                      ${!isAddressEditing ? 'disabled' : ''}>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Card D: About me -->
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <div>
+                  <h3 class="profile-card-title">About me</h3>
+                  <p class="profile-card-subtitle">Operational background and logistics bio</p>
+                </div>
+                <div class="profile-card-actions">
+                  ${!isBioEditing ? `
+                    <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('personal_bio', true)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+                  ` : `
+                    <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('personal_bio')">Cancel</button>
+                    <button type="button" class="profile-btn-save" onclick="MallApp.saveProfileSection('personal_bio')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      <span>Save</span>
+                    </button>
+                  `}
+                </div>
+              </div>
+
+              <form id="form_personal_bio" onsubmit="event.preventDefault(); MallApp.saveProfileSection('personal_bio');">
+                <div class="profile-form-group profile-field-full">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="profBio" class="profile-form-label" style="margin-bottom:0;">Professional Bio</label>
+                    <span class="profile-char-counter" id="bioCounter">${bioLen} / 200</span>
+                  </div>
+                  <textarea id="profBio" class="profile-form-textarea" maxlength="200" rows="3" ${!isBioEditing ? 'disabled' : ''}
+                    oninput="document.getElementById('bioCounter').textContent = this.value.length + ' / 200';">${this.escapeHTML(profile.bio)}</textarea>
+                </div>
+              </form>
+            </div>
+
+          </div>
+
+          <!-- RIGHT COLUMN: Profile Completion, Assigned Zones, Recent Activity, Quick Actions -->
+          <div class="profile-col-right">
+
+            <!-- Card 1: Profile completion -->
+            <div class="profile-card">
+              <div class="profile-completion-header">
+                <h3 class="profile-card-title" style="margin-bottom: 0;">Profile completion</h3>
+                <span class="profile-completion-pct">${completionPct}%</span>
+              </div>
+              <p class="profile-card-subtitle" style="margin-bottom: 12px;">Complete all profile data points to reach 100%</p>
+              <div class="profile-completion-track">
+                <div class="profile-completion-bar" style="width: ${completionPct}%;"></div>
+              </div>
+              <div class="profile-completion-tasks">
+                ${!avatar ? `
+                  <div class="profile-task-item" onclick="document.getElementById('profileAvatarFileInput').click()" title="Click to upload photo">
+                    <span>📷 Add profile photo</span>
+                    <span style="color: var(--accent); font-weight: 600;">+10%</span>
+                  </div>
+                ` : `
+                  <div class="profile-task-item completed">
+                    <span>✓ Profile photo uploaded</span>
+                    <span>Done</span>
+                  </div>
+                `}
+                ${!profile.emergencyContactName ? `
+                  <div class="profile-task-item" onclick="MallApp.setProfileTab('contact')" title="Click to add emergency contact">
+                    <span>🚨 Add emergency contact</span>
+                    <span style="color: var(--accent); font-weight: 600;">+10%</span>
+                  </div>
+                ` : `
+                  <div class="profile-task-item completed">
+                    <span>✓ Emergency contact added</span>
+                    <span>Done</span>
+                  </div>
+                `}
+                ${!profile.twoFactorEnabled ? `
+                  <div class="profile-task-item" onclick="MallApp.setProfileTab('security')" title="Click to enable 2FA">
+                    <span>🔒 Enable Two-Factor Auth</span>
+                    <span style="color: var(--accent); font-weight: 600;">+10%</span>
+                  </div>
+                ` : `
+                  <div class="profile-task-item completed">
+                    <span>✓ Two-Factor Auth active</span>
+                    <span>Done</span>
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <!-- Card 2: Assigned zones -->
+            <div class="profile-card">
+              <div class="profile-card-header" style="margin-bottom: 12px;">
+                <div>
+                  <h3 class="profile-card-title">Assigned zones</h3>
+                  <p class="profile-card-subtitle">Operational floor sectors under your watch</p>
+                </div>
+              </div>
+              <div class="profile-chips-wrap" style="margin-bottom: 10px;">
+                ${(profile.assignedZones || []).map(z => `
+                  <span class="profile-zone-chip">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>${this.escapeHTML(z)}</span>
+                  </span>
+                `).join('')}
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); margin: 0;">
+                4 operational sectors · 48 retail tenant stores monitored
+              </p>
+            </div>
+
+            <!-- Card 3: Recent activity -->
+            <div class="profile-card">
+              <div class="profile-card-header" style="margin-bottom: 12px;">
+                <div>
+                  <h3 class="profile-card-title">Recent activity</h3>
+                  <p class="profile-card-subtitle">Last 5 actions performed</p>
+                </div>
+                <div class="profile-card-actions">
+                  <a href="#" onclick="event.preventDefault(); MallApp.setProfileTab('activity')" 
+                    style="font-size: 0.8rem; font-weight: 600; color: var(--accent); text-decoration: none;">
+                    View all →
+                  </a>
+                </div>
+              </div>
+              <div class="profile-mini-activity-list">
+                ${recentActivities.map(act => `
+                  <div class="profile-mini-activity-item">
+                    <div class="profile-mini-activity-dot"></div>
+                    <div class="profile-mini-activity-body">
+                      <div class="profile-mini-activity-title">${this.escapeHTML(act.title)}</div>
+                      <div class="profile-mini-activity-time">${this.escapeHTML(act.time)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Card 4: Quick actions -->
+            <div class="profile-card">
+              <div class="profile-card-header" style="margin-bottom: 12px;">
+                <div>
+                  <h3 class="profile-card-title">Quick actions</h3>
+                  <p class="profile-card-subtitle">Common profile and operational tasks</p>
+                </div>
+              </div>
+              <div class="profile-quick-actions-list">
+                <button type="button" class="profile-quick-action-btn" onclick="MallApp.setProfileTab('security')">
+                  <span>🔑 Change password</span>
+                  <span>→</span>
+                </button>
+                <button type="button" class="profile-quick-action-btn" onclick="MallApp.exportProfileData('json')">
+                  <span>📥 Export my data</span>
+                  <span>→</span>
+                </button>
+                <button type="button" class="profile-quick-action-btn" onclick="MallApp.setProfileTab('preferences')">
+                  <span>⚙️ System preferences</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      `;
+    }
+
+    if (activeTab === 'work') {
+      const isRoleEditing = Boolean(MallState.profileEditSections.work_role);
+
+      return `
+        <!-- Work Details: 2 paired cards on top, full-width zone & permissions cards below -->
+        <div class="profile-card-grid-2">
+          <!-- Card 1: Role & Organization Position -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Role & Organizational Details</h3>
+                <p class="profile-card-subtitle">Your mall operational responsibilities and hierarchy</p>
+              </div>
+              <div class="profile-card-actions">
+                ${!isRoleEditing ? `
+                  <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('work_role', true)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Edit</span>
+                  </button>
+                ` : `
+                  <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('work_role')">Cancel</button>
+                  <button type="button" class="profile-btn-save" onclick="MallApp.saveProfileSection('work_role')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Save</span>
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <form id="form_work_role" onsubmit="event.preventDefault(); MallApp.saveProfileSection('work_role');">
+              <div class="profile-form-grid">
+                <div class="profile-form-group">
+                  <label for="profRole" class="profile-form-label">Role / Job Title</label>
+                  <input type="text" id="profRole" class="profile-form-input" value="${this.escapeHTML(profile.role)}" ${!isRoleEditing ? 'disabled' : ''}>
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="profDept" class="profile-form-label">Department</label>
+                  <input type="text" id="profDept" class="profile-form-input" value="${this.escapeHTML(profile.department)}" ${!isRoleEditing ? 'disabled' : ''}>
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="profManager" class="profile-form-label">Reporting Manager</label>
+                  <input type="text" id="profManager" class="profile-form-input" value="${this.escapeHTML(profile.reportingManager)}" ${!isRoleEditing ? 'disabled' : ''}>
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="profShift" class="profile-form-label">Shift Timing</label>
+                  <input type="text" id="profShift" class="profile-form-input" value="${this.escapeHTML(profile.shiftTiming)}" ${!isRoleEditing ? 'disabled' : ''}>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Card 2: Enterprise Credentials & Governance -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Enterprise Governance</h3>
+                <p class="profile-card-subtitle">Official corporate access tier and employment records</p>
+              </div>
+            </div>
+
+            <div class="profile-form-grid">
+              <div class="profile-form-group">
+                <label class="profile-form-label">Employee ID <span class="profile-readonly-badge" title="Managed by your administrator">🔒 Managed</span></label>
+                <input type="text" class="profile-form-input" value="${this.escapeHTML(profile.employeeId)}" disabled style="font-family: monospace; opacity: 0.85;">
+              </div>
+
+              <div class="profile-form-group">
+                <label class="profile-form-label">Joining Date <span class="profile-readonly-badge" title="Managed by your administrator">🔒 Managed</span></label>
+                <input type="text" class="profile-form-input" value="${this.escapeHTML(profile.joiningDate)}" disabled style="opacity: 0.85;">
+              </div>
+
+              <div class="profile-form-group">
+                <label class="profile-form-label">Employment Type</label>
+                <input type="text" class="profile-form-input" value="${this.escapeHTML(profile.employmentType)}" disabled style="opacity: 0.85;">
+              </div>
+
+              <div class="profile-form-group">
+                <label class="profile-form-label">Access Level <span class="profile-readonly-badge" title="Managed by your administrator">🔒 Managed</span></label>
+                <input type="text" class="profile-form-input" value="${this.escapeHTML(profile.accessLevel)} Tier (Full Clearance)" disabled style="opacity: 0.85; font-weight: 700; color: var(--accent);">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Assigned Mall Zones & Retail Coverage -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div>
+              <h3 class="profile-card-title">Assigned Mall Zones & Retail Coverage</h3>
+              <p class="profile-card-subtitle">Sectors requiring daily telemetry inspections and automated restock sign-offs</p>
+            </div>
+          </div>
+
+          <div class="profile-chips-wrap" style="margin-bottom: 16px;">
+            ${(profile.assignedZones || []).map(z => `
+              <span class="profile-zone-chip" style="font-size: 0.84rem; padding: 6px 14px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>${this.escapeHTML(z)}</span>
+              </span>
+            `).join('')}
+          </div>
+
+          <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+            Assigned personnel have active override authorization for retail tenants situated across Ground Floor Atrium, Level 1 West Wing, Level 2 Food Court, and Logistics Bay B.
+          </p>
+        </div>
+
+        <!-- Card 4: System Permissions Checklist -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div>
+              <h3 class="profile-card-title">System Permissions Checklist</h3>
+              <p class="profile-card-subtitle">Active clearance modules managed by organization administrators</p>
+            </div>
+            <span class="profile-readonly-badge" title="Managed by your administrator">🔒 Admin Privileges</span>
+          </div>
+
+          <div class="profile-permissions-list" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+            ${(profile.permissions || []).map(p => `
+              <div class="profile-perm-item" style="border: 1px solid var(--border); border-radius: 8px; padding: 12px;">
+                <div class="profile-perm-check">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <div class="profile-perm-name">${this.escapeHTML(p.name)}</div>
+                  <div class="profile-perm-desc">${this.escapeHTML(p.desc)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    if (activeTab === 'contact') {
+      const isWorkContactEditing = Boolean(MallState.profileEditSections.contact_work);
+      const isEmergEditing = Boolean(MallState.profileEditSections.contact_emerg);
+
+      return `
+        <!-- Contact & Emergency: Paired 2-column cards on top -->
+        <div class="profile-card-grid-2">
+          <!-- Card 1: Primary & Work Communication -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Work Communication</h3>
+                <p class="profile-card-subtitle">Official operational channels for mall correspondence</p>
+              </div>
+              <div class="profile-card-actions">
+                ${!isWorkContactEditing ? `
+                  <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('contact_work', true)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Edit</span>
+                  </button>
+                ` : `
+                  <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('contact_work')">Cancel</button>
+                  <button type="button" class="profile-btn-save" id="saveBtn_contact_work" onclick="MallApp.saveProfileSection('contact_work')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Save</span>
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <form id="form_contact_work" onsubmit="event.preventDefault(); MallApp.saveProfileSection('contact_work');" novalidate>
+              <div class="profile-form-grid">
+                <div class="profile-form-group profile-field-full">
+                  <label for="profWorkEmail" class="profile-form-label">Work Email <span style="color:#DC2626;">*</span></label>
+                  <input type="email" id="profWorkEmail" class="profile-form-input" value="${this.escapeHTML(profile.workEmail)}" 
+                    ${!isWorkContactEditing ? 'disabled' : ''} required oninput="MallApp.validateWorkContactForm()">
+                  <div class="profile-field-error" id="err_profWorkEmail"></div>
+                </div>
+
+                <div class="profile-form-group profile-field-full">
+                  <label for="profPersonalEmail" class="profile-form-label">Personal Email</label>
+                  <input type="email" id="profPersonalEmail" class="profile-form-input" value="${this.escapeHTML(profile.personalEmail)}" 
+                    ${!isWorkContactEditing ? 'disabled' : ''} oninput="MallApp.validateWorkContactForm()">
+                  <div class="profile-field-error" id="err_profPersonalEmail"></div>
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="profWorkPhone" class="profile-form-label">Work Phone <span style="color:#DC2626;">*</span></label>
+                  <input type="tel" id="profWorkPhone" class="profile-form-input" value="${this.escapeHTML(profile.workPhone)}" 
+                    ${!isWorkContactEditing ? 'disabled' : ''} required oninput="MallApp.validateWorkContactForm()">
+                  <div class="profile-field-error" id="err_profWorkPhone"></div>
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="profPrefContact" class="profile-form-label">Preferred Method</label>
+                  <select id="profPrefContact" class="profile-form-select" ${!isWorkContactEditing ? 'disabled' : ''}>
+                    <option value="Work Email & Phone" ${profile.preferredContactMethod === 'Work Email & Phone' ? 'selected' : ''}>Work Email & Phone</option>
+                    <option value="Phone Call Only" ${profile.preferredContactMethod === 'Phone Call Only' ? 'selected' : ''}>Phone Call Only</option>
+                    <option value="SMS Only" ${profile.preferredContactMethod === 'SMS Only' ? 'selected' : ''}>SMS Only</option>
+                    <option value="Personal Email" ${profile.preferredContactMethod === 'Personal Email' ? 'selected' : ''}>Personal Email</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Card 2: Emergency Next-of-Kin Contact -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Emergency Contact</h3>
+                <p class="profile-card-subtitle">Designated contact person for critical incidents</p>
+              </div>
+              <div class="profile-card-actions">
+                ${!isEmergEditing ? `
+                  <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('contact_emerg', true)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Edit</span>
+                  </button>
+                ` : `
+                  <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('contact_emerg')">Cancel</button>
+                  <button type="button" class="profile-btn-save" id="saveBtn_contact_emerg" onclick="MallApp.saveProfileSection('contact_emerg')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Save</span>
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <form id="form_contact_emerg" onsubmit="event.preventDefault(); MallApp.saveProfileSection('contact_emerg');" novalidate>
+              <div class="profile-form-grid">
+                <div class="profile-form-group profile-field-full">
+                  <label for="profEmergName" class="profile-form-label">Contact Full Name <span style="color:#DC2626;">*</span></label>
+                  <input type="text" id="profEmergName" class="profile-form-input" value="${this.escapeHTML(profile.emergencyContactName)}" 
+                    ${!isEmergEditing ? 'disabled' : ''} required oninput="MallApp.validateEmergencyContactForm()">
+                  <div class="profile-field-error" id="err_profEmergName"></div>
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="profEmergRel" class="profile-form-label">Relationship</label>
+                  <input type="text" id="profEmergRel" class="profile-form-input" value="${this.escapeHTML(profile.emergencyContactRelation)}" 
+                    ${!isEmergEditing ? 'disabled' : ''} placeholder="e.g. Spouse, Sibling">
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="profEmergPhone" class="profile-form-label">Emergency Phone <span style="color:#DC2626;">*</span></label>
+                  <input type="tel" id="profEmergPhone" class="profile-form-input" value="${this.escapeHTML(profile.emergencyContactPhone)}" 
+                    ${!isEmergEditing ? 'disabled' : ''} required oninput="MallApp.validateEmergencyContactForm()">
+                  <div class="profile-field-error" id="err_profEmergPhone"></div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Card 3: Emergency Escalation Protocol & SLA -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div>
+              <h3 class="profile-card-title">Emergency Escalation Protocol & SLA</h3>
+              <p class="profile-card-subtitle">Official procedure followed when high-priority mall alerts occur</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+              <div style="font-size: 0.86rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Tier 1: In-App Telemetry</div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+                Real-time dashboard warnings and push banners for low inventory thresholds and overdue tenant rent notices.
+              </p>
+            </div>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+              <div style="font-size: 0.86rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Tier 2: Urgent SMS Broadcast</div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+                Direct SMS dispatch to work phone when tenant PO replenishment buffers breach 10% safety tolerances.
+              </p>
+            </div>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+              <div style="font-size: 0.86rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Tier 3: Facility Dispatch</div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+                Security and emergency contact notification if facility anomalies or critical security events are triggered.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (activeTab === 'security') {
+      const sessions = profile.activeSessions || [];
+      const history = profile.loginHistory || [];
+      const is2FA = Boolean(profile.twoFactorEnabled);
+
+      return `
+        <!-- Security: 2-column card grid on top -->
+        <div class="profile-card-grid-2">
+          <!-- Card 1: Change Password -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Change Password</h3>
+                <p class="profile-card-subtitle">Update your credentials to safeguard operations</p>
+              </div>
+            </div>
+
+            <form id="form_password" onsubmit="event.preventDefault(); MallApp.handlePasswordChange();">
+              <div class="profile-form-group" style="margin-bottom: 12px;">
+                <label for="profCurrentPwd" class="profile-form-label">Current Password</label>
+                <div style="position: relative;">
+                  <input type="password" id="profCurrentPwd" class="profile-form-input" placeholder="Enter current password" required style="padding-right: 40px;">
+                  <button type="button" class="login-eye-toggle-btn" onclick="MallApp.togglePasswordVisibility('profCurrentPwd', this)" 
+                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);" aria-label="Toggle password visibility">
+                    👁️
+                  </button>
+                </div>
+                <div class="profile-field-error" id="err_profCurrentPwd"></div>
+              </div>
+
+              <div class="profile-form-group" style="margin-bottom: 12px;">
+                <label for="profNewPwd" class="profile-form-label">New Password</label>
+                <div style="position: relative;">
+                  <input type="password" id="profNewPwd" class="profile-form-input" placeholder="At least 8 characters" required 
+                    oninput="MallApp.checkPasswordStrength(this.value)" style="padding-right: 40px;">
+                  <button type="button" class="login-eye-toggle-btn" onclick="MallApp.togglePasswordVisibility('profNewPwd', this)" 
+                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);" aria-label="Toggle password visibility">
+                    👁️
+                  </button>
+                </div>
+                <div class="profile-field-error" id="err_profNewPwd"></div>
+
+                <!-- Password Strength Meter -->
+                <div class="profile-password-meter" style="margin-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Strength:</span>
+                    <span style="font-size: 0.72rem; font-weight: 700;" id="pwdStrengthLabel">Enter password</span>
+                  </div>
+                  <div class="profile-meter-bar-track">
+                    <div class="profile-meter-bar-fill" id="pwdStrengthFill" style="width: 0%; background: #EF4444;"></div>
+                  </div>
+                </div>
+
+                <!-- Password Rules Checklist -->
+                <div class="profile-rules-checklist" style="margin-top: 8px;">
+                  <div class="profile-rule-item" id="rule_len">
+                    <span class="profile-rule-icon">○</span>
+                    <span>At least 8 characters</span>
+                  </div>
+                  <div class="profile-rule-item" id="rule_upper">
+                    <span class="profile-rule-icon">○</span>
+                    <span>At least 1 uppercase letter</span>
+                  </div>
+                  <div class="profile-rule-item" id="rule_lower">
+                    <span class="profile-rule-icon">○</span>
+                    <span>At least 1 lowercase letter</span>
+                  </div>
+                  <div class="profile-rule-item" id="rule_num">
+                    <span class="profile-rule-icon">○</span>
+                    <span>At least 1 number</span>
+                  </div>
+                  <div class="profile-rule-item" id="rule_spec">
+                    <span class="profile-rule-icon">○</span>
+                    <span>At least 1 special symbol (@$!%*?&#)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="profile-form-group" style="margin-bottom: 16px;">
+                <label for="profConfirmPwd" class="profile-form-label">Confirm New Password</label>
+                <div style="position: relative;">
+                  <input type="password" id="profConfirmPwd" class="profile-form-input" placeholder="Repeat new password" required 
+                    oninput="MallApp.checkPasswordMatch()" style="padding-right: 40px;">
+                  <button type="button" class="login-eye-toggle-btn" onclick="MallApp.togglePasswordVisibility('profConfirmPwd', this)" 
+                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted);" aria-label="Toggle password visibility">
+                    👁️
+                  </button>
+                </div>
+                <div class="profile-field-error" id="err_profConfirmPwd"></div>
+              </div>
+
+              <button type="submit" id="btnUpdatePassword" class="btn-create-order" disabled style="opacity: 0.5; cursor: not-allowed; width: 100%;">
+                Update Password
+              </button>
+            </form>
+          </div>
+
+          <!-- Card 2: Two-Factor Authentication -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Two-Factor Authentication</h3>
+                <p class="profile-card-subtitle">Secondary verification checkpoint on sign-in</p>
+              </div>
+              <div class="profile-card-actions">
+                <button type="button" class="profile-btn-edit" onclick="MallApp.toggleTwoFactorAuth()" style="${is2FA ? 'background: #10B981; color: white;' : ''}">
+                  ${is2FA ? 'Enabled ✓' : 'Enable 2FA'}
+                </button>
+              </div>
+            </div>
+
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-size: 0.84rem; font-weight: 700; color: var(--text);">Security Status:</span>
+                <span style="font-size: 0.78rem; font-weight: 700; color: ${is2FA ? '#10B981' : '#EF4444'};">
+                  ${is2FA ? 'Protected (Active)' : 'Disabled (Recommended)'}
+                </span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+                Requires an authenticator code (Google Authenticator, Authy, or YubiKey hardware) each time administrative operations are performed.
+              </p>
+            </div>
+
+            <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+              <div style="font-weight: 600; color: var(--text); margin-bottom: 6px;">Benefits of 2FA:</div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div>✓ Protects against credential stuffing and brute force</div>
+                <div>✓ Enforces compliance with SOC2 retail security guidelines</div>
+                <div>✓ Locks purchase order approvals behind verified tokens</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Active Authorized Sessions -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div>
+              <h3 class="profile-card-title">Active Authorized Sessions</h3>
+              <p class="profile-card-subtitle">Devices currently authenticated with your MallMatrix operational credentials</p>
+            </div>
+            ${sessions.length > 1 ? `
+              <div class="profile-card-actions">
+                <button type="button" class="profile-photo-remove-btn" onclick="MallApp.terminateAllOtherSessions()" style="color: #EF4444; border-color: rgba(239,68,68,0.3);">
+                  Log out of all other devices
+                </button>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="profile-sessions-list">
+            ${sessions.map(s => `
+              <div class="profile-session-item">
+                <div class="profile-session-device">
+                  <div class="profile-session-icon">
+                    ${s.icon === 'phone' ? '📱' : '💻'}
+                  </div>
+                  <div>
+                    <div class="profile-session-title">
+                      ${this.escapeHTML(s.device)} · ${this.escapeHTML(s.browser)}
+                      ${s.isCurrent ? `<span class="profile-session-badge">Current session</span>` : ''}
+                    </div>
+                    <div class="profile-session-meta">
+                      ${this.escapeHTML(s.location)} · Last active: ${this.escapeHTML(s.lastActive)}
+                    </div>
+                  </div>
+                </div>
+                ${!s.isCurrent ? `
+                  <button type="button" class="profile-session-btn" onclick="MallApp.terminateSession('${s.id}')">
+                    Log out
+                  </button>
+                ` : `
+                  <span style="font-size: 0.78rem; font-weight: 600; color: #10B981;">Online</span>
+                `}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Card 4: Recent Login History -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div>
+              <h3 class="profile-card-title">Recent Login History</h3>
+              <p class="profile-card-subtitle">Audit log of your last 10 successful authentication sessions</p>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="inventory-table" style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border); text-align: left; color: var(--text-muted);">
+                  <th style="padding: 10px 12px;">Date & Time</th>
+                  <th style="padding: 10px 12px;">IP Address</th>
+                  <th style="padding: 10px 12px;">Device / Client</th>
+                  <th style="padding: 10px 12px; text-align: right;">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${history.map(h => `
+                  <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 10px 12px; font-weight: 600; color: var(--text);">${this.escapeHTML(h.date)}</td>
+                    <td style="padding: 10px 12px; font-family: monospace; color: var(--text-muted);">${this.escapeHTML(h.ip)}</td>
+                    <td style="padding: 10px 12px; color: var(--text);">${this.escapeHTML(h.device)}</td>
+                    <td style="padding: 10px 12px; text-align: right;">
+                      <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; background: rgba(16,185,129,0.12); color: #10B981;">
+                        ${this.escapeHTML(h.result)}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Card 5: Danger Zone -->
+        <div class="profile-danger-card">
+          <div class="profile-danger-header">
+            <div>
+              <h4 style="font-size: 0.96rem; font-weight: 700; color: #EF4444; margin-bottom: 4px;">Danger Zone: Delete Account</h4>
+              <p style="font-size: 0.82rem; color: var(--text-muted);">
+                Permanently archive your personal credentials and operational privileges. This action cannot be reversed.
+              </p>
+            </div>
+            <button type="button" class="profile-danger-btn" onclick="MallApp.openDeleteAccountModal()">
+              Delete account
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (activeTab === 'preferences') {
+      const isRegEditing = Boolean(MallState.profileEditSections.preferences_regional);
+      const isUiEditing = Boolean(MallState.profileEditSections.preferences_interface);
+      const isNotifEditing = Boolean(MallState.profileEditSections.preferences_notif);
+      const prefs = profile.preferences || {};
+      const notifs = prefs.notifications || {};
+
+      return `
+        <!-- Preferences: Paired cards on top, notifications below -->
+        <div class="profile-card-grid-2">
+          <!-- Card 1: Regional & Formatting -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Regional & Locale Formatting</h3>
+                <p class="profile-card-subtitle">Currency, timezone, and calendar preferences</p>
+              </div>
+              <div class="profile-card-actions">
+                ${!isRegEditing ? `
+                  <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('preferences_regional', true)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Edit</span>
+                  </button>
+                ` : `
+                  <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('preferences_regional')">Cancel</button>
+                  <button type="button" class="profile-btn-save" onclick="MallApp.saveProfileSection('preferences_regional')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Save</span>
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <form id="form_pref_regional" onsubmit="event.preventDefault(); MallApp.saveProfileSection('preferences_regional');">
+              <div class="profile-form-grid">
+                <div class="profile-form-group">
+                  <label for="prefLanguage" class="profile-form-label">Language</label>
+                  <select id="prefLanguage" class="profile-form-select" ${!isRegEditing ? 'disabled' : ''}>
+                    <option value="English (US)" ${prefs.language === 'English (US)' ? 'selected' : ''}>English (US)</option>
+                    <option value="Spanish" ${prefs.language === 'Spanish' ? 'selected' : ''}>Español (Spanish)</option>
+                    <option value="French" ${prefs.language === 'French' ? 'selected' : ''}>Français (French)</option>
+                    <option value="German" ${prefs.language === 'German' ? 'selected' : ''}>Deutsch (German)</option>
+                    <option value="Hindi" ${prefs.language === 'Hindi' ? 'selected' : ''}>हिन्दी (Hindi)</option>
+                    <option value="Japanese" ${prefs.language === 'Japanese' ? 'selected' : ''}>日本語 (Japanese)</option>
+                  </select>
+                </div>
+
+                <div class="profile-form-group">
+                  <label for="prefCurrency" class="profile-form-label">Display Currency</label>
+                  <select id="prefCurrency" class="profile-form-select" ${!isRegEditing ? 'disabled' : ''}>
+                    <option value="USD" ${MallState.currency === 'USD' ? 'selected' : ''}>USD ($ - US Dollar)</option>
+                    <option value="INR" ${MallState.currency === 'INR' ? 'selected' : ''}>INR (₹ - Indian Rupee)</option>
+                  </select>
+                </div>
+
+                <div class="profile-form-group profile-field-full">
+                  <label for="prefTimezone" class="profile-form-label">Timezone</label>
+                  <select id="prefTimezone" class="profile-form-select" ${!isRegEditing ? 'disabled' : ''}>
+                    <option value="Pacific Time (US & Canada) (UTC-8)" ${prefs.timezone?.includes('Pacific') ? 'selected' : ''}>Pacific Time (US & Canada) (UTC-8)</option>
+                    <option value="Eastern Time (US & Canada) (UTC-5)" ${prefs.timezone?.includes('Eastern') ? 'selected' : ''}>Eastern Time (US & Canada) (UTC-5)</option>
+                    <option value="UTC" ${prefs.timezone === 'UTC' ? 'selected' : ''}>Universal Coordinated Time (UTC)</option>
+                    <option value="India Standard Time (IST) (UTC+5:30)" ${prefs.timezone?.includes('India') ? 'selected' : ''}>India Standard Time (IST) (UTC+5:30)</option>
+                    <option value="Central European Time (CET) (UTC+1)" ${prefs.timezone?.includes('Central European') ? 'selected' : ''}>Central European Time (CET) (UTC+1)</option>
+                  </select>
+                </div>
+
+                <div class="profile-form-group profile-field-full">
+                  <label for="prefDateFormat" class="profile-form-label">Date Format</label>
+                  <select id="prefDateFormat" class="profile-form-select" ${!isRegEditing ? 'disabled' : ''}>
+                    <option value="DD-MMM-YYYY" ${prefs.dateFormat === 'DD-MMM-YYYY' ? 'selected' : ''}>DD-MMM-YYYY (e.g. 11-Nov-2026)</option>
+                    <option value="YYYY-MM-DD" ${prefs.dateFormat === 'YYYY-MM-DD' ? 'selected' : ''}>YYYY-MM-DD (e.g. 2026-11-11)</option>
+                    <option value="MM/DD/YYYY" ${prefs.dateFormat === 'MM/DD/YYYY' ? 'selected' : ''}>MM/DD/YYYY (e.g. 11/11/2026)</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Card 2: Interface & Appearance -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <div>
+                <h3 class="profile-card-title">Interface & Appearance</h3>
+                <p class="profile-card-subtitle">Visual theme and initial dashboard landing destination</p>
+              </div>
+              <div class="profile-card-actions">
+                ${!isUiEditing ? `
+                  <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('preferences_interface', true)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Edit</span>
+                  </button>
+                ` : `
+                  <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('preferences_interface')">Cancel</button>
+                  <button type="button" class="profile-btn-save" onclick="MallApp.saveProfileSection('preferences_interface')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Save</span>
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <form id="form_pref_ui" onsubmit="event.preventDefault(); MallApp.saveProfileSection('preferences_interface');">
+              <div class="profile-form-grid">
+                <div class="profile-form-group profile-field-full">
+                  <label for="prefTheme" class="profile-form-label">Interface Theme</label>
+                  <select id="prefTheme" class="profile-form-select" ${!isUiEditing ? 'disabled' : ''}>
+                    <option value="dark" ${document.documentElement.classList.contains('dark') ? 'selected' : ''}>Dark Mode</option>
+                    <option value="light" ${!document.documentElement.classList.contains('dark') ? 'selected' : ''}>Light Mode</option>
+                  </select>
+                </div>
+
+                <div class="profile-form-group profile-field-full">
+                  <label for="prefDefaultLanding" class="profile-form-label">Default Landing View</label>
+                  <select id="prefDefaultLanding" class="profile-form-select" ${!isUiEditing ? 'disabled' : ''}>
+                    <option value="Dashboard" ${prefs.defaultLanding === 'Dashboard' ? 'selected' : ''}>Dashboard Overview</option>
+                    <option value="Inventory" ${prefs.defaultLanding === 'Inventory' ? 'selected' : ''}>Stock Inventory</option>
+                    <option value="Reordering" ${prefs.defaultLanding === 'Reordering' ? 'selected' : ''}>Automated Reordering</option>
+                    <option value="Sales" ${prefs.defaultLanding === 'Sales' ? 'selected' : ''}>Sales Analytics</option>
+                    <option value="Tenants" ${prefs.defaultLanding === 'Tenants' ? 'selected' : ''}>Tenant Stores</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Card 3: Notification Channels & Subscriptions -->
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div>
+              <h3 class="profile-card-title">Notification Channels & Subscriptions</h3>
+              <p class="profile-card-subtitle">Configure real-time dispatch channels for operational anomalies</p>
+            </div>
+            <div class="profile-card-actions">
+              ${!isNotifEditing ? `
+                <button type="button" class="profile-btn-edit" onclick="MallApp.toggleProfileEdit('preferences_notif', true)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  <span>Edit</span>
+                </button>
+              ` : `
+                <button type="button" class="profile-btn-cancel" onclick="MallApp.cancelProfileEdit('preferences_notif')">Cancel</button>
+                <button type="button" class="profile-btn-save" onclick="MallApp.saveProfileSection('preferences_notif')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Save</span>
+                </button>
+              `}
+            </div>
+          </div>
+
+          <form id="form_pref_notif" onsubmit="event.preventDefault(); MallApp.saveProfileSection('preferences_notif');">
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
+                <div>
+                  <div style="font-size: 0.86rem; font-weight: 600; color: var(--text);">Low Stock Buffer Alerts</div>
+                  <div style="font-size: 0.74rem; color: var(--text-muted);">Triggered when SKU stock drops below 20% safety threshold</div>
+                </div>
+                <input type="checkbox" id="notif_lowStock" ${notifs.lowStockAlerts?.inApp ? 'checked' : ''} ${!isNotifEditing ? 'disabled' : ''} style="accent-color: var(--accent); width: 18px; height: 18px;">
+              </label>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
+                <div>
+                  <div style="font-size: 0.86rem; font-weight: 600; color: var(--text);">Purchase Order Approvals</div>
+                  <div style="font-size: 0.74rem; color: var(--text-muted);">Dispatches alerts when vendors approve restock batches</div>
+                </div>
+                <input type="checkbox" id="notif_po" ${notifs.poApprovals?.inApp ? 'checked' : ''} ${!isNotifEditing ? 'disabled' : ''} style="accent-color: var(--accent); width: 18px; height: 18px;">
+              </label>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
+                <div>
+                  <div style="font-size: 0.86rem; font-weight: 600; color: var(--text);">Overdue Tenant Rents</div>
+                  <div style="font-size: 0.74rem; color: var(--text-muted);">Notifies mall management of tenant overdue compliance</div>
+                </div>
+                <input type="checkbox" id="notif_overdue" ${notifs.overdueRents?.inApp ? 'checked' : ''} ${!isNotifEditing ? 'disabled' : ''} style="accent-color: var(--accent); width: 18px; height: 18px;">
+              </label>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
+                <div>
+                  <div style="font-size: 0.86rem; font-weight: 600; color: var(--text);">Daily Operations Digest</div>
+                  <div style="font-size: 0.74rem; color: var(--text-muted);">Morning summary of consolidated turnover and POS feeds</div>
+                </div>
+                <input type="checkbox" id="notif_daily" ${notifs.dailySummary?.inApp ? 'checked' : ''} ${!isNotifEditing ? 'disabled' : ''} style="accent-color: var(--accent); width: 18px; height: 18px;">
+              </label>
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    if (activeTab === 'activity') {
+      const allActivities = profile.activities || [];
+      const filter = MallState.profileTimelineFilter || 'all';
+      const count = MallState.profileTimelineCount || 5;
+
+      const filtered = filter === 'all' 
+        ? allActivities 
+        : allActivities.filter(a => (a.tag || '').toLowerCase() === filter.toLowerCase() || (a.type || '').toLowerCase() === filter.toLowerCase());
+
+      const displayed = filtered.slice(0, count);
+      const hasMore = displayed.length < filtered.length;
+
+      const filterButtons = [
+        { id: 'all', label: 'All Activities' },
+        { id: 'procurement', label: 'Procurement' },
+        { id: 'inventory', label: 'Inventory' },
+        { id: 'compliance', label: 'Compliance' },
+        { id: 'operations', label: 'Operations' },
+        { id: 'security', label: 'Security' }
+      ];
+
+      return `
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div>
+              <h3 class="profile-card-title">User Activity Timeline</h3>
+              <p class="profile-card-subtitle">Comprehensive operational audit log of recent transactions, approvals, and exports</p>
+            </div>
+          </div>
+
+          <div class="profile-timeline-wrap">
+            <div class="profile-timeline-filter-row">
+              ${filterButtons.map(b => `
+                <button type="button" class="lp-tag ${filter === b.id ? 'active' : ''}" 
+                  style="cursor: pointer; border: 1px solid var(--border); padding: 5px 12px; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; background: ${filter === b.id ? 'var(--accent)' : 'var(--surface)'}; color: ${filter === b.id ? '#ffffff' : 'var(--text)'};"
+                  onclick="MallApp.filterActivityTimeline('${b.id}')">
+                  ${b.label}
+                </button>
+              `).join('')}
+            </div>
+
+            <div class="profile-timeline-list">
+              ${displayed.length === 0 ? `
+                <div style="text-align: center; padding: 32px; color: var(--text-muted); font-size: 0.88rem;">
+                  No activities found for category "${filter}".
+                </div>
+              ` : displayed.map(item => `
+                <div class="profile-timeline-item">
+                  <div class="profile-timeline-icon-wrap">
+                    ${item.type === 'po' ? '📦' : (item.type === 'export' ? '📊' : (item.type === 'sku' ? '🏷️' : (item.type === 'tenant' ? '🏬' : '🔒')))}
+                  </div>
+                  <div class="profile-timeline-body">
+                    <div class="profile-timeline-title">${this.escapeHTML(item.title)}</div>
+                    <div class="profile-timeline-detail">${this.escapeHTML(item.detail)}</div>
+                    <div class="profile-timeline-time">${this.escapeHTML(item.date)} · ${this.escapeHTML(item.time)}</div>
+                  </div>
+                  <span class="profile-timeline-tag">${this.escapeHTML(item.tag)}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            ${hasMore ? `
+              <div style="text-align: center; margin-top: 18px;">
+                <button type="button" class="btn-create-order" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);"
+                  onclick="MallApp.loadMoreActivity()">
+                  Load more activities
+                </button>
+              </div>
+            ` : (displayed.length > 0 ? `
+              <div style="text-align: center; margin-top: 18px; font-size: 0.78rem; color: var(--text-muted);">
+                All activities in this view are loaded.
+              </div>
+            ` : '')}
+          </div>
+        </div>
+      `;
+    }
+
+    return '';
+  },
+
+  getProfileSkeletonHTML() {
+    return `
+      <div class="profile-page-container">
+        <div class="profile-grid-layout">
+          <aside class="profile-summary-card">
+            <div class="profile-avatar-center">
+              <div class="profile-avatar-wrapper" style="background: var(--border); animation: pulse 1.5s infinite;"></div>
+              <div style="width: 100px; height: 28px; background: var(--border); border-radius: 6px; margin: 12px auto; animation: pulse 1.5s infinite;"></div>
+            </div>
+            <div style="height: 20px; width: 60%; background: var(--border); border-radius: 4px; margin: 14px auto; animation: pulse 1.5s infinite;"></div>
+            <div style="height: 14px; width: 40%; background: var(--border); border-radius: 4px; margin: 6px auto 20px; animation: pulse 1.5s infinite;"></div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="height: 16px; background: var(--border); border-radius: 4px; animation: pulse 1.5s infinite;"></div>
+              <div style="height: 16px; background: var(--border); border-radius: 4px; animation: pulse 1.5s infinite;"></div>
+              <div style="height: 16px; background: var(--border); border-radius: 4px; animation: pulse 1.5s infinite;"></div>
+            </div>
+          </aside>
+          <div class="profile-tabs-wrapper">
+            <div class="profile-card" style="height: 380px; animation: pulse 1.5s infinite; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  setProfileTab(tabName, pushHistory = true) {
+    if (Object.values(MallState.profileEditSections || {}).some(Boolean)) {
+      if (!confirm('You have unsaved changes in your profile. Are you sure you want to discard them?')) {
+        return;
+      }
+      MallState.profileEditSections = {};
+    }
+
+    MallState.profileActiveTab = tabName;
+    if (pushHistory) {
+      const url = tabName === 'personal' ? '/profile' : `/profile?tab=${tabName}`;
+      try {
+        window.history.pushState({ view: 'profile', tab: tabName }, '', url);
+      } catch (e) {}
+    }
+    this.renderProfileView();
+  },
+
+  toggleProfileEdit(sectionId, enable) {
+    MallState.profileEditSections[sectionId] = Boolean(enable);
+    this.renderProfileView();
+  },
+
+  cancelProfileEdit(sectionId) {
+    MallState.profileEditSections[sectionId] = false;
+    this.renderProfileView();
+  },
+
+  validateBasicForm() {
+    const fName = document.getElementById('profFirstName')?.value.trim();
+    const lName = document.getElementById('profLastName')?.value.trim();
+    const dName = document.getElementById('profDisplayName')?.value.trim();
+
+    let valid = true;
+    const setErr = (id, msg) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = msg || '';
+      if (msg) valid = false;
+    };
+
+    setErr('err_profFirstName', !fName ? 'First name is required' : '');
+    setErr('err_profLastName', !lName ? 'Last name is required' : '');
+    setErr('err_profDisplayName', !dName ? 'Display name is required' : '');
+
+    const saveBtn = document.getElementById('saveBtn_personal_basic');
+    if (saveBtn) {
+      saveBtn.disabled = !valid;
+      saveBtn.style.opacity = valid ? '1' : '0.5';
+      saveBtn.style.cursor = valid ? 'pointer' : 'not-allowed';
+    }
+    return valid;
+  },
+
+  validatePersonalContactForm() {
+    const email = document.getElementById('profEmail')?.value.trim();
+    const phone = document.getElementById('profPhone')?.value.trim();
+
+    let valid = true;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[+]?[\d\s().-]{7,}$/;
+
+    const setErr = (id, msg) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = msg || '';
+      if (msg) valid = false;
+    };
+
+    setErr('err_profEmail', !email ? 'Email is required' : (!emailRegex.test(email) ? 'Enter a valid email' : ''));
+    setErr('err_profPhone', !phone ? 'Phone is required' : (!phoneRegex.test(phone) ? 'Enter a valid phone number' : ''));
+
+    const saveBtn = document.getElementById('saveBtn_personal_contact');
+    if (saveBtn) {
+      saveBtn.disabled = !valid;
+      saveBtn.style.opacity = valid ? '1' : '0.5';
+      saveBtn.style.cursor = valid ? 'pointer' : 'not-allowed';
+    }
+    return valid;
+  },
+
+  validateWorkContactForm() {
+    const wEmail = document.getElementById('profWorkEmail')?.value.trim();
+    const pEmail = document.getElementById('profPersonalEmail')?.value.trim();
+    const wPhone = document.getElementById('profWorkPhone')?.value.trim();
+
+    let valid = true;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[+]?[\d\s().-]{7,}$/;
+
+    const setErr = (id, msg) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = msg || '';
+      if (msg) valid = false;
+    };
+
+    setErr('err_profWorkEmail', !wEmail ? 'Work email is required' : (!emailRegex.test(wEmail) ? 'Enter a valid work email' : ''));
+    if (pEmail) {
+      setErr('err_profPersonalEmail', !emailRegex.test(pEmail) ? 'Enter a valid personal email' : '');
+    } else {
+      setErr('err_profPersonalEmail', '');
+    }
+    setErr('err_profWorkPhone', !wPhone ? 'Work phone is required' : (!phoneRegex.test(wPhone) ? 'Enter a valid phone' : ''));
+
+    const saveBtn = document.getElementById('saveBtn_contact_work');
+    if (saveBtn) {
+      saveBtn.disabled = !valid;
+      saveBtn.style.opacity = valid ? '1' : '0.5';
+      saveBtn.style.cursor = valid ? 'pointer' : 'not-allowed';
+    }
+    return valid;
+  },
+
+  validateEmergencyContactForm() {
+    const eName = document.getElementById('profEmergName')?.value.trim();
+    const ePhone = document.getElementById('profEmergPhone')?.value.trim();
+
+    let valid = true;
+    const phoneRegex = /^[+]?[\d\s().-]{7,}$/;
+
+    const setErr = (id, msg) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = msg || '';
+      if (msg) valid = false;
+    };
+
+    setErr('err_profEmergName', !eName ? 'Emergency contact name is required' : '');
+    setErr('err_profEmergPhone', !ePhone ? 'Emergency phone is required' : (!phoneRegex.test(ePhone) ? 'Enter a valid phone' : ''));
+
+    const saveBtn = document.getElementById('saveBtn_contact_emerg');
+    if (saveBtn) {
+      saveBtn.disabled = !valid;
+      saveBtn.style.opacity = valid ? '1' : '0.5';
+      saveBtn.style.cursor = valid ? 'pointer' : 'not-allowed';
+    }
+    return valid;
+  },
+
+  saveProfileSection(sectionId) {
+    const profile = getProfile();
+
+    if (sectionId === 'personal_basic') {
+      if (!this.validateBasicForm()) return;
+      saveProfile({
+        firstName: document.getElementById('profFirstName')?.value.trim(),
+        lastName: document.getElementById('profLastName')?.value.trim(),
+        displayName: document.getElementById('profDisplayName')?.value.trim(),
+        dob: document.getElementById('profDob')?.value,
+        gender: document.getElementById('profGender')?.value
+      });
+    } else if (sectionId === 'personal_contact') {
+      if (!this.validatePersonalContactForm()) return;
+      saveProfile({
+        email: document.getElementById('profEmail')?.value.trim(),
+        phone: document.getElementById('profPhone')?.value.trim(),
+        altPhone: document.getElementById('profAltPhone')?.value.trim(),
+        preferredContactMethod: document.getElementById('profPrefMethod')?.value
+      });
+    } else if (sectionId === 'personal_address') {
+      saveProfile({
+        address: document.getElementById('profAddress')?.value.trim(),
+        city: document.getElementById('profCity')?.value.trim(),
+        state: document.getElementById('profState')?.value.trim(),
+        pinCode: document.getElementById('profPinCode')?.value.trim(),
+        country: document.getElementById('profCountry')?.value.trim()
+      });
+    } else if (sectionId === 'personal_bio') {
+      saveProfile({
+        bio: document.getElementById('profBio')?.value.trim()
+      });
+    } else if (sectionId === 'work_role') {
+      saveProfile({
+        role: document.getElementById('profRole')?.value.trim() || profile.role,
+        department: document.getElementById('profDept')?.value.trim() || profile.department,
+        reportingManager: document.getElementById('profManager')?.value.trim() || profile.reportingManager,
+        shiftTiming: document.getElementById('profShift')?.value.trim() || profile.shiftTiming
+      });
+    } else if (sectionId === 'contact_work') {
+      if (!this.validateWorkContactForm()) return;
+      saveProfile({
+        workEmail: document.getElementById('profWorkEmail')?.value.trim(),
+        personalEmail: document.getElementById('profPersonalEmail')?.value.trim(),
+        workPhone: document.getElementById('profWorkPhone')?.value.trim(),
+        preferredContactMethod: document.getElementById('profPrefContact')?.value
+      });
+    } else if (sectionId === 'contact_emerg') {
+      if (!this.validateEmergencyContactForm()) return;
+      saveProfile({
+        emergencyContactName: document.getElementById('profEmergName')?.value.trim(),
+        emergencyContactRelation: document.getElementById('profEmergRel')?.value.trim(),
+        emergencyContactPhone: document.getElementById('profEmergPhone')?.value.trim()
+      });
+    } else if (sectionId === 'preferences_regional') {
+      const selectedCurrency = document.getElementById('prefCurrency')?.value || 'USD';
+      saveProfile({
+        preferences: {
+          ...profile.preferences,
+          language: document.getElementById('prefLanguage')?.value,
+          timezone: document.getElementById('prefTimezone')?.value,
+          dateFormat: document.getElementById('prefDateFormat')?.value,
+          currency: selectedCurrency
+        }
+      });
+      if (selectedCurrency !== MallState.currency) {
+        this.setCurrency(selectedCurrency);
+      }
+    } else if (sectionId === 'preferences_interface') {
+      const selectedTheme = document.getElementById('prefTheme')?.value || 'dark';
+      saveProfile({
+        preferences: {
+          ...profile.preferences,
+          theme: selectedTheme,
+          defaultLanding: document.getElementById('prefDefaultLanding')?.value
+        }
+      });
+      const isCurrentDark = document.documentElement.classList.contains('dark');
+      if ((selectedTheme === 'dark' && !isCurrentDark) || (selectedTheme === 'light' && isCurrentDark)) {
+        this.setTheme(selectedTheme, false);
+      }
+    } else if (sectionId === 'preferences_notif') {
+      saveProfile({
+        preferences: {
+          ...profile.preferences,
+          notifications: {
+            lowStockAlerts: { inApp: Boolean(document.getElementById('notif_lowStock')?.checked), email: true, sms: false },
+            poApprovals: { inApp: Boolean(document.getElementById('notif_po')?.checked), email: true, sms: true },
+            overdueRents: { inApp: Boolean(document.getElementById('notif_overdue')?.checked), email: true, sms: false },
+            dailySummary: { inApp: Boolean(document.getElementById('notif_daily')?.checked), email: false, sms: false }
+          }
+        }
+      });
+    } else {
+      // Fallback
+      MallState.profileEditSections = {};
+    }
+
+    MallState.profileEditSections[sectionId] = false;
+    this.updateUserProfile();
+    this.renderProfileView();
+    this.showToast('Profile updated successfully', 'success');
+  },
+
+  handleAvatarUpload(event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      this.showToast('Photo must be less than 2 MB', 'error');
+      event.target.value = '';
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+      this.showToast('Please upload a valid JPG or PNG image', 'error');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      saveAvatar(dataUrl);
+      this.updateUserProfile();
+      this.renderProfileView();
+      this.showToast('Profile photo updated', 'success');
+      event.target.value = '';
+    };
+    reader.onerror = () => {
+      this.showToast('Failed to read image file', 'error');
+      event.target.value = '';
+    };
+    reader.readAsDataURL(file);
+  },
+
+  removeAvatarPhoto() {
+    removeAvatar();
+    this.updateUserProfile();
+    this.renderProfileView();
+    this.showToast('Profile photo removed', 'info');
+  },
+
+  exportProfileData(format = 'json') {
+    const profile = getProfile();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(profile, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `MallMatrix_Profile_AlexRivera_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    this.showToast('Profile data exported successfully', 'success');
+  },
+
+  togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    if (btn) btn.textContent = isPassword ? '🙈' : '👁️';
+  },
+
+  checkPasswordStrength(pwd) {
+    const ruleLen = pwd.length >= 8;
+    const ruleUpper = /[A-Z]/.test(pwd);
+    const ruleLower = /[a-z]/.test(pwd);
+    const ruleNum = /[0-9]/.test(pwd);
+    const ruleSpec = /[@$!%*?&#]/.test(pwd);
+
+    const updateRuleUI = (id, passed) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('passed', passed);
+      const icon = el.querySelector('.profile-rule-icon');
+      if (icon) icon.textContent = passed ? '✓' : '○';
+    };
+
+    updateRuleUI('rule_len', ruleLen);
+    updateRuleUI('rule_upper', ruleUpper);
+    updateRuleUI('rule_lower', ruleLower);
+    updateRuleUI('rule_num', ruleNum);
+    updateRuleUI('rule_spec', ruleSpec);
+
+    const score = [ruleLen, ruleUpper, ruleLower, ruleNum, ruleSpec].filter(Boolean).length;
+    const label = document.getElementById('pwdStrengthLabel');
+    const fill = document.getElementById('pwdStrengthFill');
+
+    if (!pwd) {
+      if (label) { label.textContent = 'Enter password'; label.style.color = 'var(--text-muted)'; }
+      if (fill) { fill.style.width = '0%'; fill.style.background = '#EF4444'; }
+    } else if (score <= 2) {
+      if (label) { label.textContent = 'Weak'; label.style.color = '#EF4444'; }
+      if (fill) { fill.style.width = '30%'; fill.style.background = '#EF4444'; }
+    } else if (score <= 4) {
+      if (label) { label.textContent = 'Medium'; label.style.color = '#F59E0B'; }
+      if (fill) { fill.style.width = '65%'; fill.style.background = '#F59E0B'; }
+    } else {
+      if (label) { label.textContent = 'Strong'; label.style.color = '#10B981'; }
+      if (fill) { fill.style.width = '100%'; fill.style.background = '#10B981'; }
+    }
+
+    this.checkPasswordMatch();
+  },
+
+  checkPasswordMatch() {
+    const current = document.getElementById('profCurrentPwd')?.value;
+    const newPwd = document.getElementById('profNewPwd')?.value || '';
+    const confirmPwd = document.getElementById('profConfirmPwd')?.value || '';
+    const errConfirm = document.getElementById('err_profConfirmPwd');
+    const updateBtn = document.getElementById('btnUpdatePassword');
+
+    const ruleLen = newPwd.length >= 8;
+    const ruleUpper = /[A-Z]/.test(newPwd);
+    const ruleLower = /[a-z]/.test(newPwd);
+    const ruleNum = /[0-9]/.test(newPwd);
+    const ruleSpec = /[@$!%*?&#]/.test(newPwd);
+    const rulesPassed = ruleLen && ruleUpper && ruleLower && ruleNum && ruleSpec;
+
+    let matched = true;
+    if (confirmPwd && newPwd !== confirmPwd) {
+      if (errConfirm) errConfirm.textContent = 'Passwords do not match';
+      matched = false;
+    } else {
+      if (errConfirm) errConfirm.textContent = '';
+    }
+
+    const isValid = Boolean(current && rulesPassed && confirmPwd && newPwd === confirmPwd);
+    if (updateBtn) {
+      updateBtn.disabled = !isValid;
+      updateBtn.style.opacity = isValid ? '1' : '0.5';
+      updateBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+    }
+  },
+
+  handlePasswordChange() {
+    const current = document.getElementById('profCurrentPwd')?.value;
+    const newPwd = document.getElementById('profNewPwd')?.value;
+    const confirmPwd = document.getElementById('profConfirmPwd')?.value;
+
+    if (!current || !newPwd || newPwd !== confirmPwd) return;
+
+    // Reset password form
+    const form = document.getElementById('form_password');
+    if (form) form.reset();
+    this.checkPasswordStrength('');
+
+    this.showToast('Password updated successfully', 'success');
+  },
+
+  toggleTwoFactorAuth() {
+    const profile = getProfile();
+    const nextState = !profile.twoFactorEnabled;
+    saveProfile({ twoFactorEnabled: nextState });
+    this.renderProfileView();
+    this.showToast(`Two-factor authentication ${nextState ? 'enabled' : 'disabled'}`, 'info');
+  },
+
+  terminateSession(sessionId) {
+    terminateSessionById(sessionId);
+    this.renderProfileView();
+    this.showToast('Session logged out successfully', 'info');
+  },
+
+  terminateAllOtherSessions() {
+    terminateOtherSessions();
+    this.renderProfileView();
+    this.showToast('Logged out of all other devices', 'success');
+  },
+
+  openDeleteAccountModal() {
+    const modal = document.getElementById('deleteAccountModal');
+    if (modal) {
+      modal.classList.add('open');
+      const input = document.getElementById('deleteAccountInput');
+      if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 50);
+      }
+      const btn = document.getElementById('confirmDeleteAccountBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      }
+    }
+    const copilot = document.getElementById('floatingCopilotBtn');
+    if (copilot) copilot.style.display = 'none';
+  },
+
+  closeDeleteAccountModal() {
+    const modal = document.getElementById('deleteAccountModal');
+    if (modal) modal.classList.remove('open');
+    const copilot = document.getElementById('floatingCopilotBtn');
+    if (copilot && MallState.activeView !== 'copilot') copilot.style.display = 'flex';
+  },
+
+  handleDeleteAccountInputChange(val) {
+    const btn = document.getElementById('confirmDeleteAccountBtn');
+    if (!btn) return;
+    const isConfirmed = (val || '').trim() === 'DELETE';
+    btn.disabled = !isConfirmed;
+    btn.style.opacity = isConfirmed ? '1' : '0.5';
+    btn.style.cursor = isConfirmed ? 'pointer' : 'not-allowed';
+  },
+
+  confirmDeleteAccount() {
+    this.closeDeleteAccountModal();
+    this.showToast('Contact your administrator to delete the account', 'info');
+  },
+
+  filterActivityTimeline(filterType) {
+    MallState.profileTimelineFilter = filterType;
+    MallState.profileTimelineCount = 5;
+    this.renderProfileView();
+  },
+
+  loadMoreActivity() {
+    MallState.profileTimelineCount = (MallState.profileTimelineCount || 5) + 5;
+    this.renderProfileView();
   },
 
   escapeHTML(str) {

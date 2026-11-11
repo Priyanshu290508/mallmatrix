@@ -73,21 +73,22 @@
             <li>
               <a href="#features" class="lp-nav-link lp-nav-link-dropdown">
                 <span>Features</span>
-                <svg class="lp-chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg class="lp-chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </a>
             </li>
-            <li><a href="/dashboard" class="lp-nav-link" onclick="MallApp.navigateRoute('/dashboard', event)">Dashboard</a></li>
+            <li><a href="/login" class="lp-nav-link" onclick="MallApp.navigateRoute('/login', event)">Dashboard</a></li>
             <li><a href="#contact" class="lp-nav-link">Contact us</a></li>
           </ul>
         </nav>
 
         <!-- Desktop Action Buttons -->
         <div class="lp-nav-actions">
-          <a href="/dashboard" class="lp-btn-signin" onclick="MallApp.navigateRoute('/dashboard', event)">Sign In</a>
-          <a href="/dashboard" class="lp-btn-getstarted" onclick="MallApp.navigateRoute('/dashboard', event)">Get Started</a>
+          <a href="/login" class="lp-btn-signin" onclick="MallApp.navigateRoute('/login', event)">Sign In</a>
+          <a href="/login" class="lp-btn-getstarted" onclick="MallApp.navigateRoute('/login', event)">Get Started</a>
         </div>
 
         <!-- Mobile Hamburger Button -->
@@ -130,14 +131,17 @@
             <ul class="lp-mobile-links">
               <li><a href="#top" class="lp-mobile-link">Home</a></li>
               <li><a href="#features" class="lp-mobile-link">Features</a></li>
-              <li><a href="/dashboard" class="lp-mobile-link" onclick="MallApp.navigateRoute('/dashboard', event)">Dashboard</a></li>
+              <li><a href="/login" class="lp-mobile-link" onclick="MallApp.navigateRoute('/login', event)">Dashboard</a>
+              </li>
               <li><a href="#contact" class="lp-mobile-link">Contact us</a></li>
             </ul>
           </nav>
 
           <div class="lp-mobile-actions">
-            <a href="/dashboard" class="lp-btn-signin lp-mobile-btn" onclick="MallApp.navigateRoute('/dashboard', event)">Sign In</a>
-            <a href="/dashboard" class="lp-btn-getstarted lp-mobile-btn" onclick="MallApp.navigateRoute('/dashboard', event)">Get Started</a>
+            <a href="/login" class="lp-btn-signin lp-mobile-btn" onclick="MallApp.navigateRoute('/login', event)">Sign
+              In</a>
+            <a href="/login" class="lp-btn-getstarted lp-mobile-btn"
+              onclick="MallApp.navigateRoute('/login', event)">Get Started</a>
           </div>
         </div>
       </div>
@@ -154,12 +158,6 @@
           Real-time POS telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs
           before they happen and run your whole mall from one dashboard.
         </p>
-
-        <!-- CTA Row -->
-        <div class="lp-cta-row">
-          <button type="button" class="lp-btn-demo" id="lpBookDemoBtn">Book a Free Demo</button>
-          <a href="/dashboard" class="lp-btn-start" onclick="MallApp.navigateRoute('/dashboard', event)">Get Started Now</a>
-        </div>
       </main>
     </section>
 
@@ -203,23 +201,183 @@
           <h3>Demo Request Confirmed!</h3>
           <p>Our mall operations team will connect with you within 2 hours. You can also explore the live dashboard
             directly.</p>
-          <a href="/dashboard" class="lp-btn-start" style="display:inline-block; margin-top:14px;" onclick="MallApp.navigateRoute('/dashboard', event)">Open Live
+          <a href="/login" class="lp-btn-start" style="display:inline-block; margin-top:14px;"
+            onclick="MallApp.navigateRoute('/login', event)">Open Live
             Dashboard</a>
         </div>
       </div>
     </div>
 
-    <!-- Floating AI Copilot Button (bottom-right, links to dashboard AI Copilot view) -->
-    <a href="/copilot" class="lp-floating-copilot" title="Open MallMatrix AI Copilot" aria-label="Open AI Copilot" onclick="MallApp.navigateRoute('/copilot', event)">
+    <!-- Floating AI Copilot Button (bottom-right, links to login view) -->
+    <a href="/login" class="lp-floating-copilot" title="Open MallMatrix AI Copilot" aria-label="Open AI Copilot"
+      onclick="MallApp.navigateRoute('/login', event)">
       <span class="lp-copilot-glow-ring"></span>
       <span class="lp-copilot-sparkle-icon" aria-hidden="true">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z"/>
-          <path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/>
+          <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
+          <path d="M19 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" />
         </svg>
       </span>
       <span class="lp-copilot-floating-text">AI Copilot</span>
     </a>
+  </div>
+
+  <!-- ========================================================
+       1.5. LOGIN PAGE VIEW (Rendered at "/login")
+       ======================================================== -->
+  <div class="login-page-view" id="view-login" style="display: none;">
+    <!-- TOP BAR -->
+    <header class="login-top-bar" aria-label="Login Header">
+      <a href="/" class="login-brand" onclick="MallApp.navigateRoute('/', event)" title="MallMatrix Home">
+        <div class="login-brand-logo-wrap">
+          <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="login-brand-logo-img">
+        </div>
+        <span class="login-brand-name">Mall<span class="login-brand-highlight">Matrix</span></span>
+      </a>
+
+      <div class="login-top-actions">
+        <a href="/" class="login-back-home-link" onclick="MallApp.navigateRoute('/', event)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Back to home</span>
+        </a>
+
+        <!-- Header Theme Toggle Button -->
+        <button type="button" class="login-theme-toggle-btn" id="loginThemeToggleBtn" onclick="MallApp.toggleTheme()"
+          aria-label="Toggle theme" title="Toggle theme">
+          <svg class="theme-icon-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="theme-icon-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- CENTERED LOGIN CONTENT -->
+    <main class="login-main-container">
+      <div class="login-content-box">
+        <!-- Headings -->
+        <div class="login-header-group">
+          <h1 class="login-title">Welcome back to <span class="login-title-accent">MallMatrix</span></h1>
+          <p class="login-subtitle">Sign in to manage your stock, orders and tenants.</p>
+        </div>
+
+        <!-- Floating Card -->
+        <div class="login-card">
+          <!-- General Error Banner (shown if wrong credentials) -->
+          <div class="login-alert-error" id="loginAlertError" role="alert" style="display: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span id="loginAlertErrorText">Incorrect email or password</span>
+          </div>
+
+          <form id="loginForm" class="login-form" novalidate onsubmit="MallApp.submitLogin(event)">
+            <!-- Email Field -->
+            <div class="login-form-group">
+              <label for="loginEmail" class="login-form-label">Email address</label>
+              <input type="email" id="loginEmail" class="login-form-input" placeholder="admin@mallmatrix.com"
+                autocomplete="email" required aria-required="true" aria-invalid="false"
+                aria-describedby="loginEmailError" oninput="MallApp.validateLoginForm()"
+                onblur="MallApp.onFieldBlur('loginEmail')" />
+              <div class="login-field-error" id="loginEmailError" aria-live="polite"></div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="login-form-group">
+              <label for="loginPassword" class="login-form-label">Password</label>
+              <div class="login-password-wrap">
+                <input type="password" id="loginPassword" class="login-form-input login-password-input"
+                  placeholder="••••••••" autocomplete="current-password" required aria-required="true"
+                  aria-invalid="false" aria-describedby="loginPasswordError" oninput="MallApp.validateLoginForm()"
+                  onblur="MallApp.onFieldBlur('loginPassword')" />
+                <button type="button" class="login-password-toggle-btn" id="loginPasswordToggleBtn"
+                  onclick="MallApp.togglePasswordVisibility()" aria-label="Show password" title="Show password">
+                  <!-- Eye Open Icon -->
+                  <svg class="login-eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <!-- Eye Slashed Icon (hidden by default) -->
+                  <svg class="login-eye-slashed" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="display: none;">
+                    <path
+                      d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                    </path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+              <div class="login-field-error" id="loginPasswordError" aria-live="polite"></div>
+            </div>
+
+            <!-- Remember me & Forgot password row -->
+            <div class="login-options-row">
+              <label class="login-remember-wrap" for="loginRemember">
+                <input type="checkbox" id="loginRemember" class="login-checkbox">
+                <span class="login-remember-text">Remember me</span>
+              </label>
+
+              <a href="#" class="login-forgot-link" onclick="MallApp.handleForgotPassword(event)">Forgot password?</a>
+            </div>
+
+            <!-- Primary Sign in Button -->
+            <button type="submit" class="login-submit-btn" id="loginSubmitBtn" disabled>
+              <span class="login-submit-text" id="loginSubmitText">Sign in</span>
+              <span class="login-submit-spinner" id="loginSubmitSpinner" style="display: none;" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  class="login-spinner-svg">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                </svg>
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Footer Text below Card -->
+        <p class="login-contact-admin">
+          Don't have access? <span class="login-contact-admin-highlight">Contact your administrator</span>
+        </p>
+
+        <!-- Dismissible Demo Credentials Hint (Marked for easy removal) -->
+        <div class="login-demo-hint" id="loginDemoHint">
+          <!-- DEMO LOGIN HINT: Remove or hide this block when deploying to production with real authentication -->
+          <div class="login-demo-hint-content">
+            <span class="login-demo-hint-text">
+              Demo login: <strong>admin@mallmatrix.com</strong> / <strong>Admin@123</strong>
+            </span>
+            <button type="button" class="login-demo-fill-btn" onclick="MallApp.fillDemoCredentials()"
+              title="Fill demo credentials">
+              Fill Demo
+            </button>
+          </div>
+          <button type="button" class="login-demo-close-btn" onclick="document.getElementById('loginDemoHint').remove()"
+            aria-label="Dismiss demo hint">
+            ×
+          </button>
+        </div>
+      </div>
+    </main>
   </div>
 
   <!-- ========================================================
@@ -232,7 +390,8 @@
     <!-- ==================== SIDEBAR ==================== -->
     <aside class="sidebar" id="sidebar">
       <!-- SIDEBAR BRAND HEADER (Only Logo and Name) -->
-      <a href="/" class="sidebar-brand-header" title="Go to MallMatrix Landing Page" onclick="MallApp.navigateRoute('/', event)">
+      <a href="/" class="sidebar-brand-header" title="Go to MallMatrix Landing Page"
+        onclick="MallApp.navigateRoute('/', event)">
         <div class="brand-logo-wrap">
           <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="brand-logo-img">
         </div>
@@ -377,17 +536,18 @@
 
         <!-- User Details at the Bottom of Sidebar -->
         <div class="sidebar-user-footer">
-          <div class="user-footer-avatar-wrap">
+          <div class="user-footer-avatar-wrap" onclick="MallApp.navigateRoute('/profile')" style="cursor: pointer;"
+            title="View Profile">
             <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80"
-              alt="Alex Rivera" class="user-footer-avatar">
+              alt="Alex Rivera" class="user-footer-avatar user-avatar-preview">
             <span class="user-footer-online-dot"></span>
           </div>
-          <div class="user-footer-info">
+          <div class="user-footer-info" onclick="MallApp.navigateRoute('/profile')" style="cursor: pointer;"
+            title="View Profile">
             <div class="user-footer-name">Alex Rivera</div>
             <div class="user-footer-role">Mall Operations Lead</div>
           </div>
-          <button class="user-footer-logout-btn" title="Log Out"
-            onclick="MallApp.showToast('Mall Operations Session Active', 'info')">
+          <button class="user-footer-logout-btn" title="Log Out" onclick="MallApp.logout()">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
@@ -504,10 +664,10 @@
             <!-- Profile Menu: circular 36px avatar + name "Alex Rivera" + role "Mall Operations Lead" below in small gray (hide under 768px) + chevron -->
             <div class="header-profile-wrap" id="headerProfileMenuWrap">
               <button type="button" class="header-profile-btn" id="headerProfileBtn"
-                onclick="MallApp.toggleProfileDropdown(event)" aria-label="User profile menu" aria-haspopup="menu"
+                onclick="MallApp.handleHeaderProfileClick(event)" aria-label="User profile menu" aria-haspopup="menu"
                 aria-expanded="false">
                 <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=90&auto=format&fit=crop&q=80"
-                  alt="Alex Rivera" class="header-avatar-img">
+                  alt="Alex Rivera" class="header-avatar-img user-avatar-preview">
                 <div class="header-profile-info">
                   <span class="header-profile-name">Alex Rivera</span>
                   <span class="header-profile-role">Mall Operations Lead</span>
@@ -522,7 +682,7 @@
               <div class="profile-dropdown-menu" id="headerProfileDropdown" role="menu"
                 aria-label="User profile options" style="display: none;">
                 <button type="button" class="profile-menu-item" role="menuitem"
-                  onclick="MallApp.showToast('Profile: Alex Rivera (Mall Operations Lead)', 'info'); MallApp.toggleProfileDropdown(false);">
+                  onclick="MallApp.navigateRoute('/profile'); MallApp.toggleProfileDropdown(false);">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
@@ -559,7 +719,7 @@
                 </button>
                 <div class="profile-menu-divider"></div>
                 <button type="button" class="profile-menu-item profile-logout-item" role="menuitem"
-                  onclick="MallApp.showToast('Mall Operations Session Active', 'info'); MallApp.toggleProfileDropdown(false);">
+                  onclick="MallApp.logout(); MallApp.toggleProfileDropdown(false);">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
@@ -1698,6 +1858,11 @@
         </div>
       </div>
 
+      <!-- ==================== VIEW 9: MY PROFILE ==================== -->
+      <div class="view-panel" id="view-profile">
+        <!-- Rendered dynamically by MallApp.renderProfileView() -->
+      </div>
+
       <!-- FIXED AI COPILOT ACTION BUTTON (Fixed in bottom right corner of screen on Dashboard) -->
       <button class="floating-copilot-pill" id="floatingCopilotBtn" onclick="MallApp.switchView('copilot')"
         title="Consult MallMatrix AI Copilot">
@@ -2264,6 +2429,61 @@
       </div>
     </div>
 
+    <!-- HIDDEN FILE INPUT FOR PROFILE PHOTO UPLOAD -->
+    <input type="file" id="profileAvatarFileInput" accept="image/png, image/jpeg, image/jpg" style="display: none;"
+      onchange="MallApp.handleAvatarUpload(event)">
+
+    <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
+    <div class="modal-backdrop" id="deleteAccountModal" role="dialog" aria-modal="true"
+      aria-labelledby="deleteAccountTitle">
+      <div class="modal-box" style="max-width: 480px;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div
+              style="width: 36px; height: 36px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); display: flex; align-items: center; justify-content: center; color: #EF4444;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <h3 class="modal-title" id="deleteAccountTitle" style="color: #EF4444;">Delete MallMatrix Account</h3>
+          </div>
+          <button class="modal-close-btn" onclick="MallApp.closeDeleteAccountModal()"
+            aria-label="Close modal">&times;</button>
+        </div>
+        <div style="padding: 16px 20px;">
+          <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+            This action is permanent and cannot be undone. All personal preferences, saved credentials, and assigned
+            role linkages will be permanently archived.
+          </p>
+          <div
+            style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+            <p style="font-size: 0.82rem; color: var(--text); font-weight: 500;">
+              Please type <strong style="color: #EF4444; font-family: monospace;">DELETE</strong> to confirm:
+            </p>
+          </div>
+          <div class="form-group">
+            <label for="deleteAccountInput"
+              style="font-size: 0.82rem; font-weight: 600; color: var(--text); display: block; margin-bottom: 6px;">Confirmation
+              phrase</label>
+            <input type="text" id="deleteAccountInput" class="profile-input" placeholder="Type DELETE here"
+              autocomplete="off" oninput="MallApp.handleDeleteAccountInputChange(this.value)" style="width: 100%;">
+          </div>
+        </div>
+        <div class="modal-footer"
+          style="display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface);">
+          <button type="button" class="clean-btn" onclick="MallApp.closeDeleteAccountModal()">Cancel</button>
+          <button type="button" id="confirmDeleteAccountBtn" class="btn-create-order" disabled
+            style="background: #EF4444; color: #fff; opacity: 0.5; cursor: not-allowed;"
+            onclick="MallApp.confirmDeleteAccount()">
+            Permanently Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- TOAST NOTIFICATIONS -->
     <div class="toast-container" id="toastContainer"></div>
   </div>
@@ -2278,8 +2498,8 @@
       <p class="not-found-desc">The page you are looking for doesn't exist or has been moved.</p>
       <a href="/dashboard" class="not-found-btn" onclick="MallApp.navigateRoute('/dashboard', event)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
         <span>Go to dashboard</span>
       </a>
