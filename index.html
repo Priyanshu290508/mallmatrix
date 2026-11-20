@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MallMatrix — Mall Inventory & Stock Management Platform</title>
   <meta name="description"
-    content="MallMatrix: Enterprise Mall Inventory Management System with real-time stock monitoring, AI Copilot, POS sales analytics, staff duty rosters, and tenant store management.">
+    content="MallMatrix: Enterprise Mall Inventory Management System with real-time stock monitoring, AI Copilot, sales analytics, staff duty rosters, and tenant store management.">
   <link rel="icon" type="image/jpeg" href="/mallmatrix_logo.jpg">
   <link rel="apple-touch-icon" href="/mallmatrix_logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -155,7 +155,7 @@
 
         <!-- Subtext -->
         <p class="lp-subtext">
-          Real-time POS telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs
+          Real-time store telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs
           before they happen and run your whole mall from one dashboard.
         </p>
       </main>
@@ -779,7 +779,7 @@
                 <span>AUTONOMOUS AGENT MESH ACTIVE</span>
               </div>
               <h2 class="orch-card-title">ORCHESTRATOR SUMMARY</h2>
-              <p class="orch-description">Central intelligence core orchestrating inventory buffers, POS telemetry
+              <p class="orch-description">Central intelligence core orchestrating inventory buffers, store telemetry
                 streams, and tenant compliance.</p>
             </div>
             <div class="orch-action-btns">
@@ -808,11 +808,8 @@
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Stock Replenishment Triggers</span>
-              <div class="orch-metric-val"><span id="orchReplenishTriggersVal">12 Auto-POs</span> <span
-                  class="tag-badge tag-purple info-dot-label"><span class="info-dot dot-accent"></span>In-Flight</span>
-              </div>
-              <span class="orch-metric-sub">Auto-replenishing <span id="orchBufferBreachesVal">14</span> buffer
-                breaches</span>
+              <div class="orch-metric-val"><span id="orchReplenishTriggersVal">14 Alerts</span> <span class="tag-badge tag-purple info-dot-label"><span class="info-dot dot-accent"></span>Active</span></div>
+              <span class="orch-metric-sub">Monitoring <span id="orchBufferBreachesVal">14</span> buffer breaches</span>
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Predicted Day Footfall</span>
@@ -853,7 +850,7 @@
                   <span class="kpi-main-val" id="kpiRevenueVal">$148,250.00</span>
                 </div>
                 <div class="kpi-footer-note">
-                  <span>Aggregated across 48 tenant retail POS terminals</span>
+                  <span>Aggregated across 48 tenant retail store registers</span>
                 </div>
               </div>
 
@@ -1069,7 +1066,7 @@
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Sales</h4>
-                  <span class="agent-tagline">Live POS Stream & Revenue Engine</span>
+                  <span class="agent-tagline">Live Store Stream & Revenue Engine</span>
                 </div>
                 <span class="agent-status-badge status-active">Active</span>
               </div>
@@ -1080,7 +1077,7 @@
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">342/hr</span>
-                  <span class="agent-metric-name">POS Velocity</span>
+                  <span class="agent-metric-name">Sales Velocity</span>
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">99.8%</span>
@@ -1329,7 +1326,7 @@
           <div class="sales-chart-header">
             <div>
               <h3 class="sales-chart-title">Revenue by Store (Top 6 Stores)</h3>
-              <p class="sales-chart-subtitle">Aggregated retail POS turnover across active mall tenants (<span
+              <p class="sales-chart-subtitle">Aggregated retail sales turnover across active mall tenants (<span
                   id="salesChartRangeLabel">Today</span>)</p>
             </div>
             <div class="sales-chart-legend-wrap">
@@ -1387,7 +1384,7 @@
                   </th>
                   <th class="sales-th-sortable" data-col="posStatus" onclick="MallApp.sortSalesTable('posStatus')"
                     style="min-width: 150px;">
-                    POS Status <span class="sales-sort-icon" id="sales-sort-posStatus">↕</span>
+                    Register Status <span class="sales-sort-icon" id="sales-sort-posStatus">↕</span>
                   </th>
                 </tr>
               </thead>
@@ -1647,11 +1644,11 @@
               </div>
               <div class="action-card-content">
                 <h3 class="action-card-title">Why did Zara's turnover drop?</h3>
-                <p class="action-card-desc">Analyze POS sales velocity and inventory levels for Zara Flagship</p>
+                <p class="action-card-desc">Analyze store sales velocity and inventory levels for Zara Flagship</p>
               </div>
             </div>
 
-            <!-- Card 3: Summarize today's overdue POs -->
+            <!-- Card 3: Summarize store rent compliance -->
             <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Summarize store rent compliance')">
               <div class="action-card-sparkle">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2023,7 +2020,7 @@
           <div>
             <h3 class="modal-title">MallMatrix System & Export Settings</h3>
             <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Platform preferences,
-              report configuration, and POS sync parameters.</p>
+              report configuration, and telemetry sync parameters.</p>
           </div>
           <button type="button" class="modal-close-btn" onclick="MallApp.closeSettingsModal()"
             aria-label="Close settings">&times;</button>
@@ -2087,7 +2084,7 @@
               style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 6px; display: block;">Platform
               Telemetry</label>
             <div class="settings-telemetry-box">
-              <strong>48 Mall Tenants Active:</strong> Real-time POS telemetry stream connected.
+              <strong>48 Mall Tenants Active:</strong> Real-time store telemetry stream connected.
               Autonomous buffer triggers online.
             </div>
           </div>

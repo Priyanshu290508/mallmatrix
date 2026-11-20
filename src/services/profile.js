@@ -36,9 +36,9 @@ export const DEFAULT_PROFILE = {
   accessLevel: 'Admin',
   permissions: [
     { id: 'inv', name: 'Inventory', desc: 'SKU creation, stock audit, buffer threshold adjustments', granted: true },
-    { id: 'sales', name: 'Sales', desc: 'Turnover reports, revenue analytics, POS telemetry streams', granted: true },
+    { id: 'sales', name: 'Sales', desc: 'Turnover reports, revenue analytics, store telemetry streams', granted: true },
     { id: 'staff', name: 'Staff', desc: 'Shift scheduling, compliance tracking, auditor duty rosters', granted: true },
-    { id: 'tenants', name: 'Tenants', desc: 'Store directory, onboarding leases, POS telemetry check', granted: true },
+    { id: 'tenants', name: 'Tenants', desc: 'Store directory, onboarding leases, store telemetry check', granted: true },
     { id: 'export', name: 'Export', desc: 'Full data snapshots, Excel/PDF multi-format downloads', granted: true }
   ],
 
