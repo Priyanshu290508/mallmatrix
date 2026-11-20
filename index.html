@@ -499,7 +499,7 @@
           <span class="badge-copilot">Smart</span>
         </button>
 
-        <!-- 8. Export Center -->
+                <!-- 8. Export Center -->
         <button class="menu-item" data-view="export" id="nav-export">
           <div class="menu-icon">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -509,6 +509,18 @@
             </svg>
           </div>
           <span class="menu-label">Export Center</span>
+        </button>
+
+        <!-- 9. Data Library -->
+        <button class="menu-item" data-view="datalibrary" id="nav-datalibrary">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>
+          </div>
+          <span class="menu-label">Data Library</span>
         </button>
 
         <!-- Inventory Settings -->
@@ -593,6 +605,28 @@
 
           <!-- Right: Date chip, Refresh button, Notification bell, Vertical divider, Profile menu (flex items-center gap-3) -->
           <div class="header-utility-right">
+            <!-- Mall Property Selector -->
+            <div class="header-mall-selector-wrap" id="headerMallSelectorWrap" title="Switch Mall Property">
+              <svg class="header-mall-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M9 3l3-2 3 2v4H9V3z"/>
+              </svg>
+              <select id="headerMallSelector" class="header-mall-select" onchange="MallApp.onMallChange(this.value)" aria-label="Select Mall Property">
+                <option value="MALL-001" selected>City Centre Mall (MALL-001)</option>
+                <option value="MALL-002">South City Mall (MALL-002)</option>
+                <option value="MALL-003">Phoenix Palladium (MALL-003)</option>
+                <option value="MALL-004">Inorbit Mall Malad (MALL-004)</option>
+                <option value="MALL-005">Select CITYWALK (MALL-005)</option>
+                <option value="MALL-006">DLF Mall of India (MALL-006)</option>
+                <option value="MALL-007">Phoenix Marketcity (MALL-007)</option>
+                <option value="MALL-008">Orion Mall (MALL-008)</option>
+                <option value="MALL-009">Express Avenue (MALL-009)</option>
+                <option value="MALL-010">Sarath City Capital Mall (MALL-010)</option>
+                <option value="MALL-011">The Pavilion Mall (MALL-011)</option>
+                <option value="MALL-012">AlphaOne Mall (MALL-012)</option>
+                <option value="ALL">All Malls (12 Properties)</option>
+              </select>
+            </div>
+
             <!-- Date Chip: calendar icon + "9 Nov 2026" in short format, whitespace-nowrap, text-sm, subtle border, rounded-lg. Hide calendar icon under 640px -->
             <div class="header-date-chip" id="headerDateChip">
               <svg class="header-date-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1878,6 +1912,66 @@
         </div>
       </div>
 
+      <!-- ==================== VIEW: DATA LIBRARY ==================== -->
+      <div class="view-panel" id="view-datalibrary">
+        <div class="dash-card datalibrary-card">
+          <div class="datalibrary-header">
+            <div class="datalibrary-header-left">
+              <label for="datalibraryDatasetSelect" class="clean-label" style="font-weight: 700; font-size: 0.84rem; color: var(--text);">Active Dataset:</label>
+              <select id="datalibraryDatasetSelect" class="clean-select" style="min-width: 240px;" onchange="MallApp.onDataLibraryDatasetChange(this.value)">
+                <!-- Populated dynamically -->
+              </select>
+              <span id="datalibraryMetaBadge" class="status-pill pill-active" style="display: none;">0 rows</span>
+            </div>
+            <div class="datalibrary-header-right">
+              <div class="datalibrary-search-wrap">
+                <input type="text" id="datalibrarySearchInput" class="clean-input" placeholder="Search dataset records..." oninput="MallApp.onDataLibrarySearch(this.value)">
+              </div>
+              <button type="button" class="clean-btn" onclick="MallApp.exportActiveCustomDataset('csv')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px;">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Export CSV</span>
+              </button>
+              <button type="button" class="clean-btn" onclick="MallApp.exportActiveCustomDataset('json')">
+                <span>Export JSON</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty state when no custom datasets exist -->
+          <div id="datalibraryEmptyState" class="datalibrary-empty-state" style="padding: 48px 24px; text-align: center;">
+            <div style="font-size: 2.4rem; margin-bottom: 12px;">📁</div>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 6px;">No Custom Datasets Yet</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 440px; margin: 0 auto 16px auto;">When you import a file that does not match standard schemas and choose "Custom dataset", it will be typed, stored, and displayed here.</p>
+            <button type="button" class="btn-create-order" onclick="MallApp.openImportModal()">
+              <span>Import Dataset</span>
+            </button>
+          </div>
+
+          <!-- Dataset Table Content -->
+          <div id="datalibraryTableWrap" style="display: none;">
+            <div class="table-responsive">
+              <table class="clean-table" id="datalibraryTable">
+                <thead id="datalibraryTableHead">
+                  <!-- Rendered dynamically -->
+                </thead>
+                <tbody id="datalibraryTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="inv-pagination-bar" id="datalibraryPaginationBar">
+              <div class="inv-page-info" id="datalibraryPageInfo">Showing 1 to 50 of 0 records</div>
+              <div class="inv-page-btns" id="datalibraryPageBtns"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ==================== VIEW 9: MY PROFILE ==================== -->
       <div class="view-panel" id="view-profile">
         <!-- Rendered dynamically by MallApp.renderProfileView() -->
@@ -2189,19 +2283,18 @@
       </div>
     </div>
 
-    <!-- 3. IMPORT PRODUCTS MODAL -->
+        <!-- 3. SMART DATA IMPORT MODAL -->
     <div class="modal-backdrop" id="importProductsModal" onclick="if(event.target === this) MallApp.closeImportModal()"
       role="dialog" aria-modal="true" aria-labelledby="importModalTitle">
-      <div class="modal-box import-modal-box" onclick="event.stopPropagation()">
+      <div class="modal-box import-modal-box" onclick="event.stopPropagation()" style="max-width: 900px;">
         <!-- MODAL HEADER -->
         <div class="modal-header">
           <div>
-            <h3 class="modal-title" id="importModalTitle">Import Products</h3>
-            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Upload a CSV or Excel
-              (.xlsx) file to add or update tenant products.</p>
+            <h3 class="modal-title" id="importModalTitle">Smart Data Import</h3>
+            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Upload CSV, XLSX or JSON files. Automated schema detection, cleaning, and non-destructive storage.</p>
           </div>
           <button type="button" class="modal-close-btn" onclick="MallApp.closeImportModal()"
-            aria-label="Close import products modal">&times;</button>
+            aria-label="Close import modal">&times;</button>
         </div>
 
         <!-- MODAL BODY -->
@@ -2209,9 +2302,9 @@
           <!-- VIEW 1: UPLOAD DROPZONE -->
           <div class="import-upload-section" id="importUploadSection">
             <div class="import-dropzone" id="importDropzone" tabindex="0" role="button"
-              aria-label="Drop CSV or Excel file here or press Enter to browse">
-              <input type="file" id="importFileInput" class="import-file-input"
-                accept=".csv, .xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv"
+              aria-label="Drop CSV, Excel, or JSON files here or press Enter to browse">
+              <input type="file" id="importFileInput" class="import-file-input" multiple
+                accept=".csv, .xlsx, .xls, .json, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv, application/json"
                 style="display: none;">
               <div class="import-dropzone-icon">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -2221,21 +2314,20 @@
                 </svg>
               </div>
               <div class="import-dropzone-text">
-                <span class="import-dropzone-title">Drag & drop your CSV or Excel file here, or</span>
+                <span class="import-dropzone-title">Drag & drop your files here, or</span>
                 <button type="button" class="btn-import-browse" id="btnBrowseImportFile"
-                  onclick="document.getElementById('importFileInput').click()">Choose file</button>
+                  onclick="document.getElementById('importFileInput').click()">Choose files</button>
               </div>
               <div class="import-dropzone-hint">
-                Supports .csv and .xlsx up to 5 MB (max 5,000 rows)
+                Accepts multiple CSV, XLSX, or JSON files (up to 25 MB each). All sheets extracted automatically.
               </div>
             </div>
 
             <!-- TEMPLATE LINK & FORMAT GUIDE -->
             <div class="import-guidance-bar">
               <div class="import-cols-hint">
-                <span class="import-cols-label">Required columns:</span>
-                <code>name</code>, <code>sku</code>, <code>tenant</code>, <code>category</code>, <code>stock</code>,
-                <code>minBuffer</code>, <code>price</code>
+                <span class="import-cols-label">Auto-detects:</span>
+                <code>Tenants</code>, <code>Inventory</code>, <code>Reordering</code>, <code>Sales</code>, <code>KPIs</code>, <code>Products</code>, or <code>Custom Datasets</code>
               </div>
               <a href="#" class="import-template-link" id="btnDownloadTemplate"
                 onclick="MallApp.downloadImportTemplate(event)">
@@ -2252,101 +2344,125 @@
           <!-- VIEW 2: READING FILE LOADING STATE -->
           <div class="import-loading-state" id="importLoadingState" style="display: none;">
             <div class="import-spinner"></div>
-            <div class="import-loading-text">Reading file and validating rows...</div>
-            <div class="import-loading-sub">Parsing sheets and matching tenant stores</div>
+            <div class="import-loading-text" id="importLoadingText">Reading files and analyzing schema...</div>
+            <div class="import-loading-sub" id="importLoadingSub">Detecting column fingerprints and checking templates</div>
           </div>
 
-          <!-- VIEW 3: PREVIEW & STATS SECTION -->
+          <!-- VIEW 3: COLUMN MAPPING FOR UNKNOWN FILES -->
+          <div class="import-mapping-section" id="importMappingSection" style="display: none; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #FEF3C7; padding: 12px 16px; border-radius: 8px; border: 1px solid #FCD34D;">
+              <div>
+                <div style="font-weight: 700; font-size: 0.88rem; color: #92400E;" id="mappingFileNameTitle">Unrecognized Schema: dataset.csv</div>
+                <div style="font-size: 0.76rem; color: #B45309;">Please map columns to a target table or store as a Custom Dataset.</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="mappingTargetTableSelect" style="font-size: 0.8rem; font-weight: 700; color: #92400E;">Target Table:</label>
+                <select id="mappingTargetTableSelect" class="clean-select" style="background: #FFFFFF;" onchange="MallApp.onMappingTargetChange(this.value)">
+                  <option value="products">Products</option>
+                  <option value="stores">Stores / Tenants</option>
+                  <option value="purchaseOrders">Purchase Orders</option>
+                  <option value="sales">Sales</option>
+                  <option value="staff">Staff</option>
+                  <option value="custom" selected>Custom Dataset</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+              <table class="clean-table" id="mappingColumnsTable">
+                <thead>
+                  <tr>
+                    <th>Source Column</th>
+                    <th>Sample Values (3 rows)</th>
+                    <th style="width: 220px;">Map to Field</th>
+                  </tr>
+                </thead>
+                <tbody id="mappingColumnsTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #475569; cursor: pointer;">
+                <input type="checkbox" id="mappingSaveTemplateCheck" checked style="accent-color: var(--accent);">
+                <span>Save choices as template for future imports</span>
+              </label>
+              <button type="button" class="btn-primary-reorder" onclick="MallApp.applyColumnMapping()">
+                Apply Mapping & Continue
+              </button>
+            </div>
+          </div>
+
+          <!-- VIEW 4: PREVIEW & STATS SECTION -->
           <div class="import-preview-section" id="importPreviewSection" style="display: none;">
-            <!-- FILE INFO & RE-CHOOSE -->
-            <div class="import-file-chip">
-              <div class="import-file-meta">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                </svg>
-                <span class="import-filename" id="importFilenameDisplay">products.csv</span>
-                <span class="import-filesize" id="importFilesizeDisplay">(12.4 KB)</span>
+            <!-- DATASET SELECTOR & FILE INFO -->
+            <div class="import-controls-row" style="margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <label for="importActiveDatasetSelect" style="font-weight: 700; font-size: 0.8rem; color: var(--text);">Dataset Preview:</label>
+                <select id="importActiveDatasetSelect" class="clean-select" onchange="MallApp.onActiveImportDatasetChange(this.value)">
+                  <!-- Populated dynamically -->
+                </select>
+                <span id="importActiveTypeBadge" class="import-type-badge badge-tenants">Tenants</span>
               </div>
-              <button type="button" class="btn-import-change-file" onclick="MallApp.resetImportFile()">Change
-                file</button>
-            </div>
-
-            <!-- DUPLICATE HANDLING & SUMMARY -->
-            <div class="import-controls-row">
-              <div class="import-duplicate-ctrl">
-                <span class="import-ctrl-label">If SKU already exists for store:</span>
-                <div class="import-radio-group">
-                  <label class="import-radio-label">
-                    <input type="radio" name="importDuplicateMode" id="dupModeUpdate" value="update" checked
-                      onchange="MallApp.onDuplicateModeChange(this.value)">
-                    <span>Update existing</span>
-                  </label>
-                  <label class="import-radio-label">
-                    <input type="radio" name="importDuplicateMode" id="dupModeSkip" value="skip"
-                      onchange="MallApp.onDuplicateModeChange(this.value)">
-                    <span>Skip</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="import-summary-bar" id="importSummaryBar">
-                <!-- Dynamically populated: e.g. 42 new, 5 updates, 3 errors -->
-              </div>
-            </div>
-
-            <!-- ERROR REPORT DOWNLOAD LINK (IF ERRORS EXIST) -->
-            <div class="import-error-banner" id="importErrorBanner" style="display: none;">
-              <div class="import-error-msg" id="importErrorBannerMsg">3 rows contain errors and will be skipped during
-                import.</div>
-              <button type="button" class="btn-download-error-csv" id="btnDownloadErrorReport"
-                onclick="MallApp.downloadImportErrorReport()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Download error report (CSV)
+              <button type="button" class="btn-import-change-file" onclick="MallApp.resetImportFile()">
+                + Add or change files
               </button>
             </div>
 
-            <!-- PREVIEW TABLE NOTE (FOR >100 ROWS) -->
+            <!-- DATA QUALITY & METRICS SUMMARY BAR -->
+            <div class="import-quality-bar" id="importQualityBar">
+              <!-- Rendered dynamically -->
+            </div>
+
+            <!-- PREVIEW TABLE NOTE -->
             <div class="import-table-note" id="importTableNote" style="display: none;">
-              <!-- Showing first 100 of N rows -->
+              <!-- Showing first 10 rows -->
             </div>
 
             <!-- PREVIEW TABLE -->
-            <div class="import-table-container">
+            <div class="import-table-container" style="max-height: 240px; overflow-y: auto;">
               <table class="import-preview-table" id="importPreviewTable">
-                <thead>
-                  <tr>
-                    <th style="width: 48px;">#</th>
-                    <th>Product</th>
-                    <th style="width: 120px;">SKU</th>
-                    <th>Tenant Store</th>
-                    <th style="width: 70px; text-align: right;">Stock</th>
-                    <th style="width: 85px; text-align: center;">Status</th>
-                    <th>Details / Error</th>
-                  </tr>
+                <thead id="importPreviewTableHead">
+                  <!-- Rendered dynamically -->
                 </thead>
                 <tbody id="importPreviewTableBody">
                   <!-- Rendered dynamically -->
                 </tbody>
               </table>
             </div>
+
+            <!-- ISSUES LOG ACTION BAR -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+              <div id="importIssuesCountLabel" style="font-size: 0.78rem; color: #64748B;">0 issues logged (all fixed automatically)</div>
+              <button type="button" class="btn-download-error-csv" id="btnDownloadIssuesCsv" onclick="MallApp.downloadIssuesLog()" style="display: none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Download Issues Log (.csv)
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- MODAL FOOTER -->
         <div class="modal-footer import-modal-footer">
-          <div class="import-footer-left">
+          <div class="import-footer-left" style="flex: 1;">
             <span class="import-footer-status" id="importFooterStatus"></span>
+            <div class="import-progress-wrap" id="importProgressWrap" style="display: none;">
+              <div class="import-progress-bar-bg">
+                <div class="import-progress-bar-fill" id="importProgressBar" style="width: 0%;"></div>
+              </div>
+              <span class="import-progress-text" id="importProgressText">Writing to storage (0%)...</span>
+            </div>
           </div>
           <div class="import-footer-actions">
             <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeImportModal()">Cancel</button>
-            <button type="button" class="btn-primary-reorder" id="btnConfirmImport" onclick="MallApp.executeImport()"
+            <button type="button" class="btn-primary-reorder" id="btnConfirmImport" onclick="MallApp.executeSmartImport()"
               disabled>
-              Import Products
+              Import All
             </button>
           </div>
         </div>
@@ -2407,20 +2523,27 @@
             <div
               style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(239, 68, 68, 0.05); border: 1.5px solid rgba(239, 68, 68, 0.2); border-radius: 10px;">
               <div>
-                <div style="font-weight: 700; font-size: 0.84rem; color: #EF4444;">Clear Local Changes</div>
-                <div style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">Removes all imported products, tenant
-                  and staff edits, and restores defaults.</div>
+                <div style="font-weight: 700; font-size: 0.84rem; color: #EF4444;">Reset All Imported Data</div>
+                <div style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">Removes all imported data from IndexedDB, clears local cache, and restores defaults.</div>
               </div>
-              <button type="button" class="btn-table-action" onclick="MallApp.resetDemoData()"
+              <button type="button" class="btn-table-action" onclick="MallApp.resetAllImportedData()"
                 style="background: #EF4444; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; cursor: pointer;">
                 Reset Data
               </button>
             </div>
           </div>
-          <div>
-            <label
-              style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 6px; display: block;">Platform
-              Telemetry</label>
+            <div>
+              <label
+                style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 8px; display: block;">Saved Import Mapping Templates</label>
+              <div id="settingsTemplatesList" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;">
+                <div style="font-size: 0.76rem; color: #64748B;">No custom mapping templates saved yet.</div>
+              </div>
+            </div>
+
+            <div>
+              <label
+                style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 6px; display: block;">Platform
+                Telemetry</label>
             <div class="settings-telemetry-box">
               <strong>48 Mall Tenants Active:</strong> Real-time sales telemetry stream connected.
               Autonomous buffer triggers online.

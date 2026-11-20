@@ -11243,3 +11243,181 @@ html.dark .import-err-text {
   color: #F87171 !important;
 }
 
+
+
+/* ========================================================
+   MALL SELECTOR DROPDOWN IN HEADER
+   ======================================================== */
+.header-mall-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border, #E2E8F0);
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 38px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.header-mall-selector-wrap:hover,
+.header-mall-selector-wrap:focus-within {
+  border-color: var(--accent, #6366F1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.header-mall-icon {
+  color: var(--accent, #6366F1);
+  flex-shrink: 0;
+}
+
+.header-mall-select {
+  border: none;
+  background: transparent;
+  color: var(--text, #1E293B);
+  font-size: 0.82rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  padding: 4px 0;
+  font-family: inherit;
+}
+
+html.dark .header-mall-selector-wrap {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+html.dark .header-mall-select {
+  color: var(--text);
+  background: var(--surface);
+}
+
+/* ========================================================
+   SMART IMPORT ENHANCEMENTS
+   ======================================================== */
+.import-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.import-queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #E2E8F0);
+  background: var(--surface-soft, #F8FAFC);
+}
+
+.import-queue-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.import-type-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
+.badge-tenants { background: #EEF2FF; color: #4F46E5; }
+.badge-inventory { background: #ECFDF5; color: #059669; }
+.badge-reordering { background: #EFF6FF; color: #2563EB; }
+.badge-sales { background: #FAF5FF; color: #9333EA; }
+.badge-kpis { background: #FFFBEB; color: #D97706; }
+.badge-legacy_products { background: #F1F5F9; color: #475569; }
+.badge-custom { background: #F0FDF4; color: #16A34A; }
+.badge-unknown { background: #FEF2F2; color: #DC2626; }
+
+.import-quality-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.import-quality-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--surface-soft, #F1F5F9);
+  color: var(--text, #334155);
+}
+
+.import-progress-wrap {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.import-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--border, #E2E8F0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.import-progress-bar-fill {
+  height: 100%;
+  background: var(--accent, #6366F1);
+  transition: width 0.15s ease;
+}
+
+.import-progress-text {
+  font-size: 0.74rem;
+  color: var(--text-muted, #64748B);
+  margin-top: 4px;
+  display: block;
+}
+
+/* ========================================================
+   DATA LIBRARY STYLES
+   ======================================================== */
+.datalibrary-card {
+  padding: 24px;
+}
+
+.datalibrary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.datalibrary-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.datalibrary-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.datalibrary-search-wrap input {
+  padding: 8px 14px;
+  border: 1px solid var(--border, #E2E8F0);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: var(--surface, #FFFFFF);
+  color: var(--text, #1E293B);
+  min-width: 200px;
+}

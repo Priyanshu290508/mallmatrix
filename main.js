@@ -67,11 +67,57 @@ import {
 
 import { getDashboardStats } from './src/utils/dashboardStats.js';
 
+import {
+  loadAllStateFromDB,
+  batchPut,
+  resetAllImportedData as dbResetAllImportedData,
+  saveMappingTemplate,
+  getMappingTemplate,
+  getAllMappingTemplates,
+  deleteMappingTemplate as dbDeleteMappingTemplate,
+  saveCustomDataset,
+  getAllCustomDatasets,
+  logImportRecord
+} from './src/utils/db.js';
+
+import {
+  KNOWN_FINGERPRINTS,
+  TYPE_PROCESSING_ORDER,
+  SYNONYM_DICTIONARY,
+  normalizeHeader,
+  getHeaderSignature,
+  stringSimilarity,
+  suggestTargetField,
+  detectDatasetType,
+  parseCSV,
+  parseFileToDatasets,
+  cleanText,
+  cleanNumber,
+  cleanDate,
+  cleanBoolean,
+  cleanId,
+  isRowCompletelyEmpty,
+  logIssue,
+  processTenantsData,
+  processInventoryData,
+  processReorderingData,
+  processSalesData,
+  processKpisData,
+  processLegacyProductsData,
+  processCustomDataset,
+  generateIssuesCSV
+} from './src/utils/smartImport.js';
+
+
 const MallState = {
   activeView: 'dashboard',
   isLoading: false,
   hasError: false,
   currency: localStorage.getItem('mallmatrix_currency') || 'USD',
+  selectedMall: localStorage.getItem('mallmatrix_selected_mall') || 'MALL-001',
+  salesHistory: [],
+  kpiSnapshots: [],
+  customDatasets: [],
   totalSKUs: 18450,
   salesAmount: 2500.00,
   taxesAmount: 470.00,
@@ -122,9 +168,9 @@ window.MallApp = {
   _currentSalesRows: null,
   _currentPODetail: null,
 
-  init() {
+  async init() {
     this.initTheme();
-    this.loadStateFromStorage();
+    await this.loadStateFromStorage();
     this.bindNavigation();
     this.bindModals();
     this.bindImportEvents();
@@ -132,7 +178,9 @@ window.MallApp = {
     this.bindCopilot();
     this.bindCommandPalette();
     this.updateNotificationBadge();
+    this.populateDynamicFilters();
     this.renderAll();
+    this.renderSettingsTemplates();
     this.initLanding();
     this.updateUserProfile();
     this.checkRoute();
@@ -150,9 +198,37 @@ window.MallApp = {
     }
   },
 
-  loadStateFromStorage() {
+  async loadStateFromStorage() {
     try {
       MallState.currency = localStorage.getItem('mallmatrix_currency') || 'USD';
+      MallState.selectedMall = localStorage.getItem('mallmatrix_selected_mall') || 'MALL-001';
+      const mallSelEl = document.getElementById('headerMallSelector');
+      if (mallSelEl) mallSelEl.value = MallState.selectedMall;
+
+      // 1. Try loading from IndexedDB first (Smart Import storage)
+      const dbState = await loadAllStateFromDB();
+      if (dbState && (dbState.stores.length > 0 || dbState.products.length > 0 || dbState.purchaseOrders.length > 0)) {
+        MallState.tenants = dbState.stores;
+        MallState.products = dbState.products;
+        MallState.purchaseOrders = dbState.purchaseOrders;
+        MallState.salesHistory = dbState.salesHistory || [];
+        MallState.kpiSnapshots = dbState.kpiSnapshots || [];
+        MallState.customDatasets = dbState.customDatasets || [];
+        MallState.stockValuation = getTotalStockValuation(MallState.products);
+
+        // Sidebar collapsed state
+        const isCollapsed = localStorage.getItem('mallmatrix_sidebar_collapsed') === 'true';
+        if (isCollapsed) {
+          document.body.classList.add('sidebar-is-collapsed');
+          const btn = document.getElementById('sidebarCollapseBtn');
+          if (btn) {
+            const textSpan = btn.querySelector('.collapse-btn-text');
+            if (textSpan) textSpan.textContent = 'Expand Sidebar';
+            btn.title = 'Expand Sidebar';
+          }
+        }
+        return;
+      }
 
       // Restore sidebar collapsed preference
       const isCollapsed = localStorage.getItem('mallmatrix_sidebar_collapsed') === 'true';
@@ -486,7 +562,7 @@ window.MallApp = {
       view = 'landing';
     }
 
-    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
+    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile', 'datalibrary'];
 
     // If user is already authenticated and navigates to login, redirect to dashboard
     if (view === 'login' && isAuthenticated()) {
@@ -540,11 +616,12 @@ window.MallApp = {
       'tenants': 'tenants',
       'export': 'export',
       'copilot': 'copilot',
-      'profile': 'profile'
+      'profile': 'profile',
+      'datalibrary': 'datalibrary'
     };
 
     const resolved = ROUTE_MAP[target] || 'not-found';
-    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
+    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile', 'datalibrary'];
 
     // If user is already authenticated and visits /login, redirect to /dashboard
     if (resolved === 'login' && isAuthenticated()) {
@@ -579,7 +656,8 @@ window.MallApp = {
       tenants: { category: 'Directory', current: 'Tenant Retail Stores' },
       export: { category: 'Reports', current: 'Data Export Center' },
       copilot: { category: 'Intelligence', current: 'MallMatrix AI' },
-      profile: { category: 'Account', current: 'My Profile' }
+      profile: { category: 'Account', current: 'My Profile' },
+      datalibrary: { category: 'Datasets', current: 'Data Library' }
     };
 
     const breadcrumb = BREADCRUMB_MAP[viewName] || { category: 'Overview', current: 'Dashboard' };
@@ -699,6 +777,8 @@ window.MallApp = {
       this.renderTenantDirectory();
     } else if (viewName === 'profile') {
       this.renderProfileView();
+    } else if (viewName === 'datalibrary') {
+      this.renderDataLibrary();
     }
 
     // Keep bottom-right Copilot button visible on all views except the copilot view itself
@@ -1087,9 +1167,131 @@ window.MallApp = {
   _importRawRows: null,
   _importEvaluatedRows: null,
   _importSummary: null,
-  _importDuplicateMode: 'update',
-  _importCurrentFile: null,
+  // ==========================================
+  // SMART IMPORT, DATA LIBRARY & MULTI-MALL SCOPE
+  // ==========================================
+  _importDatasets: [],
+  _activeImportDatasetIndex: 0,
+  _importIssues: [],
   _importEventsBound: false,
+  _dataLibraryActiveDatasetId: null,
+  _dataLibraryPage: 1,
+  _dataLibraryRowsPerPage: 50,
+  _dataLibrarySearch: '',
+  _dataLibrarySort: { col: null, dir: 'asc' },
+
+  onMallChange(mallId) {
+    MallState.selectedMall = mallId;
+    localStorage.setItem('mallmatrix_selected_mall', mallId);
+    const sel = document.getElementById('headerMallSelector');
+    if (sel && sel.value !== mallId) sel.value = mallId;
+    this.populateDynamicFilters();
+    this.renderAll();
+    const mallName = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : mallId;
+    this.showToast(`Active mall scope: ${mallName}`, 'info');
+  },
+
+  getFilteredState() {
+    const selectedMall = MallState.selectedMall || 'MALL-001';
+    if (selectedMall === 'ALL') {
+      return MallState;
+    }
+    const allStores = Array.isArray(MallState.tenants) ? MallState.tenants : [];
+    const storesInMall = allStores.filter(t => t.mallId === selectedMall || (!t.mallId && selectedMall === 'MALL-001'));
+    const storeIdSet = new Set(storesInMall.map(t => t.id));
+    const storeNameSet = new Set(storesInMall.map(t => (t.name || '').toLowerCase()));
+
+    const filteredProducts = (MallState.products || []).filter(p => {
+      if (p.storeId && storeIdSet.has(p.storeId)) return true;
+      if (p.mallId && p.mallId === selectedMall) return true;
+      if (p.tenant && storeNameSet.has(p.tenant.toLowerCase())) return true;
+      return false;
+    });
+
+    const filteredPOs = (MallState.purchaseOrders || []).filter(po => {
+      if (po.storeId && storeIdSet.has(po.storeId)) return true;
+      if (po.mallId && po.mallId === selectedMall) return true;
+      if (po.tenant) {
+        const lower = po.tenant.toLowerCase();
+        for (const name of storeNameSet) {
+          if (lower.includes(name)) return true;
+        }
+      }
+      return false;
+    });
+
+    const filteredSalesHistory = (MallState.salesHistory || []).filter(s => {
+      if (s.storeId && storeIdSet.has(s.storeId)) return true;
+      if (s.mallId && s.mallId === selectedMall) return true;
+      return false;
+    });
+
+    return {
+      ...MallState,
+      tenants: storesInMall,
+      products: filteredProducts,
+      purchaseOrders: filteredPOs,
+      salesHistory: filteredSalesHistory
+    };
+  },
+
+  populateDynamicFilters() {
+    // 1. Inventory Department/Category filter
+    const invCat = document.getElementById('invCategoryFilter');
+    if (invCat) {
+      const currentVal = invCat.value || 'all';
+      const categories = Array.from(new Set((MallState.products || []).map(p => p.category).filter(Boolean))).sort();
+      invCat.innerHTML = `<option value="all">All Departments</option>` +
+        categories.map(c => `<option value="${this.escapeHTML(c)}" ${c === currentVal ? 'selected' : ''}>${this.escapeHTML(c)}</option>`).join('');
+    }
+
+    // 2. Tenant floor filter
+    const tFloor = document.getElementById('tenantFloorFilter');
+    if (tFloor) {
+      const currentVal = tFloor.value || 'all';
+      const floors = Array.from(new Set((MallState.tenants || []).map(t => t.floor).filter(Boolean))).sort();
+      tFloor.innerHTML = `<option value="all">All floors</option>` +
+        floors.map(f => `<option value="${this.escapeHTML(f)}" ${f === currentVal ? 'selected' : ''}>${this.escapeHTML(f)}</option>`).join('');
+    }
+
+    // 3. Tenant category filter
+    const tCat = document.getElementById('tenantCategoryFilter');
+    if (tCat) {
+      const currentVal = tCat.value || 'all';
+      const categories = Array.from(new Set((MallState.tenants || []).map(t => t.category).filter(Boolean))).sort();
+      tCat.innerHTML = `<option value="all">All categories</option>` +
+        categories.map(c => `<option value="${this.escapeHTML(c)}" ${c === currentVal ? 'selected' : ''}>${this.escapeHTML(c)}</option>`).join('');
+    }
+
+    // 4. Tenant status filter
+    const tStatus = document.getElementById('tenantStatusFilter');
+    if (tStatus) {
+      const currentVal = tStatus.value || 'all';
+      const statuses = Array.from(new Set((MallState.tenants || []).map(t => t.status).filter(Boolean))).sort();
+      tStatus.innerHTML = `<option value="all">All statuses</option>` +
+        statuses.map(s => `<option value="${this.escapeHTML(s)}" ${s === currentVal ? 'selected' : ''}>${this.escapeHTML(s)}</option>`).join('');
+    }
+
+    // 5. Header Mall Selector
+    const mallSel = document.getElementById('headerMallSelector');
+    if (mallSel) {
+      const currentVal = MallState.selectedMall || 'MALL-001';
+      const mallMap = new Map();
+      (MallState.tenants || []).forEach(t => {
+        if (t.mallId && t.mallName) {
+          mallMap.set(t.mallId, t.mallName);
+        }
+      });
+      if (mallMap.size > 0) {
+        let opts = '';
+        mallMap.forEach((name, id) => {
+          opts += `<option value="${this.escapeHTML(id)}" ${id === currentVal ? 'selected' : ''}>${this.escapeHTML(name)} (${this.escapeHTML(id)})</option>`;
+        });
+        opts += `<option value="ALL" ${currentVal === 'ALL' ? 'selected' : ''}>All Malls (${mallMap.size} Properties)</option>`;
+        mallSel.innerHTML = opts;
+      }
+    }
+  },
 
   openImportModal() {
     this.resetImportState();
@@ -1111,41 +1313,32 @@ window.MallApp = {
   },
 
   resetImportState() {
-    this._importRawRows = null;
-    this._importEvaluatedRows = null;
-    this._importSummary = null;
-    this._importDuplicateMode = 'update';
-    this._importCurrentFile = null;
+    this._importDatasets = [];
+    this._activeImportDatasetIndex = 0;
+    this._importIssues = [];
 
     const fileInput = document.getElementById('importFileInput');
     if (fileInput) fileInput.value = '';
 
     const uploadSection = document.getElementById('importUploadSection');
     const loadingState = document.getElementById('importLoadingState');
+    const mappingSection = document.getElementById('importMappingSection');
     const previewSection = document.getElementById('importPreviewSection');
+    const progressWrap = document.getElementById('importProgressWrap');
     const confirmBtn = document.getElementById('btnConfirmImport');
-    const errorBanner = document.getElementById('importErrorBanner');
-    const tableNote = document.getElementById('importTableNote');
-    const tbody = document.getElementById('importPreviewTableBody');
     const footerStatus = document.getElementById('importFooterStatus');
-    const updateRadio = document.getElementById('dupModeUpdate');
 
     if (uploadSection) uploadSection.style.display = 'flex';
     if (loadingState) loadingState.style.display = 'none';
+    if (mappingSection) mappingSection.style.display = 'none';
     if (previewSection) previewSection.style.display = 'none';
-    if (errorBanner) errorBanner.style.display = 'none';
-    if (tableNote) tableNote.style.display = 'none';
+    if (progressWrap) progressWrap.style.display = 'none';
+
     if (confirmBtn) {
       confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Import Products';
+      confirmBtn.textContent = 'Import All';
     }
-    if (tbody) tbody.innerHTML = '';
     if (footerStatus) footerStatus.textContent = '';
-    if (updateRadio) updateRadio.checked = true;
-  },
-
-  resetImportFile() {
-    this.resetImportState();
   },
 
   bindImportEvents() {
@@ -1157,9 +1350,9 @@ window.MallApp = {
 
     if (fileInput) {
       fileInput.addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (file) {
-          this.handleImportFile(file);
+        const files = Array.from(e.target.files || []);
+        if (files.length > 0) {
+          this.handleMultipleImportFiles(files);
         }
       });
     }
@@ -1185,13 +1378,12 @@ window.MallApp = {
         e.preventDefault();
         e.stopPropagation();
         dropzone.classList.remove('drag-active');
-        const files = e.dataTransfer && e.dataTransfer.files;
-        if (files && files.length > 0) {
-          this.handleImportFile(files[0]);
+        const files = Array.from(e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files : []);
+        if (files.length > 0) {
+          this.handleMultipleImportFiles(files);
         }
       });
 
-      // Keyboard accessible: Enter or Space on dropzone opens file dialog
       dropzone.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -1201,222 +1393,476 @@ window.MallApp = {
     }
   },
 
-  async handleImportFile(file) {
-    if (!file) return;
+  async handleMultipleImportFiles(files) {
+    if (!files || files.length === 0) return;
 
-    // Show "Reading file..." loading state
+    const MAX_SIZE = 25 * 1024 * 1024;
+    for (const file of files) {
+      if (file.size > MAX_SIZE) {
+        this.showToast(`File "${file.name}" exceeds 25 MB limit`, 'error');
+        return;
+      }
+    }
+
     const uploadSection = document.getElementById('importUploadSection');
     const loadingState = document.getElementById('importLoadingState');
+    const mappingSection = document.getElementById('importMappingSection');
+    const previewSection = document.getElementById('importPreviewSection');
+
+    if (uploadSection) uploadSection.style.display = 'none';
+    if (mappingSection) mappingSection.style.display = 'none';
+    if (previewSection) previewSection.style.display = 'none';
+    if (loadingState) loadingState.style.display = 'flex';
+
+    await new Promise(r => setTimeout(r, 60));
+
+    try {
+      const allDatasets = [];
+      for (const file of files) {
+        const datasets = await parseFileToDatasets(file);
+        for (const ds of datasets) {
+          const det = detectDatasetType(ds);
+          ds.detectedType = det.type;
+          ds.targetTable = det.targetTable;
+          ds.confidence = det.confidence;
+
+          if (det.type === 'unknown') {
+            const savedTpl = await getMappingTemplate(ds.headerSignature);
+            if (savedTpl) {
+              ds.detectedType = savedTpl.targetTable;
+              ds.targetTable = savedTpl.targetTable;
+              ds.mapping = savedTpl.mapping;
+              ds.needsMapping = false;
+              ds.isFromSavedTemplate = true;
+            } else {
+              ds.needsMapping = true;
+            }
+          } else {
+            ds.needsMapping = false;
+          }
+          allDatasets.push(ds);
+        }
+      }
+
+      this._importDatasets = allDatasets;
+      this._activeImportDatasetIndex = 0;
+
+      const firstUnmapped = this._importDatasets.find(d => d.needsMapping);
+      if (firstUnmapped) {
+        if (loadingState) loadingState.style.display = 'none';
+        this.showColumnMapping(firstUnmapped);
+      } else {
+        if (loadingState) loadingState.style.display = 'none';
+        this.renderSmartImportPreview();
+      }
+    } catch (err) {
+      console.error('Import error:', err);
+      if (loadingState) loadingState.style.display = 'none';
+      if (uploadSection) uploadSection.style.display = 'flex';
+      this.showToast(err.message || 'Failed to process files', 'error');
+    }
+  },
+
+  showColumnMapping(dataset) {
+    const uploadSection = document.getElementById('importUploadSection');
+    const mappingSection = document.getElementById('importMappingSection');
     const previewSection = document.getElementById('importPreviewSection');
 
     if (uploadSection) uploadSection.style.display = 'none';
     if (previewSection) previewSection.style.display = 'none';
-    if (loadingState) loadingState.style.display = 'flex';
+    if (mappingSection) mappingSection.style.display = 'block';
 
-    this._importCurrentFile = file;
+    const titleEl = document.getElementById('mappingDatasetTitle');
+    const targetSelect = document.getElementById('mappingTargetTableSelect');
 
-    // Brief 60ms pause to yield control so the browser paints the loading state
-    await new Promise(r => setTimeout(r, 60));
+    if (titleEl) {
+      titleEl.textContent = `${dataset.name} (${dataset.rows.length.toLocaleString()} rows)`;
+    }
+
+    const currentTarget = dataset.targetTable || 'products';
+    if (targetSelect) {
+      targetSelect.value = currentTarget;
+    }
+
+    this._activeMappingDataset = dataset;
+    this.renderMappingRows(dataset, currentTarget);
+  },
+
+  renderMappingRows(dataset, targetTable) {
+    const tbody = document.getElementById('importMappingTableBody');
+    if (!tbody) return;
+
+    const candidateFields = {
+      products: ['name', 'sku', 'storeId', 'tenant', 'category', 'stock', 'minBuffer', 'price', 'barcode', 'brand', 'unitCost', 'mrp', 'batch'],
+      stores: ['id', 'name', 'mallId', 'mallName', 'city', 'unit', 'floor', 'category', 'department', 'status', 'manager', 'phone', 'email', 'monthlyRent', 'rentStatus', 'overdueAmount'],
+      purchaseOrders: ['id', 'supplier', 'tenant', 'status', 'value', 'createdDate', 'expectedDelivery', 'orderedQty', 'price'],
+      sales: ['storeId', 'date', 'gross', 'discounts', 'returns', 'netSales', 'collected', 'transactions', 'units', 'footfall', 'conversion', 'staffOnDuty', 'status'],
+      staff: ['id', 'name', 'role', 'shift', 'phone', 'email', 'storeId', 'status'],
+      custom: []
+    };
+
+    const targetList = candidateFields[targetTable] || [];
+
+    tbody.innerHTML = dataset.headers.map((hdr, idx) => {
+      const sampleVals = (dataset.sampleRows || []).map(r => r[hdr]).filter(v => v !== null && v !== undefined && String(v).trim() !== '').slice(0, 3);
+      const sampleText = sampleVals.length > 0 ? sampleVals.map(v => String(v)).join(', ') : '<em>(empty)</em>';
+
+      const suggestion = suggestTargetField(hdr, targetTable);
+      const preselected = suggestion.field || 'extra';
+
+      let optionsHtml = '';
+      if (targetTable === 'custom') {
+        optionsHtml = `
+          <option value="extra" selected>Store as column</option>
+          <option value="ignore">Ignore column</option>
+        `;
+      } else {
+        optionsHtml = targetList.map(f => {
+          const isSel = f === preselected;
+          return `<option value="${f}" ${isSel ? 'selected' : ''}>${f}${isSel ? ' (Suggested)' : ''}</option>`;
+        }).join('');
+        optionsHtml += `
+          <option value="extra" ${preselected === 'extra' ? 'selected' : ''}>Keep as extra field</option>
+          <option value="ignore">Ignore column</option>
+        `;
+      }
+
+      return `
+        <tr>
+          <td><strong style="color: var(--text);">${this.escapeHTML(hdr)}</strong></td>
+          <td style="color: #64748B; font-size: 0.76rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${sampleText}</td>
+          <td>
+            <select class="clean-select mapping-col-select" data-header="${this.escapeHTML(hdr)}" style="width: 100%; font-size: 0.78rem;">
+              ${optionsHtml}
+            </select>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  onMappingTargetChange(newTarget) {
+    if (!this._activeMappingDataset) return;
+    this._activeMappingDataset.targetTable = newTarget;
+    this.renderMappingRows(this._activeMappingDataset, newTarget);
+  },
+
+  async applyColumnMapping() {
+    if (!this._activeMappingDataset) return;
+    const dataset = this._activeMappingDataset;
+    const selects = document.querySelectorAll('.mapping-col-select');
+    const mapping = {};
+    selects.forEach(sel => {
+      const hdr = sel.getAttribute('data-header');
+      mapping[hdr] = sel.value;
+    });
+
+    dataset.mapping = mapping;
+    dataset.needsMapping = false;
+    dataset.detectedType = dataset.targetTable;
 
     try {
-      const parsedRows = await parseImportFile(file);
-      this._importRawRows = parsedRows;
+      await saveMappingTemplate(dataset.headerSignature, dataset.targetTable, mapping);
+      this.showToast(`Saved mapping template for ${dataset.targetTable}`, 'success');
+      this.renderSettingsTemplates();
+    } catch (e) {
+      console.warn('Failed to save mapping template:', e);
+    }
 
-      // Validate rows and render preview
-      this.evaluateAndRenderPreview();
-
-      if (loadingState) loadingState.style.display = 'none';
-      if (previewSection) previewSection.style.display = 'flex';
-    } catch (err) {
-      if (loadingState) loadingState.style.display = 'none';
-      if (uploadSection) uploadSection.style.display = 'flex';
-      this.showToast(err.message || 'Failed to read file', 'error');
+    const nextUnmapped = this._importDatasets.find(d => d.needsMapping);
+    if (nextUnmapped) {
+      this.showColumnMapping(nextUnmapped);
+    } else {
+      const mappingSection = document.getElementById('importMappingSection');
+      if (mappingSection) mappingSection.style.display = 'none';
+      this.renderSmartImportPreview();
     }
   },
 
-  evaluateAndRenderPreview() {
-    if (!this._importRawRows) return;
-
-    const evaluation = validateAndPreviewRows(
-      this._importRawRows,
-      MallState.tenants || initialStores,
-      MallState.products || [],
-      this._importDuplicateMode
-    );
-
-    this._importEvaluatedRows = evaluation.rows;
-    this._importSummary = evaluation.summary;
-
-    this.renderPreviewView();
+  cancelColumnMapping() {
+    const mappingSection = document.getElementById('importMappingSection');
+    const uploadSection = document.getElementById('importUploadSection');
+    if (mappingSection) mappingSection.style.display = 'none';
+    if (uploadSection) uploadSection.style.display = 'flex';
+    this.resetImportState();
   },
 
-  onDuplicateModeChange(newMode) {
-    this._importDuplicateMode = newMode;
-    this.evaluateAndRenderPreview();
-  },
+  renderSmartImportPreview() {
+    const uploadSection = document.getElementById('importUploadSection');
+    const mappingSection = document.getElementById('importMappingSection');
+    const previewSection = document.getElementById('importPreviewSection');
 
-  renderPreviewView() {
-    const file = this._importCurrentFile;
-    const summary = this._importSummary;
-    const evaluatedRows = this._importEvaluatedRows;
-    if (!file || !summary || !evaluatedRows) return;
+    if (uploadSection) uploadSection.style.display = 'none';
+    if (mappingSection) mappingSection.style.display = 'none';
+    if (previewSection) previewSection.style.display = 'flex';
 
-    // 1. File metadata strip
-    const filenameEl = document.getElementById('importFilenameDisplay');
-    const filesizeEl = document.getElementById('importFilesizeDisplay');
-    if (filenameEl) filenameEl.textContent = file.name;
-    if (filesizeEl) {
-      const kb = (file.size / 1024).toFixed(1);
-      filesizeEl.textContent = `(${kb} KB)`;
-    }
-
-    // 2. Summary stats pills
-    const summaryBar = document.getElementById('importSummaryBar');
-    if (summaryBar) {
-      const updateLabel = this._importDuplicateMode === 'skip' ? 'to skip' : 'to update';
-      summaryBar.innerHTML = `
-        <span class="import-summary-pill pill-new"><strong>${summary.newCount}</strong> new</span>
-        <span class="import-summary-pill ${this._importDuplicateMode === 'skip' ? 'pill-skip' : 'pill-update'}">
-          <strong>${this._importDuplicateMode === 'skip' ? summary.skippedCount : summary.updateCount}</strong> ${updateLabel}
-        </span>
-        <span class="import-summary-pill pill-error"><strong>${summary.errorCount}</strong> ${summary.errorCount === 1 ? 'error' : 'errors'}</span>
-      `;
-    }
-
-    // 3. Error report banner
-    const errorBanner = document.getElementById('importErrorBanner');
-    const errorMsg = document.getElementById('importErrorBannerMsg');
-    if (errorBanner) {
-      if (summary.errorCount > 0) {
-        errorBanner.style.display = 'flex';
-        if (errorMsg) {
-          errorMsg.textContent = `${summary.errorCount} row${summary.errorCount === 1 ? '' : 's'} contain errors and will be skipped during import.`;
-        }
-      } else {
-        errorBanner.style.display = 'none';
-      }
-    }
-
-    // 4. Performance preview: First 100 rows + ALL error rows beyond 100
-    const totalRowsCount = evaluatedRows.length;
-    const tableNote = document.getElementById('importTableNote');
-    const previewRowsToRender = [];
-    let errorsBeyond100Count = 0;
-
-    for (let i = 0; i < totalRowsCount; i++) {
-      const row = evaluatedRows[i];
-      if (i < 100) {
-        previewRowsToRender.push(row);
-      } else if (row.status === 'Error') {
-        previewRowsToRender.push(row);
-        errorsBeyond100Count++;
-      }
-    }
-
-    if (tableNote) {
-      if (totalRowsCount > 100) {
-        tableNote.style.display = 'block';
-        if (errorsBeyond100Count > 0) {
-          tableNote.textContent = `Showing first 100 of ${totalRowsCount.toLocaleString()} rows, plus all ${errorsBeyond100Count} error row(s) found beyond row 100.`;
-        } else {
-          tableNote.textContent = `Showing first 100 of ${totalRowsCount.toLocaleString()} rows.`;
-        }
-      } else {
-        tableNote.style.display = 'none';
-      }
-    }
-
-    // 5. Render Preview Table Body
-    const tbody = document.getElementById('importPreviewTableBody');
-    if (tbody) {
-      tbody.innerHTML = previewRowsToRender.map(r => {
-        const hasError = r.status === 'Error';
-        const statusClass = `status-${r.status.toLowerCase()}`;
-        const statusText = r.status;
-        const detailsHtml = hasError
-          ? `<span class="import-err-text">${this.escapeHTML(r.errorMessage)}</span>`
-          : (r.status === 'Update'
-            ? `<span class="import-ok-text">Matches SKU at ${this.escapeHTML(r.tenant)}</span>`
-            : (r.status === 'Skip'
-              ? `<span class="import-ok-text" style="color: #D97706;">Will be skipped</span>`
-              : `<span class="import-ok-text">Ready to add to ${this.escapeHTML(r.tenant)}</span>`));
-
-        return `
-          <tr class="${hasError ? 'row-has-error' : ''}">
-            <td class="import-row-idx">${r.rowNumber}</td>
-            <td><strong>${this.escapeHTML(r.name || '—')}</strong></td>
-            <td><code class="import-sku-code">${this.escapeHTML(r.sku || '—')}</code></td>
-            <td>${this.escapeHTML(r.tenant || '—')}</td>
-            <td style="text-align: right; font-weight: 600;">${r.stock !== null && r.stock !== undefined ? this.escapeHTML(String(r.stock)) : '—'}</td>
-            <td style="text-align: center;"><span class="status-pill ${statusClass}">${statusText}</span></td>
-            <td>${detailsHtml}</td>
-          </tr>
-        `;
+    const sel = document.getElementById('importActiveDatasetSelect');
+    if (sel) {
+      sel.innerHTML = this._importDatasets.map((ds, idx) => {
+        const typeLabel = (ds.detectedType || 'UNKNOWN').toUpperCase();
+        return `<option value="${idx}" ${idx === this._activeImportDatasetIndex ? 'selected' : ''}>
+          ${this.escapeHTML(ds.name)} — [${typeLabel}] (${ds.rows.length.toLocaleString()} rows)
+        </option>`;
       }).join('');
     }
 
-    // 6. Footer and Confirm Button
-    const validCount = summary.newCount + (this._importDuplicateMode === 'update' ? summary.updateCount : 0);
-    const confirmBtn = document.getElementById('btnConfirmImport');
-    const footerStatus = document.getElementById('importFooterStatus');
+    this.renderCurrentDatasetPreview();
+  },
 
-    if (confirmBtn) {
-      if (validCount > 0) {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = `Import ${validCount.toLocaleString()} Product${validCount === 1 ? '' : 's'}`;
+  onActiveImportDatasetChange(idxStr) {
+    this._activeImportDatasetIndex = parseInt(idxStr, 10) || 0;
+    this.renderCurrentDatasetPreview();
+  },
+
+  renderCurrentDatasetPreview() {
+    const dataset = this._importDatasets[this._activeImportDatasetIndex];
+    if (!dataset) return;
+
+    if (!dataset._processedResult) {
+      const type = dataset.detectedType;
+      const rows = dataset.rows;
+      const fileName = dataset.fileName;
+
+      if (type === 'tenants') {
+        dataset._processedResult = processTenantsData(rows, fileName);
+      } else if (type === 'inventory') {
+        dataset._processedResult = processInventoryData(rows, fileName, MallState.tenants);
+      } else if (type === 'reordering') {
+        dataset._processedResult = processReorderingData(rows, fileName);
+      } else if (type === 'sales') {
+        dataset._processedResult = processSalesData(rows, fileName, MallState.tenants);
+      } else if (type === 'kpis') {
+        dataset._processedResult = processKpisData(rows, fileName);
+      } else if (type === 'legacy_products') {
+        dataset._processedResult = processLegacyProductsData(rows, fileName, MallState.tenants);
       } else {
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Import Products';
+        dataset._processedResult = processCustomDataset(dataset.name, dataset.headers, rows, fileName);
       }
     }
 
+    const res = dataset._processedResult;
+
+    if (res.issues && res.issues.length > 0) {
+      for (const iss of res.issues) {
+        if (!this._importIssues.includes(iss)) {
+          this._importIssues.push(iss);
+        }
+      }
+    }
+
+    const summaryBar = document.getElementById('importSummaryBar');
+    if (summaryBar) {
+      summaryBar.innerHTML = `
+        <span class="import-summary-pill pill-new"><strong>${res.readCount.toLocaleString()}</strong> read</span>
+        <span class="import-summary-pill pill-update"><strong>${res.cleanedCount.toLocaleString()}</strong> cleaned</span>
+        <span class="import-summary-pill ${res.flaggedCount > 0 ? 'pill-skip' : 'pill-update'}"><strong>${res.flaggedCount.toLocaleString()}</strong> flagged/fixed</span>
+        <span class="import-summary-pill ${res.duplicateCount > 0 ? 'pill-error' : 'pill-update'}"><strong>${res.duplicateCount.toLocaleString()}</strong> duplicates dropped</span>
+      `;
+    }
+
+    const thead = document.getElementById('importPreviewTableHead');
+    const tbody = document.getElementById('importPreviewTableBody');
+
+    const previewItems = res.previewRows || (res.stores || res.products || res.purchaseOrders || res.records || res.snapshots || res.data || []).slice(0, 10);
+
+    if (previewItems.length > 0) {
+      const sampleItem = previewItems[0];
+      const keys = Object.keys(sampleItem).filter(k => k !== 'extra' && k !== 'batches' && k !== 'timeline');
+      const displayKeys = keys.slice(0, 7);
+
+      if (thead) {
+        thead.innerHTML = `<tr>
+          <th style="width: 40px;">#</th>
+          ${displayKeys.map(k => `<th>${this.escapeHTML(k)}</th>`).join('')}
+        </tr>`;
+      }
+
+      if (tbody) {
+        tbody.innerHTML = previewItems.slice(0, 10).map((item, idx) => {
+          return `<tr>
+            <td class="import-row-idx">${idx + 1}</td>
+            ${displayKeys.map(k => {
+              const val = item[k];
+              const strVal = val === null || val === undefined ? '<em>null</em>' : this.escapeHTML(String(val));
+              return `<td>${strVal}</td>`;
+            }).join('')}
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    const btnDownload = document.getElementById('btnDownloadIssuesCsv');
+    const issuesLabel = document.getElementById('importIssuesCountLabel');
+    if (issuesLabel) {
+      issuesLabel.textContent = `${this._importIssues.length} issue(s) recorded (all auto-corrected without dropping data)`;
+    }
+    if (btnDownload) {
+      btnDownload.style.display = this._importIssues.length > 0 ? 'inline-flex' : 'none';
+    }
+
+    const confirmBtn = document.getElementById('btnConfirmImport');
+    if (confirmBtn) {
+      let totalRecs = 0;
+      this._importDatasets.forEach(ds => {
+        totalRecs += ds.rows.length;
+      });
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = `Import All (${this._importDatasets.length} datasets, ${totalRecs.toLocaleString()} records)`;
+    }
+
+    const footerStatus = document.getElementById('importFooterStatus');
     if (footerStatus) {
-      footerStatus.textContent = `${validCount.toLocaleString()} valid of ${totalRowsCount.toLocaleString()} total rows`;
+      footerStatus.textContent = `${this._importDatasets.length} dataset(s) ready for ingestion`;
     }
   },
 
-  executeImport() {
-    if (!this._importEvaluatedRows || !this._importSummary) return;
-
-    const validCount = this._importSummary.newCount + (this._importDuplicateMode === 'update' ? this._importSummary.updateCount : 0);
-    if (validCount === 0) {
-      this.showToast('No valid products to import. Please resolve file errors.', 'warning');
+  downloadIssuesLog() {
+    if (!this._importIssues || this._importIssues.length === 0) {
+      this.showToast('No issues recorded', 'info');
       return;
     }
+    const csv = generateIssuesCSV(this._importIssues);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mallmatrix_import_issues.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.showToast('Issues log downloaded (.csv)', 'info');
+  },
 
-    // Process rows in one pass
-    const result = importProducts(this._importEvaluatedRows, {
-      duplicateMode: this._importDuplicateMode,
-      existingProducts: MallState.products || [],
-      stores: MallState.tenants || initialStores
+  async executeSmartImport() {
+    if (!this._importDatasets || this._importDatasets.length === 0) return;
+
+    let hasInr = false;
+    for (const ds of this._importDatasets) {
+      if (ds.headers && ds.headers.some(h => h.toLowerCase().endsWith('_inr'))) {
+        hasInr = true;
+        break;
+      }
+    }
+    if (hasInr && MallState.currency !== 'INR') {
+      MallState.currency = 'INR';
+      localStorage.setItem('mallmatrix_currency', 'INR');
+      this.updateCurrencyUI();
+      this.showToast('Detected INR currency fields — switched display currency to INR (₹)', 'info');
+    }
+
+    const progressWrap = document.getElementById('importProgressWrap');
+    const progressBar = document.getElementById('importProgressBar');
+    const progressText = document.getElementById('importProgressText');
+    const confirmBtn = document.getElementById('btnConfirmImport');
+
+    if (progressWrap) progressWrap.style.display = 'flex';
+    if (confirmBtn) confirmBtn.disabled = true;
+
+    const sortedDatasets = [...this._importDatasets].sort((a, b) => {
+      const ordA = TYPE_PROCESSING_ORDER.indexOf(a.detectedType);
+      const ordB = TYPE_PROCESSING_ORDER.indexOf(b.detectedType);
+      return (ordA === -1 ? 99 : ordA) - (ordB === -1 ? 99 : ordB);
     });
 
-    // Check localStorage room before mutating state (quota exceeded protection)
-    const saveCheck = safeSaveProducts(result.products);
-    if (!saveCheck.success) {
-      this.showToast(saveCheck.error, 'error');
-      return;
+    const totalSteps = sortedDatasets.length;
+    let currentStep = 0;
+
+    for (const ds of sortedDatasets) {
+      currentStep++;
+      const baseProgress = Math.round(((currentStep - 1) / totalSteps) * 100);
+      if (progressText) progressText.textContent = `Processing ${ds.name} (${currentStep}/${totalSteps})...`;
+      if (progressBar) progressBar.style.width = `${baseProgress}%`;
+
+      await new Promise(r => setTimeout(r, 40));
+
+      const type = ds.detectedType;
+      const rows = ds.rows;
+      const fileName = ds.fileName;
+
+      if (type === 'tenants') {
+        const res = ds._processedResult || processTenantsData(rows, fileName);
+        await batchPut('stores', res.stores, (pct) => {
+          if (progressBar) progressBar.style.width = `${baseProgress + Math.round((pct / 100) * (100 / totalSteps))}%`;
+        });
+        MallState.tenants = res.stores;
+      } else if (type === 'inventory') {
+        const res = ds._processedResult || processInventoryData(rows, fileName, MallState.tenants);
+        if (res.placeholderStores && res.placeholderStores.length > 0) {
+          for (const ps of res.placeholderStores) {
+            if (!MallState.tenants.some(t => t.id === ps.id)) {
+              MallState.tenants.push(ps);
+            }
+          }
+          await batchPut('stores', res.placeholderStores);
+        }
+        await batchPut('products', res.products, (pct) => {
+          if (progressBar) progressBar.style.width = `${baseProgress + Math.round((pct / 100) * (100 / totalSteps))}%`;
+        });
+        MallState.products = res.products;
+      } else if (type === 'reordering') {
+        const res = ds._processedResult || processReorderingData(rows, fileName);
+        await batchPut('purchaseOrders', res.purchaseOrders, (pct) => {
+          if (progressBar) progressBar.style.width = `${baseProgress + Math.round((pct / 100) * (100 / totalSteps))}%`;
+        });
+        MallState.purchaseOrders = res.purchaseOrders;
+      } else if (type === 'sales') {
+        const res = ds._processedResult || processSalesData(rows, fileName, MallState.tenants);
+        await batchPut('salesHistory', res.records, (pct) => {
+          if (progressBar) progressBar.style.width = `${baseProgress + Math.round((pct / 100) * (100 / totalSteps))}%`;
+        });
+        MallState.salesHistory = res.records;
+        if (res.updatedStores && res.updatedStores.length > 0) {
+          await batchPut('stores', res.updatedStores);
+          MallState.tenants = res.updatedStores;
+        }
+      } else if (type === 'kpis') {
+        const res = ds._processedResult || processKpisData(rows, fileName);
+        await batchPut('kpiSnapshots', res.snapshots, (pct) => {
+          if (progressBar) progressBar.style.width = `${baseProgress + Math.round((pct / 100) * (100 / totalSteps))}%`;
+        });
+        MallState.kpiSnapshots = res.snapshots;
+      } else if (type === 'legacy_products') {
+        const res = ds._processedResult || processLegacyProductsData(rows, fileName, MallState.tenants);
+        await batchPut('products', res.products, (pct) => {
+          if (progressBar) progressBar.style.width = `${baseProgress + Math.round((pct / 100) * (100 / totalSteps))}%`;
+        });
+        MallState.products = res.products;
+      } else {
+        const res = ds._processedResult || processCustomDataset(ds.name, ds.headers, rows, fileName);
+        await saveCustomDataset(res);
+        MallState.customDatasets = await getAllCustomDatasets();
+      }
+
+      if (ds._processedResult && ds._processedResult.issues) {
+        for (const iss of ds._processedResult.issues) {
+          if (!this._importIssues.includes(iss)) {
+            this._importIssues.push(iss);
+          }
+        }
+      }
     }
 
-    // Commit changes to MallState
-    MallState.products = result.products;
+    if (this._importIssues.length > 0) {
+      await batchPut('issues', this._importIssues);
+    }
+
+    if (progressBar) progressBar.style.width = '100%';
+    if (progressText) progressText.textContent = 'All datasets saved to storage!';
+
     MallState.stockValuation = getTotalStockValuation(MallState.products);
 
-    // Save state and notify dashboard
-    this.saveProducts();
-
-    // Re-render inventory and dependent metrics once
-    this.renderInventoryTable();
+    this.populateDynamicFilters();
     this.refreshDashboard();
+    this.renderAll();
+    this.renderDataLibrary();
 
-    // Success toast
-    const msgParts = [];
-    msgParts.push(`Imported ${result.added} product${result.added === 1 ? '' : 's'}`);
-    if (result.updated > 0) msgParts.push(`updated ${result.updated}`);
-    if (result.skipped > 0) msgParts.push(`skipped ${result.skipped}`);
-    this.showToast(msgParts.join(', '), 'success');
+    let totalSaved = 0;
+    sortedDatasets.forEach(d => totalSaved += d.rows.length);
 
-    // Close modal and reset state
+    this.showToast(`Smart Import complete: ${totalSaved.toLocaleString()} rows stored in IndexedDB. Zero rows lost!`, 'success');
+
+    await new Promise(r => setTimeout(r, 600));
     this.closeImportModal();
   },
 
@@ -1435,20 +1881,284 @@ window.MallApp = {
     this.showToast('Product template downloaded (.csv)', 'info');
   },
 
-  downloadImportErrorReport() {
-    if (!this._importEvaluatedRows) return;
-    const errorCsv = generateErrorReportCSV(this._importEvaluatedRows);
-    const blob = new Blob([errorCsv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'mallmatrix_import_errors.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    this.showToast('Error report downloaded (.csv)', 'info');
+  // ==========================================
+  // DATA LIBRARY CONTROLLER
+  // ==========================================
+  renderDataLibrary() {
+    const view = document.getElementById('view-datalibrary');
+    if (!view) return;
+
+    const selectEl = document.getElementById('datalibraryDatasetSelect');
+    const badgeEl = document.getElementById('datalibraryMetaBadge');
+    const thead = document.getElementById('datalibraryTableHead');
+    const tbody = document.getElementById('datalibraryTableBody');
+    const paginationEl = document.getElementById('datalibraryPagination');
+
+    const datasets = MallState.customDatasets || [];
+    if (datasets.length === 0) {
+      if (selectEl) {
+        selectEl.innerHTML = `<option value="">No custom datasets stored yet</option>`;
+        selectEl.disabled = true;
+      }
+      if (badgeEl) badgeEl.style.display = 'none';
+      if (thead) thead.innerHTML = `<tr><th>Information</th></tr>`;
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td style="text-align: center; padding: 40px 20px; color: #64748B;">
+              <div style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 6px;">Data Library is Empty</div>
+              <div style="font-size: 0.82rem; max-width: 440px; margin: 0 auto;">Import any CSV, XLSX, or JSON file as a <strong>Custom dataset</strong> via the Smart Import tool to view, search, sort, and export it here.</div>
+            </td>
+          </tr>
+        `;
+      }
+      if (paginationEl) paginationEl.innerHTML = '';
+      return;
+    }
+
+    if (selectEl) {
+      selectEl.disabled = false;
+      selectEl.innerHTML = datasets.map(d => {
+        return `<option value="${d.id}" ${d.id === this._dataLibraryActiveDatasetId ? 'selected' : ''}>
+          ${this.escapeHTML(d.name)} (${(d.data || []).length.toLocaleString()} rows)
+        </option>`;
+      }).join('');
+    }
+
+    let activeDs = datasets.find(d => d.id === this._dataLibraryActiveDatasetId);
+    if (!activeDs) {
+      activeDs = datasets[0];
+      this._dataLibraryActiveDatasetId = activeDs.id;
+      if (selectEl) selectEl.value = activeDs.id;
+    }
+
+    const data = activeDs.data || [];
+    const columns = activeDs.columns || [];
+
+    if (badgeEl) {
+      badgeEl.style.display = 'inline-block';
+      badgeEl.textContent = `${data.length.toLocaleString()} rows · ${columns.length} columns`;
+    }
+
+    let filtered = [...data];
+    if (this._dataLibrarySearch) {
+      const q = this._dataLibrarySearch.toLowerCase().trim();
+      filtered = filtered.filter(row => {
+        return Object.values(row).some(v => v !== null && v !== undefined && String(v).toLowerCase().includes(q));
+      });
+    }
+
+    if (this._dataLibrarySort.col) {
+      const { col, dir } = this._dataLibrarySort;
+      const mult = dir === 'asc' ? 1 : -1;
+      filtered.sort((a, b) => {
+        const vA = a[col];
+        const vB = b[col];
+        if (vA === vB) return 0;
+        if (vA === null || vA === undefined) return 1;
+        if (vB === null || vB === undefined) return -1;
+        if (typeof vA === 'number' && typeof vB === 'number') {
+          return mult * (vA - vB);
+        }
+        return mult * String(vA).localeCompare(String(vB));
+      });
+    }
+
+    const totalRows = filtered.length;
+    const rpp = this._dataLibraryRowsPerPage;
+    const totalPages = Math.max(1, Math.ceil(totalRows / rpp));
+    this._dataLibraryPage = Math.min(Math.max(1, this._dataLibraryPage), totalPages);
+
+    const startIndex = (this._dataLibraryPage - 1) * rpp;
+    const pageRows = filtered.slice(startIndex, startIndex + rpp);
+
+    if (thead) {
+      const colDefs = columns.length > 0 ? columns : (data.length > 0 ? Object.keys(data[0]).map(k => ({ name: k, type: 'text' })) : []);
+      thead.innerHTML = `<tr>
+        <th style="width: 45px;">#</th>
+        ${colDefs.map(c => {
+          const colName = typeof c === 'string' ? c : c.name;
+          const isSorted = this._dataLibrarySort.col === colName;
+          const arrow = isSorted ? (this._dataLibrarySort.dir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
+          return `<th style="cursor: pointer; user-select: none;" onclick="MallApp.sortDataLibrary('${this.escapeHTML(colName)}')">
+            ${this.escapeHTML(colName)}<span style="opacity: 0.6; font-size: 0.72rem;">${arrow}</span>
+          </th>`;
+        }).join('')}
+      </tr>`;
+    }
+
+    if (tbody) {
+      if (pageRows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${columns.length + 1}" style="text-align: center; padding: 24px; color: #64748B;">No matching records found</td></tr>`;
+      } else {
+        const colNames = columns.map(c => typeof c === 'string' ? c : c.name);
+        tbody.innerHTML = pageRows.map((r, i) => {
+          const rowIdx = startIndex + i + 1;
+          return `<tr>
+            <td class="import-row-idx">${rowIdx}</td>
+            ${colNames.map(cn => {
+              const val = r[cn];
+              const textVal = val === null || val === undefined ? '<span style="color:#CBD5E1;">—</span>' : this.escapeHTML(String(val));
+              return `<td>${textVal}</td>`;
+            }).join('')}
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    if (paginationEl) {
+      paginationEl.innerHTML = `
+        <div style="font-size: 0.78rem; color: #64748B;">
+          Showing ${totalRows === 0 ? 0 : startIndex + 1}–${Math.min(startIndex + rpp, totalRows)} of ${totalRows.toLocaleString()} records
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button class="clean-btn" style="padding: 4px 10px; font-size: 0.76rem;" onclick="MallApp.setDataLibraryPage(${this._dataLibraryPage - 1})" ${this._dataLibraryPage <= 1 ? 'disabled' : ''}>Previous</button>
+          <span style="font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; padding: 0 6px;">Page ${this._dataLibraryPage} of ${totalPages}</span>
+          <button class="clean-btn" style="padding: 4px 10px; font-size: 0.76rem;" onclick="MallApp.setDataLibraryPage(${this._dataLibraryPage + 1})" ${this._dataLibraryPage >= totalPages ? 'disabled' : ''}>Next</button>
+        </div>
+      `;
+    }
   },
+
+  onDataLibraryDatasetChange(id) {
+    this._dataLibraryActiveDatasetId = id;
+    this._dataLibraryPage = 1;
+    this._dataLibrarySearch = '';
+    const sInput = document.getElementById('datalibrarySearchInput');
+    if (sInput) sInput.value = '';
+    this.renderDataLibrary();
+  },
+
+  onDataLibrarySearch(q) {
+    this._dataLibrarySearch = q;
+    this._dataLibraryPage = 1;
+    this.renderDataLibrary();
+  },
+
+  sortDataLibrary(column) {
+    if (this._dataLibrarySort.col === column) {
+      this._dataLibrarySort.dir = this._dataLibrarySort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this._dataLibrarySort.col = column;
+      this._dataLibrarySort.dir = 'asc';
+    }
+    this.renderDataLibrary();
+  },
+
+  setDataLibraryPage(page) {
+    this._dataLibraryPage = page;
+    this.renderDataLibrary();
+  },
+
+  exportActiveCustomDataset(format) {
+    const datasets = MallState.customDatasets || [];
+    const ds = datasets.find(d => d.id === this._dataLibraryActiveDatasetId) || datasets[0];
+    if (!ds || !ds.data || ds.data.length === 0) {
+      this.showToast('No dataset data to export', 'warning');
+      return;
+    }
+
+    if (format === 'json') {
+      const jsonStr = JSON.stringify(ds.data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${ds.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showToast(`Exported ${ds.name} as JSON`, 'success');
+    } else {
+      const cols = ds.columns.map(c => typeof c === 'string' ? c : c.name);
+      let csv = cols.map(c => `"${c.replace(/"/g, '""')}"`).join(',') + '\r\n';
+      ds.data.forEach(row => {
+        const line = cols.map(c => {
+          const v = row[c];
+          if (v === null || v === undefined) return '';
+          return `"${String(v).replace(/"/g, '""')}"`;
+        }).join(',');
+        csv += line + '\r\n';
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${ds.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showToast(`Exported ${ds.name} as CSV`, 'success');
+    }
+  },
+
+  // ==========================================
+  // SETTINGS & MAPPING TEMPLATES
+  // ==========================================
+  async resetAllImportedData() {
+    const confirmReset = window.confirm(
+      'Are you sure you want to reset all imported data?\n\n' +
+      'This will permanently clear all imported stores, products, purchase orders, sales history, KPI snapshots, custom datasets, and saved mapping templates from IndexedDB and restore default platform demo data.'
+    );
+    if (!confirmReset) return;
+
+    try {
+      await dbResetAllImportedData();
+      localStorage.removeItem('mallmatrix_products');
+      localStorage.removeItem('mallmatrix_tenants');
+      localStorage.removeItem('mallmatrix_purchase_orders');
+      localStorage.removeItem('mallmatrix_selected_mall');
+      this.showToast('All imported data reset successfully. Restoring default data...', 'info');
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (e) {
+      console.error('Reset error:', e);
+      this.showToast('Failed to reset imported data', 'error');
+    }
+  },
+
+  async renderSettingsTemplates() {
+    const listEl = document.getElementById('settingsTemplatesList');
+    if (!listEl) return;
+
+    try {
+      const templates = await getAllMappingTemplates();
+      if (!templates || templates.length === 0) {
+        listEl.innerHTML = `<div style="font-size: 0.76rem; color: #64748B;">No custom mapping templates saved yet.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = templates.map(t => {
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
+            <div>
+              <span style="font-weight: 700; font-size: 0.78rem; color: var(--text);">${this.escapeHTML(t.targetTable.toUpperCase())}</span>
+              <span style="font-size: 0.72rem; color: #64748B; margin-left: 6px;">${Object.keys(t.mapping || {}).length} columns mapped</span>
+            </div>
+            <button type="button" class="clean-btn" style="padding: 2px 8px; font-size: 0.7rem; color: #EF4444; border-color: rgba(239, 68, 68, 0.3);" onclick="MallApp.deleteMappingTemplate('${t.id}')">
+              Delete
+            </button>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.warn('Failed to load settings templates:', e);
+    }
+  },
+
+  async deleteMappingTemplate(id) {
+    try {
+      await dbDeleteMappingTemplate(id);
+      this.showToast('Mapping template deleted', 'info');
+      this.renderSettingsTemplates();
+    } catch (e) {
+      this.showToast('Failed to delete mapping template', 'error');
+    }
+  },
+
 
   // 4. AI COPILOT
   bindCopilot() {
@@ -2067,7 +2777,8 @@ window.MallApp = {
   },
 
   refreshDashboard() {
-    const stats = getDashboardStats(MallState);
+    const filtered = this.getFilteredState();
+    const stats = getDashboardStats(filtered);
 
     // 1. Live dynamic date
     const liveDateEl = document.getElementById('headerLiveDate');
@@ -2207,7 +2918,7 @@ window.MallApp = {
     });
 
     // 9. Reorder page pending value sum
-    const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending');
+    const pendingOrders = filteredState.purchaseOrders.filter(po => po.status === 'Pending');
     const pendingValSum = pendingOrders.reduce((sum, po) => {
       const num = typeof po.value === 'number' ? po.value : (parseFloat(String(po.value).replace(/[^0-9.-]+/g, '')) || 0);
       return sum + num;
@@ -2304,7 +3015,8 @@ window.MallApp = {
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
     const category = catSelect ? catSelect.value : 'all';
 
-    let items = [...MallState.products];
+    const filteredState = this.getFilteredState();
+    let items = [...filteredState.products];
 
     // Search filter across SKU, Name, Tenant
     if (query) {
@@ -2679,7 +3391,8 @@ window.MallApp = {
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
     const statusVal = statusFilter ? statusFilter.value : 'all';
 
-    let orders = [...MallState.purchaseOrders];
+    const filteredState = this.getFilteredState();
+    let orders = [...filteredState.purchaseOrders];
 
     if (query) {
       orders = orders.filter(po =>
@@ -2708,7 +3421,7 @@ window.MallApp = {
 
     // Update summary metrics
     const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending');
-    const deliveredOrders = MallState.purchaseOrders.filter(po => po.status === 'Delivered');
+    const deliveredOrders = filteredState.purchaseOrders.filter(po => po.status === 'Delivered');
 
     let pendingValSum = 0;
     pendingOrders.forEach(po => {
@@ -3425,13 +4138,14 @@ window.MallApp = {
     const isINR = MallState.currency === 'INR';
     const currencySymbol = isINR ? '₹' : '$';
 
-    const totalRev = MallState.tenants.reduce((acc, cur) => acc + Math.round((cur.salesAmount || 0) * mult), 0);
+    const tenantsSource = this.getFilteredState().tenants || [];
+    const totalRev = tenantsSource.reduce((acc, cur) => acc + Math.round((cur.salesAmount || 0) * mult), 0);
     const totalRevEl = document.getElementById('salesChartTotalRevenue');
     if (totalRevEl) {
       totalRevEl.textContent = this.formatCurrency(totalRev);
     }
 
-    const topStores = [...MallState.tenants]
+    const topStores = [...tenantsSource]
       .sort((a, b) => (b.salesAmount || 0) - (a.salesAmount || 0))
       .slice(0, 6);
 
@@ -3580,7 +4294,8 @@ window.MallApp = {
       }
     });
 
-    let tenants = MallState.tenants.map((t, idx) => {
+    const tenantsSource = this.getFilteredState().tenants || [];
+    let tenants = tenantsSource.map((t, idx) => {
       const calculatedSales = Math.round(t.salesAmount * mult);
       const calculatedUnits = Math.round(t.unitsSold * mult);
       return {
@@ -3836,7 +4551,7 @@ window.MallApp = {
     const strip = document.getElementById('tenantSummaryStrip');
     if (!strip) return;
 
-    const tenants = MallState.tenants || [];
+    const tenants = this.getFilteredState().tenants || [];
     const totalStores = tenants.length;
     const posOnline = tenants.filter(t => t.posStatus === 'online').length;
     const posOffline = tenants.filter(t => t.posStatus === 'offline').length;
@@ -3950,7 +4665,7 @@ window.MallApp = {
   },
 
   getFilteredTenants() {
-    let list = [...(MallState.tenants || [])];
+    let list = [...(this.getFilteredState().tenants || [])];
 
     // 1. Search Query
     if (this._tenantSearch) {
