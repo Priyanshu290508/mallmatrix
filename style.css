@@ -2577,6 +2577,7 @@ body.has-overlay-open .floating-copilot-pill {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .tenant-page-btn {
@@ -3909,6 +3910,26 @@ html.dark .tenant-table tbody tr:hover {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inv-page-ellipsis,
+.tenant-page-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 32px;
+  padding: 0 4px;
+  color: #94A3B8;
+  font-size: 0.85rem;
+  font-weight: 700;
+  user-select: none;
+}
+
+html.dark .inv-page-ellipsis,
+html.dark .tenant-page-ellipsis {
+  color: #64748B;
 }
 
 .inv-page-btn {
@@ -10628,3 +10649,597 @@ html.dark .login-form-input:focus {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ========================================================
+   PRODUCT IMPORT MODAL & BULK BAR STYLES
+   ======================================================== */
+
+.btn-import-products {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  background-color: var(--surface);
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-import-products:hover {
+  background-color: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.inv-bulk-import {
+  background-color: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+}
+
+.inv-bulk-import:hover {
+  background-color: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+/* Modal Box & Sections */
+.import-modal-box {
+  max-width: 840px !important;
+  width: 95vw !important;
+  padding: 24px;
+}
+
+.import-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.import-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 34px 20px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background-color: var(--bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.import-dropzone:hover,
+.import-dropzone:focus-visible {
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+}
+
+.import-dropzone.drag-active {
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+  box-shadow: 0 0 0 4px rgba(91, 61, 245, 0.15);
+}
+
+.import-dropzone-icon {
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.import-dropzone-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.92rem;
+}
+
+.import-dropzone-title {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.btn-import-browse {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.92rem;
+}
+
+.btn-import-browse:hover {
+  color: var(--accent-hover);
+}
+
+.import-dropzone-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.import-guidance-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.import-cols-hint {
+  color: var(--text-muted);
+}
+
+.import-cols-label {
+  font-weight: 700;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.import-cols-hint code {
+  background: rgba(91, 61, 245, 0.08);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+}
+
+.import-template-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.import-template-link:hover {
+  text-decoration: underline;
+  color: var(--accent-hover);
+}
+
+/* Loading State */
+.import-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 20px;
+  gap: 12px;
+}
+
+.import-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(91, 61, 245, 0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: importSpin 0.7s linear infinite;
+}
+
+@keyframes importSpin {
+  to { transform: rotate(360deg); }
+}
+
+.import-loading-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.import-loading-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Preview Section */
+.import-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-file-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.import-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
+
+.import-filename {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.import-filesize {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.btn-import-change-file {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-import-change-file:hover {
+  color: var(--accent-hover);
+}
+
+.import-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.import-duplicate-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.import-ctrl-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.import-radio-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.import-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.import-radio-label input[type="radio"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.import-summary-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.import-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.import-summary-pill.pill-new {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.import-summary-pill.pill-update {
+  background: #EEEBFF;
+  color: #5B3DF5;
+}
+
+.import-summary-pill.pill-skip {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.import-summary-pill.pill-error {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.import-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  border-radius: 8px;
+  color: #991B1B;
+  font-size: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.import-error-msg {
+  font-weight: 600;
+}
+
+.btn-download-error-csv {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #FFFFFF;
+  border: 1px solid #F87171;
+  color: #DC2626;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-download-error-csv:hover {
+  background: #FEE2E2;
+}
+
+.import-table-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0 4px;
+}
+
+.import-table-container {
+  max-height: 290px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.import-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.import-preview-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+  padding: 9px 12px;
+  font-weight: 700;
+  text-align: left;
+  color: var(--text-muted);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.import-preview-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.import-preview-table tr:last-child td {
+  border-bottom: none;
+}
+
+.import-preview-table tr.row-has-error td {
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+.import-row-idx {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.import-sku-code {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-pill.status-new {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.status-pill.status-update {
+  background: #EEEBFF;
+  color: #5B3DF5;
+}
+
+.status-pill.status-skip {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.status-pill.status-error {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.import-err-text {
+  color: #DC2626;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.import-ok-text {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+/* Modal Footer */
+.import-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.import-footer-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.import-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Dark Mode Overrides for Import Modal */
+html.dark .import-dropzone {
+  background-color: var(--bg) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .import-dropzone:hover,
+html.dark .import-dropzone:focus-visible,
+html.dark .import-dropzone.drag-active {
+  border-color: var(--accent) !important;
+  background-color: rgba(91, 61, 245, 0.12) !important;
+}
+
+html.dark .import-guidance-bar,
+html.dark .import-file-chip,
+html.dark .import-controls-row {
+  background: var(--bg) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .import-cols-hint code {
+  background: rgba(91, 61, 245, 0.25) !important;
+  color: #A78BFA !important;
+}
+
+html.dark .import-table-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .import-preview-table th {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark .import-preview-table td {
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .import-preview-table tr.row-has-error td {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+}
+
+html.dark .import-sku-code {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text) !important;
+}
+
+html.dark .import-summary-pill.pill-new,
+html.dark .status-pill.status-new {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34D399 !important;
+}
+
+html.dark .import-summary-pill.pill-update,
+html.dark .status-pill.status-update {
+  background: rgba(91, 61, 245, 0.25) !important;
+  color: #C4B5FD !important;
+}
+
+html.dark .import-summary-pill.pill-skip,
+html.dark .status-pill.status-skip {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #FCD34D !important;
+}
+
+html.dark .import-summary-pill.pill-error,
+html.dark .status-pill.status-error {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #FCA5A5 !important;
+}
+
+html.dark .import-error-banner {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #FCA5A5 !important;
+}
+
+html.dark .btn-download-error-csv {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #FCA5A5 !important;
+}
+
+html.dark .btn-download-error-csv:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+}
+
+html.dark .import-err-text {
+  color: #F87171 !important;
+}
+

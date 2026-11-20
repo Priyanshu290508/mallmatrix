@@ -56,6 +56,17 @@ import {
   DEFAULT_PROFILE
 } from './src/services/profile.js';
 
+import {
+  parseImportFile,
+  validateAndPreviewRows,
+  importProducts,
+  safeSaveProducts,
+  generateTemplateCSV,
+  generateErrorReportCSV
+} from './src/utils/importProducts.js';
+
+import { getDashboardStats } from './src/utils/dashboardStats.js';
+
 const MallState = {
   activeView: 'dashboard',
   isLoading: false,
@@ -116,6 +127,7 @@ window.MallApp = {
     this.loadStateFromStorage();
     this.bindNavigation();
     this.bindModals();
+    this.bindImportEvents();
     this.bindInventoryFilters();
     this.bindCopilot();
     this.bindCommandPalette();
@@ -192,22 +204,72 @@ window.MallApp = {
       const savedProds = localStorage.getItem('mallmatrix_products');
       if (savedProds) {
         MallState.products = JSON.parse(savedProds);
+      } else {
+        MallState.products = initialProducts.map(p => ({ ...p }));
+      }
+
+      const savedTenants = localStorage.getItem('mallmatrix_tenants');
+      if (savedTenants) {
+        MallState.tenants = JSON.parse(savedTenants);
+      } else {
+        MallState.tenants = initialStores.map(t => ({ ...t }));
+      }
+
+      const savedStaff = localStorage.getItem('mallmatrix_staff');
+      if (savedStaff) {
+        MallState.staff = JSON.parse(savedStaff);
+      } else {
+        MallState.staff = initialStaff.map(s => ({ ...s }));
       }
     } catch (e) {
       console.warn('Storage restore error:', e);
     }
   },
 
+  _refreshDashScheduled: false,
+  scheduleDashboardRefresh() {
+    if (this._refreshDashScheduled) return;
+    this._refreshDashScheduled = true;
+    requestAnimationFrame(() => {
+      this._refreshDashScheduled = false;
+      this.refreshDashboard();
+    });
+  },
+
   savePurchaseOrders() {
     try {
       localStorage.setItem('mallmatrix_purchase_orders', JSON.stringify(MallState.purchaseOrders));
-    } catch (e) { }
+    } catch (e) {
+      console.warn('Storage save purchase orders error:', e);
+    }
+    this.scheduleDashboardRefresh();
   },
 
   saveProducts() {
     try {
       localStorage.setItem('mallmatrix_products', JSON.stringify(MallState.products));
-    } catch (e) { }
+    } catch (e) {
+      console.warn('Storage save products error:', e);
+    }
+    this.scheduleDashboardRefresh();
+  },
+
+  saveTenants() {
+    try {
+      localStorage.setItem('mallmatrix_tenants', JSON.stringify(MallState.tenants));
+    } catch (e) {
+      console.warn('Storage save tenants error:', e);
+    }
+    this.scheduleDashboardRefresh();
+  },
+
+  saveStaff() {
+    try {
+      localStorage.setItem('mallmatrix_staff', JSON.stringify(MallState.staff));
+    } catch (e) {
+      console.warn('Storage save staff error:', e);
+    }
+    this.scheduleDashboardRefresh();
   },
 
   initLanding() {
@@ -712,7 +774,7 @@ window.MallApp = {
   updateOverlayState() {
     // Check if any drawer or modal is currently visible/open in DOM
     const openOverlays = document.querySelectorAll(
-      '#poDetailDrawer.open, #invRestockDrawer.open, #batchReorderModal.open, #poRejectModal.open, #newProductModal.open, .modal-backdrop.open, .inv-restock-drawer.open, .inv-drawer-backdrop.open'
+      '#poDetailDrawer.open, #invRestockDrawer.open, #batchReorderModal.open, #poRejectModal.open, #newProductModal.open, #importProductsModal.open, .modal-backdrop.open, .inv-restock-drawer.open, .inv-drawer-backdrop.open'
     );
     const isOpen = Boolean(this.isOverlayOpen || openOverlays.length > 0);
     this.isOverlayOpen = isOpen;
@@ -800,6 +862,7 @@ window.MallApp = {
         this.closeTenantDrawer();
         this.closeOnboardTenantModal();
         this.closeAllTenantMenus();
+        this.closeImportModal();
         const prodModal = document.getElementById('newProductModal');
         if (prodModal && prodModal.classList.contains('open')) {
           prodModal.classList.remove('open');
@@ -1018,6 +1081,373 @@ window.MallApp = {
       modal.classList.add('open');
       this.setOverlayOpen(true);
     }
+  },
+
+  // 3b. IMPORT PRODUCTS WORKFLOW (CSV & EXCEL)
+  _importRawRows: null,
+  _importEvaluatedRows: null,
+  _importSummary: null,
+  _importDuplicateMode: 'update',
+  _importCurrentFile: null,
+  _importEventsBound: false,
+
+  openImportModal() {
+    this.resetImportState();
+    this.bindImportEvents();
+    const modal = document.getElementById('importProductsModal');
+    if (modal) {
+      modal.classList.add('open');
+      this.setOverlayOpen(true);
+    }
+  },
+
+  closeImportModal() {
+    const modal = document.getElementById('importProductsModal');
+    if (modal) {
+      modal.classList.remove('open');
+    }
+    this.setOverlayOpen(false);
+    this.resetImportState();
+  },
+
+  resetImportState() {
+    this._importRawRows = null;
+    this._importEvaluatedRows = null;
+    this._importSummary = null;
+    this._importDuplicateMode = 'update';
+    this._importCurrentFile = null;
+
+    const fileInput = document.getElementById('importFileInput');
+    if (fileInput) fileInput.value = '';
+
+    const uploadSection = document.getElementById('importUploadSection');
+    const loadingState = document.getElementById('importLoadingState');
+    const previewSection = document.getElementById('importPreviewSection');
+    const confirmBtn = document.getElementById('btnConfirmImport');
+    const errorBanner = document.getElementById('importErrorBanner');
+    const tableNote = document.getElementById('importTableNote');
+    const tbody = document.getElementById('importPreviewTableBody');
+    const footerStatus = document.getElementById('importFooterStatus');
+    const updateRadio = document.getElementById('dupModeUpdate');
+
+    if (uploadSection) uploadSection.style.display = 'flex';
+    if (loadingState) loadingState.style.display = 'none';
+    if (previewSection) previewSection.style.display = 'none';
+    if (errorBanner) errorBanner.style.display = 'none';
+    if (tableNote) tableNote.style.display = 'none';
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Import Products';
+    }
+    if (tbody) tbody.innerHTML = '';
+    if (footerStatus) footerStatus.textContent = '';
+    if (updateRadio) updateRadio.checked = true;
+  },
+
+  resetImportFile() {
+    this.resetImportState();
+  },
+
+  bindImportEvents() {
+    if (this._importEventsBound) return;
+    this._importEventsBound = true;
+
+    const dropzone = document.getElementById('importDropzone');
+    const fileInput = document.getElementById('importFileInput');
+
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          this.handleImportFile(file);
+        }
+      });
+    }
+
+    if (dropzone) {
+      ['dragenter', 'dragover'].forEach(evt => {
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('drag-active');
+        });
+      });
+
+      ['dragleave', 'dragend'].forEach(evt => {
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('drag-active');
+        });
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('drag-active');
+        const files = e.dataTransfer && e.dataTransfer.files;
+        if (files && files.length > 0) {
+          this.handleImportFile(files[0]);
+        }
+      });
+
+      // Keyboard accessible: Enter or Space on dropzone opens file dialog
+      dropzone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (fileInput) fileInput.click();
+        }
+      });
+    }
+  },
+
+  async handleImportFile(file) {
+    if (!file) return;
+
+    // Show "Reading file..." loading state
+    const uploadSection = document.getElementById('importUploadSection');
+    const loadingState = document.getElementById('importLoadingState');
+    const previewSection = document.getElementById('importPreviewSection');
+
+    if (uploadSection) uploadSection.style.display = 'none';
+    if (previewSection) previewSection.style.display = 'none';
+    if (loadingState) loadingState.style.display = 'flex';
+
+    this._importCurrentFile = file;
+
+    // Brief 60ms pause to yield control so the browser paints the loading state
+    await new Promise(r => setTimeout(r, 60));
+
+    try {
+      const parsedRows = await parseImportFile(file);
+      this._importRawRows = parsedRows;
+
+      // Validate rows and render preview
+      this.evaluateAndRenderPreview();
+
+      if (loadingState) loadingState.style.display = 'none';
+      if (previewSection) previewSection.style.display = 'flex';
+    } catch (err) {
+      if (loadingState) loadingState.style.display = 'none';
+      if (uploadSection) uploadSection.style.display = 'flex';
+      this.showToast(err.message || 'Failed to read file', 'error');
+    }
+  },
+
+  evaluateAndRenderPreview() {
+    if (!this._importRawRows) return;
+
+    const evaluation = validateAndPreviewRows(
+      this._importRawRows,
+      MallState.tenants || initialStores,
+      MallState.products || [],
+      this._importDuplicateMode
+    );
+
+    this._importEvaluatedRows = evaluation.rows;
+    this._importSummary = evaluation.summary;
+
+    this.renderPreviewView();
+  },
+
+  onDuplicateModeChange(newMode) {
+    this._importDuplicateMode = newMode;
+    this.evaluateAndRenderPreview();
+  },
+
+  renderPreviewView() {
+    const file = this._importCurrentFile;
+    const summary = this._importSummary;
+    const evaluatedRows = this._importEvaluatedRows;
+    if (!file || !summary || !evaluatedRows) return;
+
+    // 1. File metadata strip
+    const filenameEl = document.getElementById('importFilenameDisplay');
+    const filesizeEl = document.getElementById('importFilesizeDisplay');
+    if (filenameEl) filenameEl.textContent = file.name;
+    if (filesizeEl) {
+      const kb = (file.size / 1024).toFixed(1);
+      filesizeEl.textContent = `(${kb} KB)`;
+    }
+
+    // 2. Summary stats pills
+    const summaryBar = document.getElementById('importSummaryBar');
+    if (summaryBar) {
+      const updateLabel = this._importDuplicateMode === 'skip' ? 'to skip' : 'to update';
+      summaryBar.innerHTML = `
+        <span class="import-summary-pill pill-new"><strong>${summary.newCount}</strong> new</span>
+        <span class="import-summary-pill ${this._importDuplicateMode === 'skip' ? 'pill-skip' : 'pill-update'}">
+          <strong>${this._importDuplicateMode === 'skip' ? summary.skippedCount : summary.updateCount}</strong> ${updateLabel}
+        </span>
+        <span class="import-summary-pill pill-error"><strong>${summary.errorCount}</strong> ${summary.errorCount === 1 ? 'error' : 'errors'}</span>
+      `;
+    }
+
+    // 3. Error report banner
+    const errorBanner = document.getElementById('importErrorBanner');
+    const errorMsg = document.getElementById('importErrorBannerMsg');
+    if (errorBanner) {
+      if (summary.errorCount > 0) {
+        errorBanner.style.display = 'flex';
+        if (errorMsg) {
+          errorMsg.textContent = `${summary.errorCount} row${summary.errorCount === 1 ? '' : 's'} contain errors and will be skipped during import.`;
+        }
+      } else {
+        errorBanner.style.display = 'none';
+      }
+    }
+
+    // 4. Performance preview: First 100 rows + ALL error rows beyond 100
+    const totalRowsCount = evaluatedRows.length;
+    const tableNote = document.getElementById('importTableNote');
+    const previewRowsToRender = [];
+    let errorsBeyond100Count = 0;
+
+    for (let i = 0; i < totalRowsCount; i++) {
+      const row = evaluatedRows[i];
+      if (i < 100) {
+        previewRowsToRender.push(row);
+      } else if (row.status === 'Error') {
+        previewRowsToRender.push(row);
+        errorsBeyond100Count++;
+      }
+    }
+
+    if (tableNote) {
+      if (totalRowsCount > 100) {
+        tableNote.style.display = 'block';
+        if (errorsBeyond100Count > 0) {
+          tableNote.textContent = `Showing first 100 of ${totalRowsCount.toLocaleString()} rows, plus all ${errorsBeyond100Count} error row(s) found beyond row 100.`;
+        } else {
+          tableNote.textContent = `Showing first 100 of ${totalRowsCount.toLocaleString()} rows.`;
+        }
+      } else {
+        tableNote.style.display = 'none';
+      }
+    }
+
+    // 5. Render Preview Table Body
+    const tbody = document.getElementById('importPreviewTableBody');
+    if (tbody) {
+      tbody.innerHTML = previewRowsToRender.map(r => {
+        const hasError = r.status === 'Error';
+        const statusClass = `status-${r.status.toLowerCase()}`;
+        const statusText = r.status;
+        const detailsHtml = hasError
+          ? `<span class="import-err-text">${this.escapeHTML(r.errorMessage)}</span>`
+          : (r.status === 'Update'
+            ? `<span class="import-ok-text">Matches SKU at ${this.escapeHTML(r.tenant)}</span>`
+            : (r.status === 'Skip'
+              ? `<span class="import-ok-text" style="color: #D97706;">Will be skipped</span>`
+              : `<span class="import-ok-text">Ready to add to ${this.escapeHTML(r.tenant)}</span>`));
+
+        return `
+          <tr class="${hasError ? 'row-has-error' : ''}">
+            <td class="import-row-idx">${r.rowNumber}</td>
+            <td><strong>${this.escapeHTML(r.name || '—')}</strong></td>
+            <td><code class="import-sku-code">${this.escapeHTML(r.sku || '—')}</code></td>
+            <td>${this.escapeHTML(r.tenant || '—')}</td>
+            <td style="text-align: right; font-weight: 600;">${r.stock !== null && r.stock !== undefined ? this.escapeHTML(String(r.stock)) : '—'}</td>
+            <td style="text-align: center;"><span class="status-pill ${statusClass}">${statusText}</span></td>
+            <td>${detailsHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 6. Footer and Confirm Button
+    const validCount = summary.newCount + (this._importDuplicateMode === 'update' ? summary.updateCount : 0);
+    const confirmBtn = document.getElementById('btnConfirmImport');
+    const footerStatus = document.getElementById('importFooterStatus');
+
+    if (confirmBtn) {
+      if (validCount > 0) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = `Import ${validCount.toLocaleString()} Product${validCount === 1 ? '' : 's'}`;
+      } else {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Import Products';
+      }
+    }
+
+    if (footerStatus) {
+      footerStatus.textContent = `${validCount.toLocaleString()} valid of ${totalRowsCount.toLocaleString()} total rows`;
+    }
+  },
+
+  executeImport() {
+    if (!this._importEvaluatedRows || !this._importSummary) return;
+
+    const validCount = this._importSummary.newCount + (this._importDuplicateMode === 'update' ? this._importSummary.updateCount : 0);
+    if (validCount === 0) {
+      this.showToast('No valid products to import. Please resolve file errors.', 'warning');
+      return;
+    }
+
+    // Process rows in one pass
+    const result = importProducts(this._importEvaluatedRows, {
+      duplicateMode: this._importDuplicateMode,
+      existingProducts: MallState.products || [],
+      stores: MallState.tenants || initialStores
+    });
+
+    // Check localStorage room before mutating state (quota exceeded protection)
+    const saveCheck = safeSaveProducts(result.products);
+    if (!saveCheck.success) {
+      this.showToast(saveCheck.error, 'error');
+      return;
+    }
+
+    // Commit changes to MallState
+    MallState.products = result.products;
+    MallState.stockValuation = getTotalStockValuation(MallState.products);
+
+    // Save state and notify dashboard
+    this.saveProducts();
+
+    // Re-render inventory and dependent metrics once
+    this.renderInventoryTable();
+    this.refreshDashboard();
+
+    // Success toast
+    const msgParts = [];
+    msgParts.push(`Imported ${result.added} product${result.added === 1 ? '' : 's'}`);
+    if (result.updated > 0) msgParts.push(`updated ${result.updated}`);
+    if (result.skipped > 0) msgParts.push(`skipped ${result.skipped}`);
+    this.showToast(msgParts.join(', '), 'success');
+
+    // Close modal and reset state
+    this.closeImportModal();
+  },
+
+  downloadImportTemplate(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const csvContent = generateTemplateCSV();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mallmatrix_products_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.showToast('Product template downloaded (.csv)', 'info');
+  },
+
+  downloadImportErrorReport() {
+    if (!this._importEvaluatedRows) return;
+    const errorCsv = generateErrorReportCSV(this._importEvaluatedRows);
+    const blob = new Blob([errorCsv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mallmatrix_import_errors.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.showToast('Error report downloaded (.csv)', 'info');
   },
 
   // 4. AI COPILOT
@@ -1621,7 +2051,9 @@ window.MallApp = {
     this.renderTenantDirectory();
     this.renderAllExportButtons();
     this.renderExportCenter();
-    this.renderProfileView();
+    if (MallState.activeView === 'profile') {
+      this.renderProfileView();
+    }
     if (this._activeRestockSku) {
       const p = MallState.products.find(item => item.sku === this._activeRestockSku);
       const unitPriceEl = document.getElementById('invDrawerUnitPrice');
@@ -1634,7 +2066,9 @@ window.MallApp = {
     this.updateCurrencyUI();
   },
 
-  renderMetrics() {
+  refreshDashboard() {
+    const stats = getDashboardStats(MallState);
+
     // 1. Live dynamic date
     const liveDateEl = document.getElementById('headerLiveDate');
     if (liveDateEl) {
@@ -1649,46 +2083,109 @@ window.MallApp = {
       const greeting = hour < 12 ? 'Good morning' : (hour < 18 ? 'Good afternoon' : 'Good evening');
       if (mainTitle) mainTitle.textContent = `${greeting}, Alex`;
       if (mainSubtitle) {
-        const critCount = getCriticalStockCount(MallState.products);
         mainSubtitle.style.display = 'block';
-        mainSubtitle.innerHTML = `<a href="/inventory" class="header-purple-link" onclick="MallApp.navigateRoute('/inventory', event)"><span id="subtitleCritCount">${critCount}</span> critical items</a> and <a href="/tenants" class="header-purple-link" onclick="MallApp.navigateRoute('/tenants', event)">2 overdue rents</a> need your attention.`;
+        mainSubtitle.innerHTML = `<a href="/inventory" class="header-purple-link" onclick="MallApp.navigateRoute('/inventory', event)"><span id="subtitleCritCount">${stats.criticalCount}</span> critical items</a> and <a href="/tenants" class="header-purple-link" onclick="MallApp.navigateRoute('/tenants', event)"><span id="subtitleRentCount">${stats.overdueRentCount}</span> overdue rents</a> need your attention.`;
+      }
+    } else {
+      const critEl = document.getElementById('subtitleCritCount');
+      const rentEl = document.getElementById('subtitleRentCount');
+      if (critEl) critEl.textContent = stats.criticalCount;
+      if (rentEl) rentEl.textContent = stats.overdueRentCount;
+    }
+
+    // 3. Orchestrator Summary strip
+    const orchTriggersEl = document.getElementById('orchReplenishTriggersVal');
+    if (orchTriggersEl) {
+      orchTriggersEl.textContent = `${stats.poInFlight} Auto-POs`;
+    }
+    const orchBreachesEl = document.getElementById('orchBufferBreachesVal');
+    if (orchBreachesEl) {
+      orchBreachesEl.textContent = stats.lowCount;
+    }
+
+    // 4. KPI Cards
+    // KPI 1: Gross Revenue Today
+    const revEl = document.getElementById('kpiRevenueVal');
+    if (revEl) {
+      revEl.textContent = this.formatCurrency(stats.grossRevenue);
+    }
+    // KPI 2: Stock-out
+    const critEl = document.getElementById('kpiCriticalStockVal');
+    const lowEl = document.getElementById('kpiLowBufferVal');
+    if (critEl) critEl.textContent = `${stats.criticalCount} Critical Items`;
+    if (lowEl) lowEl.textContent = `${stats.lowCount} Low Buffer`;
+    // KPI 3: Rent Overdue
+    const rentValEl = document.getElementById('kpiRentOverdueVal');
+    if (rentValEl) {
+      rentValEl.textContent = this.formatCurrency(stats.overdueRentAmount);
+    }
+    const rentStoresEl = document.getElementById('kpiRentOverdueStores');
+    if (rentStoresEl) {
+      rentStoresEl.textContent = `${stats.overdueRentCount} Store${stats.overdueRentCount === 1 ? '' : 's'}`;
+    }
+
+    // 5. Agent Cards
+    // Agent 1: Inventory Agent
+    const invSkuEl = document.getElementById('invAgentSkuCount');
+    if (invSkuEl) invSkuEl.textContent = stats.skuCount.toLocaleString();
+    const invRatioEl = document.getElementById('invAgentInStockRatio');
+    if (invRatioEl) invRatioEl.textContent = `${stats.inStockRatio}%`;
+    const invAlertsEl = document.getElementById('invAgentBufferAlerts');
+    if (invAlertsEl) invAlertsEl.textContent = stats.lowCount;
+
+    // Agent 2: Sales Agent Gross Volume
+    const salesAgentGrossEl = document.getElementById('salesAgentGrossVal');
+    if (salesAgentGrossEl) {
+      const isINR = MallState.currency === 'INR';
+      const rev = stats.grossRevenue;
+      if (isINR) {
+        if (rev >= 10000000) {
+          salesAgentGrossEl.textContent = `₹${(rev / 10000000).toFixed(2)}Cr`;
+        } else if (rev >= 100000) {
+          salesAgentGrossEl.textContent = `₹${(rev / 100000).toFixed(2)}L`;
+        } else {
+          salesAgentGrossEl.textContent = `₹${rev.toLocaleString('en-IN')}`;
+        }
+      } else {
+        if (rev >= 1000000) {
+          salesAgentGrossEl.textContent = `$${(rev / 1000000).toFixed(1)}M`;
+        } else if (rev >= 1000) {
+          salesAgentGrossEl.textContent = `$${(rev / 1000).toFixed(1)}K`;
+        } else {
+          salesAgentGrossEl.textContent = `$${rev.toFixed(0)}`;
+        }
       }
     }
 
-    // 3. Gross Revenue Today (equal to sum of all store sales!)
-    const totalRev = getTotalGrossSales(MallState.tenants);
-    const revEl = document.getElementById('kpiRevenueVal');
-    if (revEl) {
-      revEl.textContent = this.formatCurrency(totalRev);
-    }
+    // Agent 3: Tenants Agent
+    const tenantsActiveEl = document.getElementById('tenantsAgentActiveCount');
+    if (tenantsActiveEl) tenantsActiveEl.textContent = stats.storesActive;
+    const tenantsOccupancyEl = document.getElementById('tenantsAgentOccupancy');
+    if (tenantsOccupancyEl) tenantsOccupancyEl.textContent = `${stats.leaseOccupancy}%`;
 
-    // 4. Rent overdue
-    const rentEl = document.getElementById('kpiRentOverdueVal');
-    if (rentEl) {
-      rentEl.textContent = this.formatCurrency(14500.00);
-    }
+    // Agent 4: Staff Agent
+    const staffShiftEl = document.getElementById('staffAgentOnShift');
+    if (staffShiftEl) staffShiftEl.textContent = stats.staffOnShift;
+    const staffAuditorsEl = document.getElementById('staffAgentAuditors');
+    if (staffAuditorsEl) staffAuditorsEl.textContent = stats.floorAuditors;
+    const staffCoverageEl = document.getElementById('staffAgentCoverage');
+    if (staffCoverageEl) staffCoverageEl.textContent = `${stats.shiftCoverage}%`;
 
-    // 5. Stock-out card
-    const critCount = getCriticalStockCount(MallState.products);
-    const lowCount = getLowStockCount(MallState.products);
-    const critEl = document.getElementById('kpiCriticalStockVal');
-    const lowEl = document.getElementById('kpiLowBufferVal');
-    if (critEl) critEl.textContent = `${critCount} Critical Items`;
-    if (lowEl) lowEl.textContent = `${lowCount} Low Buffer`;
+    // Agent 5: Reorder Agent
+    const reorderTransitEl = document.getElementById('reorderAgentTransit');
+    if (reorderTransitEl) reorderTransitEl.textContent = `${stats.poInTransit} POs`;
+    const reorderApprovalsEl = document.getElementById('reorderAgentApprovals');
+    if (reorderApprovalsEl) reorderApprovalsEl.textContent = `${stats.poPending} POs`;
+    const reorderLeadEl = document.getElementById('reorderAgentLeadTime');
+    if (reorderLeadEl) reorderLeadEl.textContent = `${stats.avgLeadDays}d`;
 
-    // 6. Sales Agent Gross Volume
-    const salesAgentGrossEl = document.getElementById('salesAgentGrossVal');
-    if (salesAgentGrossEl) {
-      salesAgentGrossEl.textContent = MallState.currency === 'INR' ? '₹1.49L' : '$148.9K';
-    }
-
-    // 7. Estimated Retail Spending in Orchestrator summary
+    // 6. Estimated Retail Spending in Orchestrator summary
     const orchSpendingEl = document.getElementById('orchEstimatedSpendingVal');
     if (orchSpendingEl) {
       orchSpendingEl.textContent = MallState.currency === 'INR' ? '₹20L+' : '$240K+';
     }
 
-    // 8. Sales Trend Graph amounts
+    // 7. Sales Trend Graph amounts
     const trendAmountEl = document.getElementById('trendMainAmount');
     if (trendAmountEl) {
       trendAmountEl.textContent = this.formatCurrency(30000).replace(/\.00$/, '');
@@ -1703,13 +2200,13 @@ window.MallApp = {
       trendAvgEl.textContent = this.formatCurrency(84.20);
     }
 
-    // 9. Form & Header Currency symbols
+    // 8. Form & Header Currency symbols
     const isINR = MallState.currency === 'INR';
     document.querySelectorAll('.currency-symbol').forEach(el => {
       el.textContent = isINR ? '₹' : '$';
     });
 
-    // 10. Reorder page pending value sum
+    // 9. Reorder page pending value sum
     const pendingOrders = MallState.purchaseOrders.filter(po => po.status === 'Pending');
     const pendingValSum = pendingOrders.reduce((sum, po) => {
       const num = typeof po.value === 'number' ? po.value : (parseFloat(String(po.value).replace(/[^0-9.-]+/g, '')) || 0);
@@ -1719,6 +2216,13 @@ window.MallApp = {
     if (pendingValEl) {
       pendingValEl.textContent = this.formatCurrency(pendingValSum);
     }
+
+    // 10. Top Bar Notification Badge
+    this.updateNotificationBadge();
+  },
+
+  renderMetrics() {
+    this.refreshDashboard();
   },
 
   getProductStatus(p) {
@@ -1959,6 +2463,19 @@ window.MallApp = {
     this.updateSelectAllCheckbox(paginatedItems);
   },
 
+  getPaginationRange(currentPage, totalPages) {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, '…', totalPages];
+    }
+    if (currentPage >= totalPages - 3) {
+      return [1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '…', currentPage - 1, currentPage, currentPage + 1, '…', totalPages];
+  },
+
   renderPagination(totalItems, start, end) {
     const pageInfo = document.getElementById('invPageInfo');
     const pageBtns = document.getElementById('invPageBtns');
@@ -1973,6 +2490,7 @@ window.MallApp = {
     pageInfo.textContent = `Showing ${start + 1} to ${end} of ${totalItems} products`;
 
     const totalPages = Math.ceil(totalItems / this._invRowsPerPage);
+    this._invTotalPages = totalPages;
     if (totalPages <= 1) {
       pageBtns.innerHTML = '';
       return;
@@ -1981,22 +2499,27 @@ window.MallApp = {
     let buttonsHtml = '';
     // Previous button
     buttonsHtml += `
-      <button class="inv-page-btn" ${this._invPage === 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="MallApp.goToPage(${this._invPage - 1})" aria-label="Previous page">
+      <button type="button" class="inv-page-btn" ${this._invPage === 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="MallApp.goToPage(${this._invPage - 1})" aria-label="Previous page">
         ‹
       </button>
     `;
 
-    for (let i = 1; i <= totalPages; i++) {
-      buttonsHtml += `
-        <button class="inv-page-btn ${i === this._invPage ? 'active' : ''}" onclick="MallApp.goToPage(${i})" aria-label="Page ${i}">
-          ${i}
-        </button>
-      `;
-    }
+    const pageRange = this.getPaginationRange(this._invPage, totalPages);
+    pageRange.forEach(p => {
+      if (p === '…') {
+        buttonsHtml += `<span class="inv-page-ellipsis" aria-hidden="true">…</span>`;
+      } else {
+        buttonsHtml += `
+          <button type="button" class="inv-page-btn ${p === this._invPage ? 'active' : ''}" onclick="MallApp.goToPage(${p})" aria-label="Page ${p}">
+            ${p}
+          </button>
+        `;
+      }
+    });
 
     // Next button
     buttonsHtml += `
-      <button class="inv-page-btn" ${this._invPage === totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="MallApp.goToPage(${this._invPage + 1})" aria-label="Next page">
+      <button type="button" class="inv-page-btn" ${this._invPage === totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="MallApp.goToPage(${this._invPage + 1})" aria-label="Next page">
         ›
       </button>
     `;
@@ -2005,7 +2528,7 @@ window.MallApp = {
   },
 
   goToPage(pageNum) {
-    const totalPages = Math.max(1, Math.ceil(MallState.products.length / this._invRowsPerPage));
+    const totalPages = this._invTotalPages || Math.max(1, Math.ceil(MallState.products.length / this._invRowsPerPage));
     if (pageNum < 1 || pageNum > totalPages) return;
     this._invPage = pageNum;
     this.renderInventoryTable();
@@ -2107,6 +2630,7 @@ window.MallApp = {
     });
 
     this.clearSelection();
+    this.saveProducts();
     this.renderAll();
     this.showToast(`Batch restock complete! Replenished stock for ${restockedCount} selected products.`, 'success');
   },
@@ -2369,6 +2893,22 @@ window.MallApp = {
     const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
     po.timeline.delivered = nowStr;
+
+    // Increment delivered stock in MallState.products if lineItems exist
+    let stockChanged = false;
+    if (po.lineItems && po.lineItems.length) {
+      po.lineItems.forEach(item => {
+        const prod = MallState.products.find(p => p.sku === item.sku || p.name === item.name);
+        if (prod) {
+          prod.stock = (Number(prod.stock) || 0) + (Number(item.qty) || 0);
+          stockChanged = true;
+        }
+      });
+    }
+    if (stockChanged) {
+      this.saveProducts();
+      this.renderInventoryTable();
+    }
 
     this.savePurchaseOrders();
     this.renderPurchaseOrders();
@@ -3187,7 +3727,10 @@ window.MallApp = {
       return;
     }
 
-    tbody.innerHTML = MallState.staff.map(s => `
+    tbody.innerHTML = MallState.staff.map(s => {
+      const isOnDuty = (s.status || '').toLowerCase() === 'on duty';
+      const pillClass = isOnDuty ? 'pill-delivered' : 'pill-cancelled';
+      return `
       <tr>
         <td>
           <div class="prod-title">${this.escapeHTML(s.name)}</div>
@@ -3195,11 +3738,12 @@ window.MallApp = {
         </td>
         <td>${this.escapeHTML(s.role)}</td>
         <td>${this.escapeHTML(s.zone)}</td>
-        <td><span class="status-pill pill-delivered">${s.status}</span></td>
+        <td><span class="status-pill ${pillClass}" style="cursor: pointer;" onclick="MallApp.toggleStaffStatus('${s.id}')" title="Click to toggle status">${s.status}</span></td>
         <td>${this.escapeHTML(s.audits)}</td>
         <td><a href="mailto:${s.contact}" style="color: var(--green-main); text-decoration: none; font-weight: 600;">${s.contact}</a></td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     this.renderStaffExportButton();
   },
@@ -3645,6 +4189,10 @@ window.MallApp = {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                     <span>Email manager</span>
                   </a>
+                  <button type="button" class="tenant-action-item" onclick="MallApp.toggleTenantRentStatus('${t.id}'); MallApp.closeAllTenantMenus();">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                    <span>Toggle Rent (${t.rentStatus === 'Overdue' ? 'Mark Paid' : 'Mark Overdue'})</span>
+                  </button>
                   <button type="button" class="tenant-action-item" onclick="MallApp.exportSingleStore('${t.id}', 'csv'); MallApp.closeAllTenantMenus();">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     <span>Export report (CSV)</span>
@@ -3808,6 +4356,10 @@ window.MallApp = {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                         <span>Email manager</span>
                       </a>
+                      <button type="button" class="tenant-action-item" onclick="MallApp.toggleTenantRentStatus('${t.id}'); MallApp.closeAllTenantMenus();">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                        <span>Toggle Rent (${t.rentStatus === 'Overdue' ? 'Mark Paid' : 'Mark Overdue'})</span>
+                      </button>
                       <button type="button" class="tenant-action-item" onclick="MallApp.exportSingleStore('${t.id}', 'csv'); MallApp.closeAllTenantMenus();">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         <span>Export report (CSV)</span>
@@ -3874,13 +4426,18 @@ window.MallApp = {
     const endIdx = Math.min(startIndex + pageSize, totalItems);
 
     let pagesHtml = '';
-    for (let p = 1; p <= totalPages; p++) {
-      pagesHtml += `
-        <button type="button" class="tenant-page-btn ${p === this._tenantPage ? 'active' : ''}" onclick="MallApp.setTenantPage(${p})">
-          ${p}
-        </button>
-      `;
-    }
+    const pageRange = this.getPaginationRange(this._tenantPage, totalPages);
+    pageRange.forEach(p => {
+      if (p === '…') {
+        pagesHtml += `<span class="tenant-page-ellipsis" aria-hidden="true">…</span>`;
+      } else {
+        pagesHtml += `
+          <button type="button" class="tenant-page-btn ${p === this._tenantPage ? 'active' : ''}" onclick="MallApp.setTenantPage(${p})">
+            ${p}
+          </button>
+        `;
+      }
+    });
 
     bar.innerHTML = `
       <div class="tenant-showing-text">
@@ -4088,9 +4645,9 @@ window.MallApp = {
       <div class="tenant-drawer-section">
         <div class="tenant-drawer-section-title">
           <span>Lease Agreement & Billing</span>
-          <span class="status-pill ${store.rentStatus === 'Overdue' ? 'pill-cancelled' : 'pill-delivered'}">
-            ${store.rentStatus === 'Overdue' ? 'Rent Overdue' : 'Rent Paid'}
-          </span>
+          <button type="button" class="status-pill ${store.rentStatus === 'Overdue' ? 'pill-cancelled' : 'pill-delivered'}" style="cursor: pointer; border: none;" onclick="MallApp.toggleTenantRentStatus('${store.id}')" title="Click to toggle Paid/Overdue">
+            ${store.rentStatus === 'Overdue' ? 'Rent Overdue' : 'Rent Paid'} (Toggle)
+          </button>
         </div>
         <div class="tenant-drawer-kpi-grid">
           <div class="tenant-drawer-kpi">
@@ -4305,6 +4862,78 @@ window.MallApp = {
     } catch (err) {
       console.error('Failed to export store:', err);
       this.showToast(`Export failed: ${err.message}`, 'error');
+    }
+  },
+
+  toggleTenantRentStatus(storeId) {
+    const store = (MallState.tenants || []).find(t => t.id === storeId);
+    if (!store) return;
+    store.rentStatus = (store.rentStatus || '').toLowerCase() === 'overdue' ? 'Paid' : 'Overdue';
+    this.saveTenants();
+    this.renderTenantDirectory();
+    if (this._activeTenantDetailId === storeId) {
+      this.openTenantDrawer(storeId);
+    }
+    this.showToast(`Updated ${store.name} rent status to ${store.rentStatus}`, 'info');
+  },
+
+  updateTenantSales(storeId, newSales) {
+    const store = (MallState.tenants || []).find(t => t.id === storeId);
+    if (!store) return;
+    const num = Math.max(0, parseFloat(newSales) || 0);
+    store.salesAmount = num;
+    this.saveTenants();
+    this.renderTenantDirectory();
+    this.renderRevenueBarChart();
+    this.renderSalesLeaderboard();
+    if (this._activeTenantDetailId === storeId) {
+      this.openTenantDrawer(storeId);
+    }
+    this.showToast(`Updated ${store.name} sales to ${this.formatCurrency(num)}`, 'info');
+  },
+
+  toggleTenantStatus(storeId) {
+    const store = (MallState.tenants || []).find(t => t.id === storeId);
+    if (!store) return;
+    store.status = (store.status || '').toLowerCase() === 'active' ? 'Offline' : 'Active';
+    store.posStatus = store.status === 'Active' ? 'online' : 'offline';
+    this.saveTenants();
+    this.renderTenantDirectory();
+    if (this._activeTenantDetailId === storeId) {
+      this.openTenantDrawer(storeId);
+    }
+    this.showToast(`Updated ${store.name} status to ${store.status}`, 'info');
+  },
+
+  toggleStaffStatus(staffId) {
+    const member = (MallState.staff || []).find(s => s.id === staffId);
+    if (!member) return;
+    member.status = (member.status || '').toLowerCase() === 'on duty' ? 'Off Duty' : 'On Duty';
+    this.saveStaff();
+    this.renderStaffTable();
+    this.showToast(`Updated ${member.name} status to ${member.status}`, 'info');
+  },
+
+  restockProduct(sku, qty = 50) {
+    const p = (MallState.products || []).find(item => item.sku === sku);
+    if (!p) return;
+    p.stock = (Number(p.stock) || 0) + Number(qty);
+    this.saveProducts();
+    this.renderInventoryTable();
+    this.showToast(`Restocked ${p.name} (+${qty} units, new stock: ${p.stock})`, 'success');
+  },
+
+  resetDemoData(force = false) {
+    if (force || confirm('Are you sure you want to reset all demo data? This will clear all local changes, imported products, purchase orders, tenants, and staff.')) {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('mallmatrix_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      window.location.reload();
     }
   },
 
@@ -4554,6 +5183,7 @@ window.MallApp = {
     };
 
     MallState.tenants.unshift(newTenant);
+    this.saveTenants();
 
     this.closeOnboardTenantModal();
     this.showToast(`Retail store "${nameVal}" onboarded successfully!`, 'success');
@@ -5946,16 +6576,20 @@ window.MallApp = {
     });
 
     // Rent overdue
-    list.push({
-      id: 'notif-rent-1',
-      type: 'rent',
-      title: 'Rent Overdue: Zara Flagship',
-      desc: `${this.formatCurrency(14500.00)} overdue on Unit #204. Automated grace advisory dispatched.`,
-      time: '18m ago',
-      unread: !this._readNotifications?.has('notif-rent-1'),
-      action: () => {
-        this.switchView('tenants');
-      }
+    const overdueTenants = (MallState.tenants || []).filter(t => (t.rentStatus || '').trim().toLowerCase() === 'overdue');
+    overdueTenants.forEach(t => {
+      list.push({
+        id: `notif-rent-${t.id}`,
+        type: 'rent',
+        title: `Rent Overdue: ${t.name}`,
+        desc: `${this.formatCurrency(t.monthlyRent || 0)} overdue on Unit ${t.unit || '#N/A'}. Automated grace advisory dispatched.`,
+        time: '18m ago',
+        unread: !this._readNotifications?.has(`notif-rent-${t.id}`),
+        action: () => {
+          this.switchView('tenants');
+          this.openTenantDrawer(t.id);
+        }
+      });
     });
 
     // Pending PO Approvals
@@ -6105,6 +6739,7 @@ window.MallApp = {
         const notif = document.getElementById('notificationDropdown');
         if (notif) notif.style.display = 'none';
         this.closeDeleteAccountModal();
+        this.closeImportModal();
       }
     });
   },
@@ -6519,6 +7154,12 @@ window.MallApp = {
   renderProfileView() {
     const container = document.getElementById('view-profile');
     if (!container) return;
+
+    // Only display view-profile if it is the currently active view
+    if (MallState.activeView !== 'profile') {
+      container.style.display = 'none';
+      return;
+    }
     container.style.display = 'block';
 
     if (MallState.isLoading) {
