@@ -96,3 +96,4 @@ self.onmessage = async (e) => {
     self.postMessage({ success: false, error: err.message || 'Worker parsing error' });
   }
 };
+

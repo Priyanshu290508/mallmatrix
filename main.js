@@ -142,6 +142,7 @@ const MallState = {
   profileTimelineFilter: 'all',
   profileTimelineCount: 5
 };
+window.MallState = MallState;
 
 // Global Application Controller
 window.MallApp = {
@@ -1760,9 +1761,14 @@ window.MallApp = {
     if (confirmBtn) confirmBtn.disabled = true;
 
     const sortedDatasets = [...this._importDatasets].sort((a, b) => {
-      const ordA = TYPE_PROCESSING_ORDER.indexOf(a.detectedType);
-      const ordB = TYPE_PROCESSING_ORDER.indexOf(b.detectedType);
-      return (ordA === -1 ? 99 : ordA) - (ordB === -1 ? 99 : ordB);
+      const getOrder = (type) => {
+        if (Array.isArray(TYPE_PROCESSING_ORDER)) {
+          const idx = TYPE_PROCESSING_ORDER.indexOf(type);
+          return idx === -1 ? 99 : idx;
+        }
+        return TYPE_PROCESSING_ORDER[type] || 99;
+      };
+      return getOrder(a.detectedType) - getOrder(b.detectedType);
     });
 
     const totalSteps = sortedDatasets.length;
@@ -2777,8 +2783,8 @@ window.MallApp = {
   },
 
   refreshDashboard() {
-    const filtered = this.getFilteredState();
-    const stats = getDashboardStats(filtered);
+    const filteredState = this.getFilteredState();
+    const stats = getDashboardStats(filteredState);
 
     // 1. Live dynamic date
     const liveDateEl = document.getElementById('headerLiveDate');

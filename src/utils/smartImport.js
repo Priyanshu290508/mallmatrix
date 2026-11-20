@@ -19,16 +19,15 @@ export const KNOWN_FINGERPRINTS = {
 };
 
 // Strict processing order: Tenants -> Inventory -> Reordering -> Sales -> KPIs -> Legacy -> Custom
-export const TYPE_PROCESSING_ORDER = {
-  tenants: 1,
-  inventory: 2,
-  reordering: 3,
-  sales: 4,
-  kpis: 5,
-  legacy_products: 6,
-  custom: 7,
-  unknown: 8
-};
+export const TYPE_PROCESSING_ORDER = ['tenants', 'inventory', 'reordering', 'sales', 'kpis', 'legacy_products', 'custom', 'unknown'];
+TYPE_PROCESSING_ORDER.tenants = 1;
+TYPE_PROCESSING_ORDER.inventory = 2;
+TYPE_PROCESSING_ORDER.reordering = 3;
+TYPE_PROCESSING_ORDER.sales = 4;
+TYPE_PROCESSING_ORDER.kpis = 5;
+TYPE_PROCESSING_ORDER.legacy_products = 6;
+TYPE_PROCESSING_ORDER.custom = 7;
+TYPE_PROCESSING_ORDER.unknown = 8;
 
 // Synonym dictionary for automatic column mapping on unknown files
 export const SYNONYM_DICTIONARY = {
@@ -117,7 +116,7 @@ export function suggestTargetField(header, targetTable = 'products') {
 
   for (const [targetField, synonyms] of Object.entries(SYNONYM_DICTIONARY)) {
     for (const syn of synonyms) {
-      const score = stringSimilarity(normalized, syn);
+      const score = stringSimilarity(normalized, normalizeHeader(syn));
       if (score > bestScore) {
         bestScore = score;
         bestField = targetField;
@@ -258,7 +257,16 @@ export async function parseFileToDatasets(file) {
     const parsed = JSON.parse(text);
     const rows = Array.isArray(parsed) ? parsed : (parsed.items || parsed.data || [parsed]);
     const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
-    return [{ name: filename, filename, headers, rows, size }];
+    return [{
+      name: filename,
+      fileName: filename,
+      filename,
+      headers,
+      rows,
+      size,
+      sampleRows: rows.slice(0, 5),
+      headerSignature: getHeaderSignature(headers)
+    }];
   }
 
   if (extension === 'xlsx' || extension === 'xls') {
@@ -273,11 +281,14 @@ export async function parseFileToDatasets(file) {
         const headers = Object.keys(jsonRows[0]);
         datasets.push({
           name: workbook.SheetNames.length > 1 ? `${filename} (${sheetName})` : filename,
+          fileName: filename,
           filename,
           sheetName,
           headers,
           rows: jsonRows,
-          size
+          size,
+          sampleRows: jsonRows.slice(0, 5),
+          headerSignature: getHeaderSignature(headers)
         });
       }
     }
@@ -287,7 +298,16 @@ export async function parseFileToDatasets(file) {
   // Default to CSV / text
   const text = await file.text();
   const { headers, rows } = parseCSV(text);
-  return [{ name: filename, filename, headers, rows, size }];
+  return [{
+    name: filename,
+    fileName: filename,
+    filename,
+    headers,
+    rows,
+    size,
+    sampleRows: rows.slice(0, 5),
+    headerSignature: getHeaderSignature(headers)
+  }];
 }
 
 // ========================================================
@@ -381,6 +401,7 @@ export function isRowCompletelyEmpty(row) {
  * Helper to log an issue into the issues tracker.
  */
 export function logIssue(issues, { file, rowNumber, recordId, field, problem, actionTaken, oldValue, newValue }) {
+  if (!issues || !Array.isArray(issues)) return;
   issues.push({
     file: file || 'Dataset',
     rowNumber: rowNumber || 0,
@@ -401,10 +422,11 @@ export function logIssue(issues, { file, rowNumber, recordId, field, problem, ac
  * Process Tenants CSV -> stores (all 12 malls: MALL-001 to MALL-012)
  */
 export function processTenantsData(rows, filename, issues = []) {
-  issues = issues || [];
+  issues = Array.isArray(issues) ? issues : [];
   const stores = [];
   const seenIds = new Set();
   const BASE_DATE = new Date('2026-11-20');
+  let duplicateCount = 0;
 
   rows.forEach((row, idx) => {
     const rowNum = idx + 2;
@@ -426,6 +448,7 @@ export function processTenantsData(rows, filename, issues = []) {
     }
 
     if (seenIds.has(storeId)) {
+      duplicateCount++;
       logIssue(issues, {
         file: filename,
         rowNumber: rowNum,
@@ -539,8 +562,8 @@ export function processTenantsData(rows, filename, issues = []) {
     stores,
     readCount: rows.length,
     cleanedCount: stores.length,
+    duplicateCount,
     flaggedCount: issues.length,
-    duplicateCount: rows.length - stores.length,
     issues,
     previewRows: stores.slice(0, 10)
   };
@@ -550,22 +573,24 @@ export function processTenantsData(rows, filename, issues = []) {
  * Process Inventory CSV -> products (key = store_id + sku_id)
  * Handles negative stock, missing price fallback, duplicate batch merging, and placeholder stores.
  */
-export function processInventoryData(rows, filename, issuesOrStores = [], maybeStores = []) {
+export function processInventoryData(rows, filename, storesOrIssues = [], maybeStores = []) {
   let issues = [];
   let existingStores = [];
-  if (Array.isArray(issuesOrStores)) {
-    if (issuesOrStores.length > 0 && (issuesOrStores[0].id || issuesOrStores[0].name)) {
-      existingStores = issuesOrStores;
+  if (Array.isArray(storesOrIssues)) {
+    if (storesOrIssues.length > 0 && (storesOrIssues[0].id || storesOrIssues[0].mallId || storesOrIssues[0].name)) {
+      existingStores = storesOrIssues;
       issues = Array.isArray(maybeStores) ? maybeStores : [];
     } else {
-      issues = issuesOrStores;
+      issues = storesOrIssues;
       existingStores = Array.isArray(maybeStores) ? maybeStores : [];
     }
   }
-  let duplicateCount = 0;
+  issues = Array.isArray(issues) ? issues : [];
+
   const productsMap = new Map();
-  const knownStoreIds = new Set(existingStores.map(s => s.id));
+  const knownStoreIds = new Set((existingStores || []).map(s => s.id));
   const placeholderStoresMap = new Map();
+  let duplicateBatchesMerged = 0;
 
   rows.forEach((row, idx) => {
     const rowNum = idx + 2;
@@ -693,6 +718,7 @@ export function processInventoryData(rows, filename, issuesOrStores = [], maybeS
 
     if (productsMap.has(compositeKey)) {
       // DUPLICATE BATCH MERGE: sum stock, highest reorder_point, price of highest-stock batch
+      duplicateBatchesMerged++;
       const existing = productsMap.get(compositeKey);
       const combinedStock = existing.stock + stock;
       const highestBuffer = Math.max(existing.minBuffer, minBuffer);
@@ -736,13 +762,12 @@ export function processInventoryData(rows, filename, issuesOrStores = [], maybeS
 
   const prods = Array.from(productsMap.values());
   const placeholders = Array.from(placeholderStoresMap.values());
-  const computedDuplicates = rows.length - prods.length;
   return {
     products: prods,
     placeholderStores: placeholders,
     readCount: rows.length,
     cleanedCount: prods.length,
-    duplicateCount: computedDuplicates > 0 ? computedDuplicates : duplicateCount,
+    duplicateCount: duplicateBatchesMerged,
     flaggedCount: issues.length,
     issues,
     previewRows: prods.slice(0, 10)
@@ -753,7 +778,7 @@ export function processInventoryData(rows, filename, issuesOrStores = [], maybeS
  * Process Reordering CSV -> purchaseOrders
  */
 export function processReorderingData(rows, filename, issues = []) {
-  issues = issues || [];
+  issues = Array.isArray(issues) ? issues : [];
   const purchaseOrders = [];
   const seenIds = new Set();
   let duplicateCount = 0;
@@ -891,18 +916,19 @@ export function processReorderingData(rows, filename, issues = []) {
 /**
  * Process Sales CSV -> salesHistory and update store performance metrics
  */
-export function processSalesData(rows, filename, issuesOrStores = [], maybeStores = []) {
+export function processSalesData(rows, filename, storesOrIssues = [], maybeStores = []) {
   let issues = [];
   let stores = [];
-  if (Array.isArray(issuesOrStores)) {
-    if (issuesOrStores.length > 0 && (issuesOrStores[0].id || issuesOrStores[0].name)) {
-      stores = issuesOrStores;
+  if (Array.isArray(storesOrIssues)) {
+    if (storesOrIssues.length > 0 && (storesOrIssues[0].id || storesOrIssues[0].name || storesOrIssues[0].mallId)) {
+      stores = storesOrIssues;
       issues = Array.isArray(maybeStores) ? maybeStores : [];
     } else {
-      issues = issuesOrStores;
+      issues = storesOrIssues;
       stores = Array.isArray(maybeStores) ? maybeStores : [];
     }
   }
+  issues = Array.isArray(issues) ? issues : [];
   const salesHistory = [];
   const storeSalesMap = new Map(); // storeId -> Array of valid rows
 
@@ -959,7 +985,7 @@ export function processSalesData(rows, filename, issuesOrStores = [], maybeStore
   });
 
   // Update stores with latest sales, sparkline, and changePct
-  const storeMap = new Map(stores.map(s => [s.id, s]));
+  const storeMap = new Map((stores || []).map(s => [s.id, s]));
 
   for (const [storeId, records] of storeSalesMap.entries()) {
     const store = storeMap.get(storeId);
@@ -996,7 +1022,7 @@ export function processSalesData(rows, filename, issuesOrStores = [], maybeStore
     }
   }
 
-  const updatedStoresList = Array.from(storeSalesMap.keys()).map(id => stores.find(s => s.id === id)).filter(Boolean);
+  const updatedStoresList = Array.from(storeSalesMap.keys()).map(id => (stores || []).find(s => s.id === id)).filter(Boolean);
 
   return {
     records: salesHistory,
@@ -1014,7 +1040,7 @@ export function processSalesData(rows, filename, issuesOrStores = [], maybeStore
  * Process KPI Snapshots CSV -> kpiSnapshots (key = snapshot_date + period_type + store_id)
  */
 export function processKpisData(rows, filename, issues = []) {
-  issues = issues || [];
+  issues = Array.isArray(issues) ? issues : [];
   const snapshots = [];
   const seenKeys = new Set();
   let duplicateCount = 0;
@@ -1093,20 +1119,21 @@ export function processKpisData(rows, filename, issues = []) {
 /**
  * Process Legacy 7-column Products CSV
  */
-export function processLegacyProductsData(rows, filename, issuesOrStores = [], maybeStores = []) {
+export function processLegacyProductsData(rows, filename, storesOrIssues = [], maybeStores = []) {
   let issues = [];
   let stores = [];
-  if (Array.isArray(issuesOrStores)) {
-    if (issuesOrStores.length > 0 && (issuesOrStores[0].id || issuesOrStores[0].name)) {
-      stores = issuesOrStores;
+  if (Array.isArray(storesOrIssues)) {
+    if (storesOrIssues.length > 0 && (storesOrIssues[0].id || storesOrIssues[0].name || storesOrIssues[0].mallId)) {
+      stores = storesOrIssues;
       issues = Array.isArray(maybeStores) ? maybeStores : [];
     } else {
-      issues = issuesOrStores;
+      issues = storesOrIssues;
       stores = Array.isArray(maybeStores) ? maybeStores : [];
     }
   }
+  issues = Array.isArray(issues) ? issues : [];
   const products = [];
-  const storeMap = new Map(stores.map(s => [s.name.toLowerCase(), s]));
+  const storeMap = new Map((stores || []).map(s => [s.name.toLowerCase(), s]));
 
   rows.forEach((row, idx) => {
     const rowNum = idx + 2;
@@ -1172,7 +1199,21 @@ export function processLegacyProductsData(rows, filename, issuesOrStores = [], m
 /**
  * Process Custom Dataset (infers types: text, number, date, boolean)
  */
-export function processCustomDataset(datasetName, filename, headers, rows) {
+export function processCustomDataset(datasetName, arg2, arg3, arg4) {
+  let headers = [];
+  let rows = [];
+  let filename = '';
+
+  if (Array.isArray(arg2)) {
+    headers = arg2;
+    rows = Array.isArray(arg3) ? arg3 : [];
+    filename = typeof arg4 === 'string' ? arg4 : 'custom.csv';
+  } else {
+    filename = typeof arg2 === 'string' ? arg2 : 'custom.csv';
+    headers = Array.isArray(arg3) ? arg3 : [];
+    rows = Array.isArray(arg4) ? arg4 : [];
+  }
+
   const columnTypes = {};
 
   for (const col of headers) {
@@ -1229,7 +1270,13 @@ export function processCustomDataset(datasetName, filename, headers, rows) {
     columns: headers,
     columnTypes,
     rows: cleanedRows,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    readCount: rows.length,
+    cleanedCount: cleanedRows.length,
+    duplicateCount: 0,
+    flaggedCount: 0,
+    issues: [],
+    previewRows: cleanedRows.slice(0, 10)
   };
 }
 
