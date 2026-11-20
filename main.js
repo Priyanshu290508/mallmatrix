@@ -486,7 +486,7 @@ window.MallApp = {
       view = 'landing';
     }
 
-    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
+    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
 
     // If user is already authenticated and navigates to login, redirect to dashboard
     if (view === 'login' && isAuthenticated()) {
@@ -533,8 +533,8 @@ window.MallApp = {
       'signin': 'login',
       'dashboard': 'dashboard',
       'inventory': 'inventory',
-      'reordering': 'reorder',
-      'reorder': 'reorder',
+      'reordering': 'dashboard',
+      'reorder': 'dashboard',
       'sales': 'sales',
       'staff': 'staff',
       'tenants': 'tenants',
@@ -554,7 +554,7 @@ window.MallApp = {
 
     // If user is not authenticated and attempts to access a protected view, redirect to /login
     if (PROTECTED_VIEWS.includes(resolved) && !isAuthenticated()) {
-      const returnPath = window.location.pathname || ('/' + (resolved === 'reorder' ? 'reordering' : resolved));
+      const returnPath = window.location.pathname || ('/' + resolved);
       try {
         sessionStorage.setItem('mallmatrix_redirect_after_login', returnPath);
       } catch (e) {}
@@ -573,8 +573,7 @@ window.MallApp = {
     const BREADCRUMB_MAP = {
       dashboard: { category: 'Overview', current: 'Dashboard' },
       inventory: { category: 'Operations', current: 'Stock Management' },
-      reorder: { category: 'Procurement', current: 'Automated Reordering' },
-      sales: { category: 'Analytics', current: 'Manage Sales Feed' },
+        sales: { category: 'Analytics', current: 'Manage Sales Feed' },
       staff: { category: 'Operations', current: 'Staff & Shift Roster' },
       tenants: { category: 'Directory', current: 'Tenant Retail Stores' },
       export: { category: 'Reports', current: 'Data Export Center' },
@@ -685,8 +684,7 @@ window.MallApp = {
 
     // Ensure view tables refresh when navigated to
     if (viewName === 'reorder') {
-      this.renderPurchaseOrders();
-    } else if (viewName === 'inventory') {
+      } else if (viewName === 'inventory') {
       this.renderInventoryTable();
     } else if (viewName === 'sales') {
       this.renderSalesLeaderboard();
@@ -730,7 +728,6 @@ window.MallApp = {
       } else {
         const titles = {
           inventory: 'Mall Multi-Tenant Stock Management',
-          reorder: 'Automated Reordering System',
           sales: 'Manage Sales & POS Analytics',
           staff: 'Staff & Shift Duty Roster',
           tenants: 'Mall Tenant Stores Directory',
@@ -740,7 +737,6 @@ window.MallApp = {
         };
         const subtitles = {
           inventory: 'Manage store SKUs, buffer thresholds, and live stock levels across all mall departments.',
-          reorder: 'Safety stock triggers, lead-time analytics, and automated supplier PO replenishment.',
           sales: 'Consolidated mall sales reports, turnover velocity, and live POS telemetry for Top 6 Stores.',
           staff: 'Floor inventory auditors, dock receiving supervisors, and tenant compliance teams on active shifts.',
           tenants: 'Directory of 48 integrated retail tenants, lease compliance, and live POS sync health.',
@@ -774,7 +770,7 @@ window.MallApp = {
   updateOverlayState() {
     // Check if any drawer or modal is currently visible/open in DOM
     const openOverlays = document.querySelectorAll(
-      '#poDetailDrawer.open, #invRestockDrawer.open, #batchReorderModal.open, #poRejectModal.open, #newProductModal.open, #importProductsModal.open, .modal-backdrop.open, .inv-restock-drawer.open, .inv-drawer-backdrop.open'
+      '#invRestockDrawer.open, #newProductModal.open, #importProductsModal.open, #onboardTenantModal.open, #settingsModal.open, .modal-backdrop.open, .inv-restock-drawer.open, .inv-drawer-backdrop.open'
     );
     const isOpen = Boolean(this.isOverlayOpen || openOverlays.length > 0);
     this.isOverlayOpen = isOpen;
@@ -1531,17 +1527,17 @@ window.MallApp = {
         • <strong>Zara Flagship (#204):</strong> Wool Overcoats (SKU-ZAR-882) at 4 units (buffer 25). Projected stock-out in <strong>1.5 days</strong>.<br>
         • <strong>Nike Experience (#112):</strong> Air Zoom Pegasus (SKU-NIK-401) at 6 units (buffer 30). Projected stock-out in <strong>2 days</strong>.<br>
         • <strong>Sephora Luxury (#108):</strong> Hydration Glow Serum (SKU-SEP-309) at 5 units (buffer 20). Projected stock-out in <strong>2.5 days</strong>.<br><br>
-        Recommendation: Run the automated batch reorder to generate POs and prevent weekend sales loss.`;
+        Recommendation: Restock low buffer inventory items immediately to prevent weekend sales loss.`;
       } else if (lower.includes('zara') && (lower.includes('turnover') || lower.includes('drop'))) {
         answer = `<strong>Zara Flagship Turnover & Velocity Analysis:</strong><br>
         • <strong>Turnover Velocity:</strong> 78% (down 4.2% week-on-week from 82.2%).<br>
         • <strong>Root Cause:</strong> Severe stock depletion in high-margin outerwear (only 4 units of SKU-ZAR-882 remaining), causing dropped basket conversions during peak shopping hours.<br>
-        • <strong>Purchase Order Status:</strong> PO #8942 (${this.formatCurrency(14250.00)}) is currently <em>Pending</em> approval for Inditex supplier dispatch. Approving this PO will restore optimal safety buffer within 3 business days.`;
-      } else if (lower.includes('overdue') || (lower.includes('po') && lower.includes('summarize')) || (lower.includes('purchase order') && lower.includes('summarize'))) {
-        answer = `<strong>Today's Purchase Order Audit & Exceptions:</strong><br>
-        • <strong>Pending POs (2):</strong> PO-8942 (Zara Flagship, ${this.formatCurrency(14250.00)}) and PO-8940 (Nike Experience, ${this.formatCurrency(16100.00)}) are awaiting approval.<br>
-        • <strong>Delivered This Week (2):</strong> PO-8941 (${this.formatCurrency(18400.00)}) and PO-8939 (${this.formatCurrency(8950.00)}) cleared dock receiving with 100% SKU match.<br>
-        • <strong>Overdue Status:</strong> Zero POs are currently past contractual SLA. Next vendor lead-time window is Nov 08, 2026.`;
+        • <strong>Restock Status:</strong> Restock advisory is active. Adding stock to SKU-ZAR-882 will restore optimal safety buffer.`;
+      } else if (lower.includes('rent') || lower.includes('overdue') || lower.includes('compliance')) {
+        answer = `<strong>Tenant Lease & Rent Compliance Summary:</strong><br>
+        • <strong>Compliant Stores:</strong> 46 of 48 active stores have satisfied all lease conditions.<br>
+        • <strong>Overdue Rents (2):</strong> Zara Flagship (${this.formatCurrency(14500.00)}, Unit #204) and Nike Experience (Unit #112) have overdue advisories dispatched.<br>
+        • <strong>Occupancy Rate:</strong> Current lease occupancy is at 96% with optimal tenant retention.`;
       } else if (lower.includes('trend') || lower.includes('analyze') || lower.includes('quarterly')) {
         answer = `<strong>Quarterly Performance & Trend Insights (Q3-Q4 Telemetry):</strong><br>
         • <strong>Revenue Velocity:</strong> Gross mall transaction volume grew <strong>+18.4%</strong> QoQ (${this.formatCurrency(getTotalGrossSales(MallState.tenants))} today).<br>
@@ -1568,10 +1564,10 @@ window.MallApp = {
         • <strong>Zara Wool Overcoat</strong> (SKU-ZAR-882): 4 units remaining (Buffer: 25)<br>
         • <strong>Apple 30W Adapter</strong> (SKU-APP-102): 8 units remaining (Buffer: 50)<br>
         • <strong>Nike Pegasus 41</strong> (SKU-NIK-401): 6 units remaining (Buffer: 30)<br><br>
-        Recommendation: Run automated batch reorder now to secure Friday delivery.`;
+        Recommendation: Restock low buffer inventory items now to secure availability.`;
       } else if (lower.includes('zara')) {
         answer = `<strong>Zara Flagship (#204):</strong><br>
-        Current sales velocity is 18 units/day. PO #8942 has been generated for 75 units (${this.formatCurrency(14250.00)} total) and is currently <em>Pending</em> for vendor dispatch.`;
+        Current sales velocity is 18 units/day. Restock advisory is active for 75 units to maintain safety buffer.`;
       } else if (lower.includes('food') || lower.includes('dining')) {
         answer = `<strong>Food Court Demand Projection:</strong><br>
         Weekend mall footfall is expected to increase by +35%. Coffee beans and fresh perishables are scheduled for early Friday dock delivery. Compliance score is 96%.`;
@@ -1789,69 +1785,33 @@ window.MallApp = {
     }
   },
 
-  createPOFromDrawer() {
+  confirmRestockFromDrawer() {
     if (!this._activeRestockSku) return;
     const p = MallState.products.find(item => item.sku === this._activeRestockSku);
     if (!p) return;
 
     const qtyInput = document.getElementById('invDrawerQty');
-    const vendorSelect = document.getElementById('invDrawerVendor');
     const qty = parseInt(qtyInput ? qtyInput.value : 0, 10);
 
     if (isNaN(qty) || qty <= 0) {
-      this.showToast('Please enter a valid reorder quantity (at least 1 unit).', 'info');
+      this.showToast('Please enter a valid restock quantity (at least 1 unit).', 'info');
       return;
     }
 
-    const vendor = vendorSelect ? vendorSelect.value : `${p.tenant} Logistics Hub`;
-    const totalCost = qty * p.price;
-    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const expDate = new Date();
-    expDate.setDate(expDate.getDate() + 3);
-    const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-    // Add new PO to Reordering page list with status "Pending" and rich details
-    const newPO = {
-      id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
-      supplier: vendor,
-      vendorContact: `${vendor} Direct Dispatch (${vendor.toLowerCase().replace(/[^a-z]/g, '')}@mallmatrix-b2b.com)`,
-      leadTime: '3 business days',
-      items: `${qty}x ${p.name}`,
-      tenant: `${p.tenant} (${p.unit})`,
-      unit: p.unit,
-      value: totalCost,
-      status: 'Pending',
-      reason: `Triggered: stock ${p.stock} < min buffer ${p.minBuffer}`,
-      createdDate: nowStr,
-      expectedDelivery: `${expDateStr} (3 days)`,
-      timeline: {
-        created: nowStr,
-        approved: null,
-        shipped: null,
-        delivered: null
-      },
-      lineItems: [
-        { name: p.name, sku: p.sku, qty: qty, price: p.price, subtotal: totalCost }
-      ],
-      rejectionReason: null
-    };
-
-    MallState.purchaseOrders.unshift(newPO);
-    this.savePurchaseOrders();
+    p.stock = (Number(p.stock) || 0) + qty;
+    this.saveProducts();
 
     // Close the drawer
     this.closeRestockDrawer();
 
-    // Re-render Reordering list and Inventory view
-    this.renderPurchaseOrders();
+    // Re-render Inventory view
     this.renderInventoryTable();
 
-    // Show exact success toast requested: "PO created for <product>"
-    this.showToast(`PO created for ${p.name}`, 'success');
+    this.showToast(`Restocked ${qty} units for ${p.name}! (New stock: ${p.stock})`, 'success');
   },
 
-  confirmRestockFromDrawer() {
-    this.createPOFromDrawer();
+  createPOFromDrawer() {
+    this.confirmRestockFromDrawer();
   },
 
   // BATCH REORDER CONFIRMATION MODAL & EXECUTION
@@ -2096,7 +2056,7 @@ window.MallApp = {
     // 3. Orchestrator Summary strip
     const orchTriggersEl = document.getElementById('orchReplenishTriggersVal');
     if (orchTriggersEl) {
-      orchTriggersEl.textContent = `${stats.poInFlight} Auto-POs`;
+      orchTriggersEl.textContent = `${stats.lowCount} Alerts`;
     }
     const orchBreachesEl = document.getElementById('orchBufferBreachesVal');
     if (orchBreachesEl) {
@@ -5650,7 +5610,6 @@ window.MallApp = {
     } else {
       let config = null;
       if (viewName === 'inventory') config = this.getInventoryExportConfig();
-      else if (viewName === 'reorder') config = this.getReorderExportConfig();
       else if (viewName === 'sales') config = this.getSalesExportConfig();
       else if (viewName === 'staff') config = this.getStaffExportConfig();
       else if (viewName === 'tenants') config = this.getTenantsExportConfig();
@@ -5682,16 +5641,7 @@ window.MallApp = {
           <span>Add SKU Product</span>
         </button>
       `;
-    } else if (viewName === 'reorder') {
-      primaryWrap.innerHTML = `
-        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.openBatchReorderModal()" aria-label="Batch Reorder All Low Stock">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-.57-8.38l5.67-5.67"></path>
-          </svg>
-          <span>Batch Reorder All Low Stock</span>
-        </button>
-      `;
+
     } else if (viewName === 'staff') {
       primaryWrap.innerHTML = `
         <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.showToast('Staff schedule dispatch active', 'info')" aria-label="Schedule Staff">
@@ -5778,14 +5728,7 @@ window.MallApp = {
           lastExport: getLastExported('inventory'),
           iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
         },
-        {
-          key: 'reorder',
-          title: 'Purchase Orders',
-          desc: 'Safety stock replenishment queue, supplier SLAs, approval audit logs, and lead times.',
-          count: `${MallState.purchaseOrders.length} Orders`,
-          lastExport: getLastExported('reorder'),
-          iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`
-        },
+
         {
           key: 'sales',
           title: 'Sales & POS Analytics',
@@ -6396,7 +6339,6 @@ window.MallApp = {
     const navActions = [
       { id: 'nav-dash', label: 'Go to Dashboard', sub: 'Overview, KPIs & telemetry stream', view: 'dashboard', icon: '📊' },
       { id: 'nav-inv', label: 'Go to Inventory', sub: 'Browse SKUs, buffer thresholds & stock levels', view: 'inventory', icon: '📦' },
-      { id: 'nav-reorder', label: 'Go to Reordering System', sub: 'Automated POs & procurement engine', view: 'reorder', icon: '🔄' },
       { id: 'nav-sales', label: 'Go to Manage Sales', sub: 'Retail POS velocity & turnover analytics', view: 'sales', icon: '💰' },
       { id: 'nav-staff', label: 'Go to Staff Management', sub: 'Floor auditors & shift rosters', view: 'staff', icon: '👥' },
       { id: 'nav-tenants', label: 'Go to Tenant Stores', sub: 'Mall directory & lease tracking', view: 'tenants', icon: '🏬' },
@@ -6479,32 +6421,7 @@ window.MallApp = {
       });
     }
 
-    // 4. Purchase Orders
-    const matchedPOs = MallState.purchaseOrders.filter(po =>
-      !lowerQ ? false : (
-        po.id.toLowerCase().includes(lowerQ) ||
-        po.supplier.toLowerCase().includes(lowerQ) ||
-        po.items.toLowerCase().includes(lowerQ) ||
-        po.status.toLowerCase().includes(lowerQ)
-      )
-    );
-    if (matchedPOs.length) {
-      sectionsHtml += `<div class="cmd-section-label">Purchase Orders (${matchedPOs.length})</div>`;
-      matchedPOs.slice(0, 3).forEach(po => {
-        sectionsHtml += `
-          <div class="cmd-result-item" onclick="MallApp.navigateRoute('/reordering'); MallApp.openPODetailDrawer('${po.id}'); MallApp.closeCommandPalette();">
-            <div class="cmd-item-left">
-              <span class="cmd-item-icon">📋</span>
-              <div>
-                <div class="cmd-item-title">${this.escapeHTML(po.id)}: ${this.escapeHTML(po.supplier)}</div>
-                <div class="cmd-item-sub">${this.escapeHTML(po.items)} • ${this.formatCurrency(po.value)} • ${po.status}</div>
-              </div>
-            </div>
-            <span class="cmd-item-badge">${po.status}</span>
-          </div>
-        `;
-      });
-    }
+
 
     // 5. Staff
     const matchedStaff = MallState.staff.filter(s =>
@@ -6592,22 +6509,7 @@ window.MallApp = {
       });
     });
 
-    // Pending PO Approvals
-    const pendingPOs = MallState.purchaseOrders.filter(po => po.status === 'Pending');
-    pendingPOs.forEach(po => {
-      list.push({
-        id: `notif-po-${po.id}`,
-        type: 'po',
-        title: `PO Awaiting Approval: ${po.id}`,
-        desc: `${po.supplier} (${po.items}) totaling ${this.formatCurrency(po.value)}. Sign-off required.`,
-        time: '45m ago',
-        unread: !this._readNotifications?.has(`notif-po-${po.id}`),
-        action: () => {
-          this.switchView('reorder');
-          this.openPODetailDrawer(po.id);
-        }
-      });
-    });
+
 
     return list;
   },
@@ -7342,7 +7244,7 @@ window.MallApp = {
           </div>
           <div class="profile-stat-box">
             <span class="profile-stat-num">${(profile.stats?.posApproved || 89).toLocaleString()}</span>
-            <span class="profile-stat-label">POs approved</span>
+            <span class="profile-stat-label">Audits logged</span>
           </div>
           <div class="profile-stat-box">
             <span class="profile-stat-num">${(profile.stats?.reportsExported || 34).toLocaleString()}</span>
@@ -7384,9 +7286,9 @@ window.MallApp = {
             <span class="profile-metric-helper">+12% vs last month</span>
           </div>
           <div class="profile-metric-card">
-            <span class="profile-metric-label">POs Approved</span>
+            <span class="profile-metric-label">Audits Logged</span>
             <span class="profile-metric-val">${(profile.stats?.posApproved || 89).toLocaleString()}</span>
-            <span class="profile-metric-helper">5 pending review</span>
+            <span class="profile-metric-helper">Compliance active</span>
           </div>
           <div class="profile-metric-card">
             <span class="profile-metric-label">Reports Exported</span>
