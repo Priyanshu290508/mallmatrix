@@ -5242,7 +5242,7 @@ html.dark .tenant-page-ellipsis {
 }
 
 /* ==========================================================================
-   MANAGE SALES & POS ANALYTICS ENHANCEMENTS
+   MANAGE SALES ANALYTICS ENHANCEMENTS
    ========================================================================== */
 
 /* 1. Date Range Selector */
@@ -5624,7 +5624,7 @@ html.dark .tenant-page-ellipsis {
   background-color: #EF4444;
 }
 
-/* 7. POS Status (Dot + Last Sync + Offline Row Tint) */
+/* 7. Register Status (Dot + Last Sync + Offline Row Tint) */
 .pos-status-cell {
   display: flex;
   flex-direction: column;

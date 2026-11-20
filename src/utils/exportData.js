@@ -812,10 +812,10 @@ export function exportFullReportToPDF(mallData) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(15, 23, 42);
-    doc.text('1. Store Sales & POS Real-Time Telemetry', 36, 162);
+    doc.text('1. Store Sales & Real-Time Telemetry', 36, 162);
 
     const salesColumns = [
-      'Rank', 'Tenant Store', 'Location', 'Units Sold', 'Gross Sales', 'Turnover Velocity', 'POS Telemetry'
+      'Rank', 'Tenant Store', 'Location', 'Units Sold', 'Gross Sales', 'Turnover Velocity', 'Terminal Sync'
     ];
     const salesRows = (mallData.tenants || []).map((t, i) => [
       `#0${i + 1}`,
