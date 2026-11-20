@@ -4937,7 +4937,7 @@ html.dark .tenant-page-ellipsis {
 }
 
 /* PO Drawer Three-Part Flex Column Layout */
-.po-drawer-header,
+.tenant-drawer-header, .po-drawer-header,
 #poDetailDrawer .inv-drawer-header {
   flex-shrink: 0 !important;
   background: #FAFAFA !important;
@@ -4988,19 +4988,19 @@ html.dark .tenant-page-ellipsis {
   }
 }
 
-.po-drawer-title-group {
+.tenant-drawer-title-group, .po-drawer-title-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.po-drawer-id-line {
+.tenant-drawer-id-line, .po-drawer-id-line {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.po-drawer-subtitle {
+.tenant-drawer-subtitle, .po-drawer-subtitle {
   font-size: 0.78rem;
   color: #64748B;
   font-weight: 600;
@@ -8520,7 +8520,7 @@ html.dark .dot-danger {
 html.dark .modal-header,
 html.dark .drawer-header,
 html.dark .inv-drawer-header,
-html.dark .po-drawer-header,
+html.dark .tenant-drawer-header, .po-drawer-header,
 html.dark .modal-footer,
 html.dark .drawer-footer,
 html.dark .inv-drawer-footer {
@@ -8856,7 +8856,7 @@ html.dark .po-detail-drawer {
   box-shadow: -12px 0 45px rgba(0, 0, 0, 0.5) !important;
 }
 
-html.dark .po-drawer-header,
+html.dark .tenant-drawer-header, .po-drawer-header,
 html.dark #poDetailDrawer .inv-drawer-header {
   background: var(--surface) !important;
   border-bottom: 1px solid var(--border) !important;
@@ -8874,11 +8874,11 @@ html.dark #poDetailDrawer .inv-drawer-footer {
   border-top: 1px solid var(--border) !important;
 }
 
-html.dark .po-drawer-title-group h3 {
+html.dark .tenant-drawer-title-group, .po-drawer-title-group h3 {
   color: var(--text) !important;
 }
 
-html.dark .po-drawer-subtitle {
+html.dark .tenant-drawer-subtitle, .po-drawer-subtitle {
   color: var(--text-muted) !important;
 }
 
