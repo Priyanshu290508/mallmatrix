@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MallMatrix — Mall Inventory & Stock Management Platform</title>
   <meta name="description"
-    content="MallMatrix: Enterprise Mall Inventory Management System with real-time stock monitoring, AI Copilot, sales analytics, staff duty rosters, and tenant store management.">
+    content="MallMatrix: Enterprise Mall Inventory Management System with automated reordering, AI Copilot, POS sales analytics, staff duty rosters, and tenant store management.">
   <link rel="icon" type="image/jpeg" href="/mallmatrix_logo.jpg">
   <link rel="apple-touch-icon" href="/mallmatrix_logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -155,7 +155,7 @@
 
         <!-- Subtext -->
         <p class="lp-subtext">
-          Real-time store telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs
+          Real-time POS telemetry, automated restocking and an AI Copilot across every tenant store. Spot stock-outs
           before they happen and run your whole mall from one dashboard.
         </p>
       </main>
@@ -175,7 +175,7 @@
             </svg>
           </button>
         </div>
-        <p class="lp-modal-desc">See how MallMatrix manages 48+ retail stores with live telemetry and AI
+        <p class="lp-modal-desc">See how MallMatrix manages 48+ retail stores with automated reordering and live AI
           Copilot telemetry.</p>
         <form class="lp-modal-form" id="lpDemoForm">
           <div class="lp-form-field">
@@ -400,7 +400,7 @@
 
       <div class="sidebar-divider"></div>
 
-      <!-- ADD SKU PRODUCT BUTTON (Styled in Mint Green Pill) -->
+      <!-- CREATE NEW REORDER / PO BUTTON (Styled in Mint Green Pill) -->
       <div class="sidebar-action-wrap">
         <button class="btn-create-order" id="sidebarCreateOrderBtn">
           <span class="create-order-icon">
@@ -409,7 +409,7 @@
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </span>
-          <span>Add SKU Product</span>
+          <span>Create New Order</span>
         </button>
       </div>
 
@@ -438,6 +438,17 @@
             </svg>
           </div>
           <span class="menu-label">Inventory</span>
+        </button>
+
+        <!-- 3. Reordering System -->
+        <button class="menu-item" data-view="reorder" id="nav-reorder">
+          <div class="menu-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              <path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3" />
+            </svg>
+          </div>
+          <span class="menu-label">Reordering System</span>
         </button>
 
         <!-- 4. Sales Manage -->
@@ -566,7 +577,7 @@
 
             <!-- Global Search Input (max-w-md, w-full, rounded-lg, light gray background, search icon on left, "Ctrl K" badge on right, truncates and never wraps) -->
             <button type="button" class="header-search-bar" id="headerGlobalSearchBtn"
-              onclick="MallApp.openCommandPalette()" aria-label="Search SKUs, stores, staff (Press Ctrl K)"
+              onclick="MallApp.openCommandPalette()" aria-label="Search SKUs, stores, POs (Press Ctrl K)"
               title="Global Search (Ctrl+K)">
               <div class="header-search-inner">
                 <svg class="header-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -574,7 +585,7 @@
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <span class="header-search-placeholder">Search SKUs, stores, staff...</span>
+                <span class="header-search-placeholder">Search SKUs, stores, POs...</span>
               </div>
               <kbd class="header-search-badge">Ctrl K</kbd>
             </button>
@@ -751,7 +762,7 @@
             <div id="headerExportBtnWrap"></div>
             <div id="headerPrimaryActionWrap">
               <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn"
-                onclick="MallApp.openProductModal()" aria-label="Add SKU Product">
+                onclick="MallApp.openProductModal()" aria-label="Create New Order">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -779,8 +790,8 @@
                 <span>AUTONOMOUS AGENT MESH ACTIVE</span>
               </div>
               <h2 class="orch-card-title">ORCHESTRATOR SUMMARY</h2>
-              <p class="orch-description">Central intelligence core orchestrating inventory buffers, store telemetry
-                streams, and tenant compliance.</p>
+              <p class="orch-description">Central intelligence core orchestrating inventory buffers, POS telemetry
+                streams, automated PO reorders, and tenant compliance.</p>
             </div>
             <div class="orch-action-btns">
               <button class="btn-orch-secondary"
@@ -802,14 +813,17 @@
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Autonomous Sub-Agents</span>
-              <div class="orch-metric-val">4 Active <span class="tag-badge tag-cyan info-dot-label"><span
+              <div class="orch-metric-val">5 Active <span class="tag-badge tag-cyan info-dot-label"><span
                     class="info-dot dot-accent"></span>Connected</span></div>
-              <span class="orch-metric-sub">Inventory, Sales, Tenants, Staff</span>
+              <span class="orch-metric-sub">Inventory, Sales, Tenants, Staff, Reorder</span>
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Stock Replenishment Triggers</span>
-              <div class="orch-metric-val"><span id="orchReplenishTriggersVal">14 Alerts</span> <span class="tag-badge tag-purple info-dot-label"><span class="info-dot dot-accent"></span>Active</span></div>
-              <span class="orch-metric-sub">Monitoring <span id="orchBufferBreachesVal">14</span> buffer breaches</span>
+              <div class="orch-metric-val"><span id="orchReplenishTriggersVal">12 Auto-POs</span> <span
+                  class="tag-badge tag-purple info-dot-label"><span class="info-dot dot-accent"></span>In-Flight</span>
+              </div>
+              <span class="orch-metric-sub">Auto-replenishing <span id="orchBufferBreachesVal">14</span> buffer
+                breaches</span>
             </div>
             <div class="orch-metric-box">
               <span class="orch-metric-label">Predicted Day Footfall</span>
@@ -850,7 +864,7 @@
                   <span class="kpi-main-val" id="kpiRevenueVal">$148,250.00</span>
                 </div>
                 <div class="kpi-footer-note">
-                  <span>Aggregated across 48 tenant retail store registers</span>
+                  <span>Aggregated across 48 tenant retail POS terminals</span>
                 </div>
               </div>
 
@@ -877,7 +891,7 @@
                   <span class="kpi-pill-tag tag-warning" id="kpiLowBufferVal">12 Low Buffer</span>
                 </div>
                 <div class="kpi-footer-note">
-                  <span>Safety buffer threshold alert active</span>
+                  <span>Automated PO dispatched to suppliers for restock</span>
                 </div>
               </div>
 
@@ -1066,7 +1080,7 @@
                 </div>
                 <div class="agent-title-info">
                   <h4 class="agent-card-name">Sales</h4>
-                  <span class="agent-tagline">Live Store Stream & Revenue Engine</span>
+                  <span class="agent-tagline">Live POS Stream & Revenue Engine</span>
                 </div>
                 <span class="agent-status-badge status-active">Active</span>
               </div>
@@ -1077,7 +1091,7 @@
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">342/hr</span>
-                  <span class="agent-metric-name">Sales Velocity</span>
+                  <span class="agent-metric-name">POS Velocity</span>
                 </div>
                 <div class="agent-metric-pair">
                   <span class="agent-metric-num">99.8%</span>
@@ -1156,13 +1170,49 @@
                   <span class="agent-metric-name">Shift Coverage</span>
                 </div>
               </div>
-                            <div class="agent-card-footer">
+              <div class="agent-card-footer">
                 <span class="agent-cta-text">Inspect Shift Roster</span>
+                <span class="agent-arrow-icon">→</span>
+              </div>
+            </div>
+
+            <!-- Agent 5: Reorder Agent -->
+            <div class="dash-card agent-module-card" onclick="MallApp.switchView('reorder')">
+              <div class="agent-card-header">
+                <div class="agent-icon-badge agent-reorder">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    <path d="M3 12a9 9 0 0 0 9 9 9 0 0 0 6.69-3" />
+                  </svg>
+                </div>
+                <div class="agent-title-info">
+                  <h4 class="agent-card-name">Reorder</h4>
+                  <span class="agent-tagline">Automated PO Procurement Engine</span>
+                </div>
+                <span class="agent-status-badge status-active">Active</span>
+              </div>
+              <div class="agent-body-metrics">
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num" id="reorderAgentTransit">8 POs</span>
+                  <span class="agent-metric-name">Dispatched Transit</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num" id="reorderAgentApprovals">3 POs</span>
+                  <span class="agent-metric-name">Vendor Approvals</span>
+                </div>
+                <div class="agent-metric-pair">
+                  <span class="agent-metric-num" id="reorderAgentLeadTime">1.4d</span>
+                  <span class="agent-metric-name">Avg Lead Time</span>
+                </div>
+              </div>
+              <div class="agent-card-footer">
+                <span class="agent-cta-text">Trigger PO Batch</span>
                 <span class="agent-arrow-icon">→</span>
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
       <!-- ======================================================= -->
@@ -1287,6 +1337,75 @@
       </div>
 
       <!-- ======================================================= -->
+      <!-- VIEW 3: REORDERING SYSTEM FEATURE -->
+      <!-- ======================================================= -->
+      <div class="view-panel" id="view-reorder">
+        <!-- REORDER METRICS STRIP -->
+        <div class="reorder-metrics-strip">
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">Pending Approval Queue</span>
+            <div class="reorder-stat-val" id="reorderPendingCount">2 Orders</div>
+            <span class="reorder-stat-sub" style="color: #D97706;">Awaiting tenant manager approval</span>
+          </div>
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">Pending PO Valuation</span>
+            <div class="reorder-stat-val" id="reorderPendingVal"></div>
+            <span class="reorder-stat-sub" style="color: #059669;">Ready for B2B supplier dispatch</span>
+          </div>
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">Delivered This Cycle</span>
+            <div class="reorder-stat-val" id="reorderDeliveredCount">2 Completed</div>
+            <span class="reorder-stat-sub" style="color: #64748B;">Stock updated in inventory</span>
+          </div>
+          <div class="reorder-stat-card">
+            <span class="reorder-stat-label">On-Time Logistics Rate</span>
+            <div class="reorder-stat-val" style="color: var(--accent);">98.8%</div>
+            <span class="reorder-stat-sub" style="color: #059669;">Avg lead time: 2.4 days</span>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="table-filter-bar inv-filter-bar">
+            <div class="inv-filter-left">
+              <input type="text" id="reorderSearchInput" class="clean-search-input"
+                placeholder="Search POs by identifier, vendor, items, tenant, or reason..."
+                oninput="MallApp.renderPurchaseOrders()">
+              <select id="reorderStatusFilter" class="clean-select" onchange="MallApp.renderPurchaseOrders()">
+                <option value="all">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Shipped">Shipped</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="inv-filter-right">
+              <span class="reorder-queue-badge" id="reorderTotalBadge">4 Requisitions Tracked</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="clean-table reorder-table">
+              <thead>
+                <tr>
+                  <th style="min-width: 120px;">PO Identifier</th>
+                  <th style="min-width: 180px;">Vendor / Supplier</th>
+                  <th style="min-width: 240px;">Requisition Items & Reason</th>
+                  <th style="min-width: 160px;">Target Tenant</th>
+                  <th style="min-width: 110px;">PO Total</th>
+                  <th style="min-width: 120px;">Status</th>
+                  <th class="text-right" style="min-width: 150px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="purchaseOrdersTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================= -->
       <!-- VIEW 4: MANAGE SALES FEATURE -->
       <!-- ======================================================= -->
       <div class="view-panel" id="view-sales">
@@ -1319,7 +1438,7 @@
           <div class="sales-chart-header">
             <div>
               <h3 class="sales-chart-title">Revenue by Store (Top 6 Stores)</h3>
-              <p class="sales-chart-subtitle">Aggregated retail sales turnover across active mall tenants (<span
+              <p class="sales-chart-subtitle">Aggregated retail POS turnover across active mall tenants (<span
                   id="salesChartRangeLabel">Today</span>)</p>
             </div>
             <div class="sales-chart-legend-wrap">
@@ -1377,7 +1496,7 @@
                   </th>
                   <th class="sales-th-sortable" data-col="posStatus" onclick="MallApp.sortSalesTable('posStatus')"
                     style="min-width: 150px;">
-                    Register Status <span class="sales-sort-icon" id="sales-sort-posStatus">↕</span>
+                    POS Status <span class="sales-sort-icon" id="sales-sort-posStatus">↕</span>
                   </th>
                 </tr>
               </thead>
@@ -1637,12 +1756,12 @@
               </div>
               <div class="action-card-content">
                 <h3 class="action-card-title">Why did Zara's turnover drop?</h3>
-                <p class="action-card-desc">Analyze store sales velocity and inventory levels for Zara Flagship</p>
+                <p class="action-card-desc">Analyze POS sales velocity and inventory levels for Zara Flagship</p>
               </div>
             </div>
 
-            <!-- Card 3: Summarize store rent compliance -->
-            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Summarize store rent compliance')">
+            <!-- Card 3: Summarize today's overdue POs -->
+            <div class="copilot-action-card" onclick="MallApp.askCopilotDirect('Summarize today\'s overdue POs')">
               <div class="action-card-sparkle">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2l2.4 7.2L21.6 12l-7.2 2.4L12 21.6l-2.4-7.2L2.4 12l7.2-2.4z" />
@@ -1650,8 +1769,8 @@
                 </svg>
               </div>
               <div class="action-card-content">
-                <h3 class="action-card-title">Summarize store rent compliance</h3>
-                <p class="action-card-desc">Audit tenant monthly lease payments and overdue accounts</p>
+                <h3 class="action-card-title">Summarize today's overdue POs</h3>
+                <p class="action-card-desc">Audit pending vendor purchase orders and delivery timelines</p>
               </div>
             </div>
           </div>
@@ -1727,7 +1846,7 @@
               </div>
             </div>
             <div class="export-toolbar-right">
-              <label class="export-toggle-label" title="Add a totals summary row to Sales exports">
+              <label class="export-toggle-label" title="Add a totals summary row to Sales and PO exports">
                 <input type="checkbox" id="exportIncludeTotalsSwitch" class="export-toggle-input"
                   onchange="MallApp.toggleTotalsSetting(this.checked)">
                 <span class="export-toggle-switch"></span>
@@ -1845,7 +1964,7 @@
           <div class="modal-footer">
             <button type="button" class="clean-btn" id="cancelProductModalBtn">Cancel</button>
             <button type="submit" class="btn-create-order" id="submitProductBtn" disabled
-              style="opacity: 0.5; cursor: not-allowed;">Add Product</button>
+              style="opacity: 0.5; cursor: not-allowed;">Submit Order</button>
           </div>
         </form>
       </div>
@@ -1900,11 +2019,12 @@
           </div>
         </div>
 
-        <!-- RESTOCK QUANTITY INPUT WITH +/- STEPPERS -->
+        <!-- REORDER QUANTITY INPUT WITH +/- STEPPERS -->
         <div class="inv-drawer-field">
           <div class="inv-drawer-field-header">
-            <label class="inv-drawer-label" for="invDrawerQty">Restock Quantity</label>
-            <span class="inv-drawer-calc-badge" id="invDrawerFormulaBadge">Suggested: min buffer × 3 - current stock</span>
+            <label class="inv-drawer-label" for="invDrawerQty">Reorder Quantity</label>
+            <span class="inv-drawer-calc-badge" id="invDrawerFormulaBadge">Suggested: min buffer × 3 - current
+              stock</span>
           </div>
           <div class="inv-stepper-wrap">
             <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(-1)"
@@ -1914,7 +2034,7 @@
               </svg>
             </button>
             <input type="number" id="invDrawerQty" class="inv-stepper-input" min="1" value="25"
-              aria-label="Restock quantity">
+              aria-label="Reorder quantity">
             <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(1)"
               aria-label="Increase quantity">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1936,8 +2056,10 @@
             <option value="LVMH Luxury Supply" data-lead="3">LVMH Luxury Supply (Secure Transit)</option>
             <option value="H&M Supply Chain Services" data-lead="3">H&M Supply Chain Services (Standard Road)</option>
             <option value="Starbucks Supply Chain EMEA" data-lead="2">Starbucks Supply Chain EMEA (Cold Chain)</option>
-            <option value="MallMatrix Express Delivery" data-lead="1">MallMatrix Express Delivery (Priority Intra-Mall)</option>
-            <option value="Global Consolidated Freight" data-lead="5">Global Consolidated Freight (Bulk Freight)</option>
+            <option value="MallMatrix Express Delivery" data-lead="1">MallMatrix Express Delivery (Priority Intra-Mall)
+            </option>
+            <option value="Global Consolidated Freight" data-lead="5">Global Consolidated Freight (Bulk Freight)
+            </option>
           </select>
         </div>
 
@@ -1953,15 +2075,15 @@
             </div>
           </div>
           <div class="inv-drawer-meta-item">
-            <span class="inv-drawer-meta-label">Restock Channel</span>
+            <span class="inv-drawer-meta-label">Requisition Type</span>
             <div class="inv-drawer-lead-badge" style="background:#F1F5F9; color:#475569;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="1" y="3" width="15" height="13" />
-                <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                 <circle cx="5.5" cy="18.5" r="2.5" />
                 <circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
-              <span>Direct Inventory Restock</span>
+              <span>Automated B2B PO</span>
             </div>
           </div>
         </div>
@@ -1978,21 +2100,94 @@
         </div>
       </div>
 
-      <!-- DRAWER FOOTER WITH CANCEL & CONFIRM RESTOCK BUTTONS -->
+      <!-- DRAWER FOOTER WITH CANCEL & CREATE PO BUTTONS -->
       <div class="inv-drawer-footer">
         <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.closeRestockDrawer()">
           Cancel
         </button>
         <button type="button" class="inv-drawer-btn-create" id="invDrawerSubmitBtn"
-          onclick="MallApp.confirmRestockFromDrawer()">
+          onclick="MallApp.createPOFromDrawer()">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
           </svg>
-          Confirm Restock
+          Create PO
         </button>
       </div>
     </aside>
+
+    <!-- 1. BATCH REORDER CONFIRMATION MODAL -->
+    <div class="modal-backdrop" id="batchReorderModal"
+      onclick="if(event.target === this) MallApp.closeBatchReorderModal()">
+      <div class="modal-box batch-reorder-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title" id="batchReorderTitle">Confirm Batch Reorder</h3>
+            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Automated replenishment
+              for all SKUs currently below safety stock buffer thresholds.</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="MallApp.closeBatchReorderModal()"
+            aria-label="Close batch reorder modal">&times;</button>
+        </div>
+
+        <div class="modal-body" id="batchReorderModalBody" style="margin-top: 14px;">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div class="modal-footer"
+          style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+          <button type="button" class="clean-btn btn-secondary"
+            onclick="MallApp.closeBatchReorderModal()">Cancel</button>
+          <button type="button" class="btn-primary-reorder" id="btnConfirmBatchReorder"
+            onclick="MallApp.confirmBatchReorder()">
+            Confirm & Create POs
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. REJECT PO REASON MODAL -->
+    <div class="modal-backdrop" id="poRejectModal" onclick="if(event.target === this) MallApp.closeRejectModal()">
+      <div class="modal-box po-reject-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title" id="rejectModalTitle">Reject Purchase Order</h3>
+            <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Provide a mandatory
+              reason for rejecting this PO for procurement compliance.</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="MallApp.closeRejectModal()"
+            aria-label="Close reject modal">&times;</button>
+        </div>
+
+        <div class="modal-body" style="margin-top: 14px;">
+          <div class="po-reject-summary-card" id="rejectModalSummary">
+            <!-- Populated dynamically -->
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label" for="rejectModalComment"
+              style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 6px;">
+              Rejection Reason <span style="color: #DC2626;">*</span>
+            </label>
+            <textarea id="rejectModalComment" class="clean-textarea" rows="3"
+              placeholder="Enter reason (e.g. price mismatch, budget freeze, duplicate order)..." required
+              style="width: 100%; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 10px; font-family: inherit; font-size: 0.84rem; resize: vertical; outline: none;"></textarea>
+            <div id="rejectModalError" class="reject-error-text" style="display: none;">A rejection reason is required
+              before confirming.</div>
+          </div>
+        </div>
+
+        <div class="modal-footer"
+          style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0;">
+          <button type="button" class="clean-btn btn-secondary" onclick="MallApp.closeRejectModal()">Cancel</button>
+          <button type="button" class="btn-danger-action" onclick="MallApp.confirmRejectPO()"
+            style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 0.84rem; cursor: pointer; border: none;">Confirm
+            Rejection</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 3. IMPORT PRODUCTS MODAL -->
     <div class="modal-backdrop" id="importProductsModal" onclick="if(event.target === this) MallApp.closeImportModal()"
@@ -2163,7 +2358,7 @@
           <div>
             <h3 class="modal-title">MallMatrix System & Export Settings</h3>
             <p class="modal-desc" style="font-size: 0.8rem; color: #64748B; margin: 2px 0 0 0;">Platform preferences,
-              report configuration, and telemetry sync parameters.</p>
+              report configuration, and POS sync parameters.</p>
           </div>
           <button type="button" class="modal-close-btn" onclick="MallApp.closeSettingsModal()"
             aria-label="Close settings">&times;</button>
@@ -2198,7 +2393,7 @@
               <div>
                 <div style="font-weight: 700; font-size: 0.84rem; color: #1E293B;">Include summary row (totals)</div>
                 <div style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">Appends computed totals for units and
-                  values to Sales exports</div>
+                  values to Sales & PO exports</div>
               </div>
               <input type="checkbox" id="settingsModalTotalsSwitch" class="export-toggle-input"
                 onchange="MallApp.toggleTotalsSetting(this.checked)">
@@ -2227,7 +2422,7 @@
               style="font-weight: 700; font-size: 0.84rem; color: #1E293B; margin-bottom: 6px; display: block;">Platform
               Telemetry</label>
             <div class="settings-telemetry-box">
-              <strong>48 Mall Tenants Active:</strong> Real-time store telemetry stream connected.
+              <strong>48 Mall Tenants Active:</strong> Real-time POS telemetry stream connected.
               Autonomous buffer triggers online.
             </div>
           </div>
@@ -2253,7 +2448,7 @@
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
           <input type="text" id="commandPaletteInput" class="cmd-palette-input"
-            placeholder="Type a SKU, store, staff, or command..." autocomplete="off">
+            placeholder="Type a SKU, store, PO ID, staff, or command..." autocomplete="off">
           <kbd class="cmd-esc-badge" onclick="MallApp.closeCommandPalette()">ESC</kbd>
         </div>
         <div class="cmd-palette-body" id="commandPaletteResults">
@@ -2270,18 +2465,49 @@
       </div>
     </div>
 
+    <!-- 3. PO DETAIL SLIDE-OVER DRAWER -->
+    <div class="inv-drawer-backdrop" id="poDrawerBackdrop" onclick="MallApp.closePODetailDrawer()" aria-hidden="true">
+    </div>
+    <aside class="inv-restock-drawer po-detail-drawer" id="poDetailDrawer" role="dialog" aria-modal="true"
+      aria-labelledby="poDrawerTitle" aria-hidden="true" tabindex="-1">
+      <div class="inv-drawer-header po-drawer-header">
+        <div class="po-drawer-title-group">
+          <div class="po-drawer-id-line">
+            <h3 class="inv-drawer-title" id="poDrawerTitle">PO-0000</h3>
+            <div id="poDrawerStatusBadge"></div>
+          </div>
+          <span class="po-drawer-subtitle" id="poDrawerTenant">Tenant Store</span>
+        </div>
+        <button type="button" class="inv-drawer-close" onclick="MallApp.closePODetailDrawer()"
+          aria-label="Close PO details">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="inv-drawer-body po-drawer-body" id="poDrawerBody">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="inv-drawer-footer po-drawer-footer" id="poDrawerFooter">
+        <!-- Rendered dynamically -->
+      </div>
+    </aside>
+
     <!-- 4. TENANT STORE DETAIL SLIDE-OVER DRAWER -->
     <div class="inv-drawer-backdrop" id="tenantDrawerBackdrop" onclick="MallApp.closeTenantDrawer()" aria-hidden="true">
     </div>
     <aside class="inv-restock-drawer tenant-detail-drawer" id="tenantDetailDrawer" role="dialog" aria-modal="true"
       aria-labelledby="tenantDrawerTitle" aria-hidden="true" tabindex="-1">
-      <div class="inv-drawer-header tenant-drawer-header">
-        <div class="tenant-drawer-title-group">
-          <div class="tenant-drawer-id-line">
+      <div class="inv-drawer-header po-drawer-header">
+        <div class="po-drawer-title-group">
+          <div class="po-drawer-id-line">
             <h3 class="inv-drawer-title" id="tenantDrawerTitle">Store Name</h3>
             <div id="tenantDrawerStatusBadge"></div>
           </div>
-          <span class="tenant-drawer-subtitle" id="tenantDrawerLocation">Location</span>
+          <span class="po-drawer-subtitle" id="tenantDrawerLocation">Location</span>
         </div>
         <button type="button" class="inv-drawer-close" onclick="MallApp.closeTenantDrawer()"
           aria-label="Close store details">

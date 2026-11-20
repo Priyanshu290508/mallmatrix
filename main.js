@@ -84,7 +84,7 @@ const MallState = {
   // Reorder Purchase Orders (Derived from single source)
   purchaseOrders: initialPurchaseOrders.map(po => ({ ...po })),
 
-  // Tenants Information & Store Real-time Telemetry (Derived from single source)
+  // Tenants Information & POS Real-time Telemetry (Derived from single source)
   tenants: initialStores.map(t => ({ ...t })),
 
   // Staff Directory (Derived from single source)
@@ -486,7 +486,7 @@ window.MallApp = {
       view = 'landing';
     }
 
-    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
+    const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile'];
 
     // If user is already authenticated and navigates to login, redirect to dashboard
     if (view === 'login' && isAuthenticated()) {
@@ -533,8 +533,8 @@ window.MallApp = {
       'signin': 'login',
       'dashboard': 'dashboard',
       'inventory': 'inventory',
-      'reordering': 'dashboard',
-      'reorder': 'dashboard',
+      'reordering': 'reorder',
+      'reorder': 'reorder',
       'sales': 'sales',
       'staff': 'staff',
       'tenants': 'tenants',
@@ -554,7 +554,7 @@ window.MallApp = {
 
     // If user is not authenticated and attempts to access a protected view, redirect to /login
     if (PROTECTED_VIEWS.includes(resolved) && !isAuthenticated()) {
-      const returnPath = window.location.pathname || ('/' + resolved);
+      const returnPath = window.location.pathname || ('/' + (resolved === 'reorder' ? 'reordering' : resolved));
       try {
         sessionStorage.setItem('mallmatrix_redirect_after_login', returnPath);
       } catch (e) {}
@@ -573,7 +573,8 @@ window.MallApp = {
     const BREADCRUMB_MAP = {
       dashboard: { category: 'Overview', current: 'Dashboard' },
       inventory: { category: 'Operations', current: 'Stock Management' },
-        sales: { category: 'Analytics', current: 'Manage Sales Feed' },
+      reorder: { category: 'Procurement', current: 'Automated Reordering' },
+      sales: { category: 'Analytics', current: 'Manage Sales Feed' },
       staff: { category: 'Operations', current: 'Staff & Shift Roster' },
       tenants: { category: 'Directory', current: 'Tenant Retail Stores' },
       export: { category: 'Reports', current: 'Data Export Center' },
@@ -684,7 +685,8 @@ window.MallApp = {
 
     // Ensure view tables refresh when navigated to
     if (viewName === 'reorder') {
-      } else if (viewName === 'inventory') {
+      this.renderPurchaseOrders();
+    } else if (viewName === 'inventory') {
       this.renderInventoryTable();
     } else if (viewName === 'sales') {
       this.renderSalesLeaderboard();
@@ -728,7 +730,8 @@ window.MallApp = {
       } else {
         const titles = {
           inventory: 'Mall Multi-Tenant Stock Management',
-          sales: 'Manage Sales Analytics',
+          reorder: 'Automated Reordering System',
+          sales: 'Manage Sales & POS Analytics',
           staff: 'Staff & Shift Duty Roster',
           tenants: 'Mall Tenant Stores Directory',
           copilot: 'MallMatrix AI Copilot Assistant',
@@ -737,9 +740,10 @@ window.MallApp = {
         };
         const subtitles = {
           inventory: 'Manage store SKUs, buffer thresholds, and live stock levels across all mall departments.',
-          sales: 'Consolidated mall sales reports, turnover velocity, and live sales telemetry for Top 6 Stores.',
+          reorder: 'Safety stock triggers, lead-time analytics, and automated supplier PO replenishment.',
+          sales: 'Consolidated mall sales reports, turnover velocity, and live POS telemetry for Top 6 Stores.',
           staff: 'Floor inventory auditors, dock receiving supervisors, and tenant compliance teams on active shifts.',
-          tenants: 'Directory of 48 integrated retail tenants, lease compliance, and live sync health.',
+          tenants: 'Directory of 48 integrated retail tenants, lease compliance, and live POS sync health.',
           copilot: 'Autonomous intelligence agent for stock prediction, sales analysis, and operations.',
           export: 'Generate comprehensive reports, exports, and data snapshots across all mall operations directly in your browser.',
           profile: 'View and manage your personal details, security and preferences.'
@@ -770,7 +774,7 @@ window.MallApp = {
   updateOverlayState() {
     // Check if any drawer or modal is currently visible/open in DOM
     const openOverlays = document.querySelectorAll(
-      '#invRestockDrawer.open, #newProductModal.open, #importProductsModal.open, #onboardTenantModal.open, #settingsModal.open, .modal-backdrop.open, .inv-restock-drawer.open, .inv-drawer-backdrop.open'
+      '#poDetailDrawer.open, #invRestockDrawer.open, #batchReorderModal.open, #poRejectModal.open, #newProductModal.open, #importProductsModal.open, .modal-backdrop.open, .inv-restock-drawer.open, .inv-drawer-backdrop.open'
     );
     const isOpen = Boolean(this.isOverlayOpen || openOverlays.length > 0);
     this.isOverlayOpen = isOpen;
@@ -1523,21 +1527,21 @@ window.MallApp = {
 
       if (lower.includes('stock out') || (lower.includes('which stores') && lower.includes('stock'))) {
         answer = `<strong>Weekly Stock-out & Safety Buffer Risk Forecast:</strong><br>
-        Based on live sales velocity and warehouse stock levels, <strong>3 stores</strong> require immediate replenishment:<br>
+        Based on live POS velocity and warehouse stock levels, <strong>3 stores</strong> require immediate replenishment:<br>
         • <strong>Zara Flagship (#204):</strong> Wool Overcoats (SKU-ZAR-882) at 4 units (buffer 25). Projected stock-out in <strong>1.5 days</strong>.<br>
         • <strong>Nike Experience (#112):</strong> Air Zoom Pegasus (SKU-NIK-401) at 6 units (buffer 30). Projected stock-out in <strong>2 days</strong>.<br>
         • <strong>Sephora Luxury (#108):</strong> Hydration Glow Serum (SKU-SEP-309) at 5 units (buffer 20). Projected stock-out in <strong>2.5 days</strong>.<br><br>
-        Recommendation: Restock low buffer inventory items immediately to prevent weekend sales loss.`;
+        Recommendation: Run the automated batch reorder to generate POs and prevent weekend sales loss.`;
       } else if (lower.includes('zara') && (lower.includes('turnover') || lower.includes('drop'))) {
         answer = `<strong>Zara Flagship Turnover & Velocity Analysis:</strong><br>
         • <strong>Turnover Velocity:</strong> 78% (down 4.2% week-on-week from 82.2%).<br>
         • <strong>Root Cause:</strong> Severe stock depletion in high-margin outerwear (only 4 units of SKU-ZAR-882 remaining), causing dropped basket conversions during peak shopping hours.<br>
-        • <strong>Restock Status:</strong> Restock advisory is active. Adding stock to SKU-ZAR-882 will restore optimal safety buffer.`;
-      } else if (lower.includes('rent') || lower.includes('overdue') || lower.includes('compliance')) {
-        answer = `<strong>Tenant Lease & Rent Compliance Summary:</strong><br>
-        • <strong>Compliant Stores:</strong> 46 of 48 active stores have satisfied all lease conditions.<br>
-        • <strong>Overdue Rents (2):</strong> Zara Flagship (${this.formatCurrency(14500.00)}, Unit #204) and Nike Experience (Unit #112) have overdue advisories dispatched.<br>
-        • <strong>Occupancy Rate:</strong> Current lease occupancy is at 96% with optimal tenant retention.`;
+        • <strong>Purchase Order Status:</strong> PO #8942 (${this.formatCurrency(14250.00)}) is currently <em>Pending</em> approval for Inditex supplier dispatch. Approving this PO will restore optimal safety buffer within 3 business days.`;
+      } else if (lower.includes('overdue') || (lower.includes('po') && lower.includes('summarize')) || (lower.includes('purchase order') && lower.includes('summarize'))) {
+        answer = `<strong>Today's Purchase Order Audit & Exceptions:</strong><br>
+        • <strong>Pending POs (2):</strong> PO-8942 (Zara Flagship, ${this.formatCurrency(14250.00)}) and PO-8940 (Nike Experience, ${this.formatCurrency(16100.00)}) are awaiting approval.<br>
+        • <strong>Delivered This Week (2):</strong> PO-8941 (${this.formatCurrency(18400.00)}) and PO-8939 (${this.formatCurrency(8950.00)}) cleared dock receiving with 100% SKU match.<br>
+        • <strong>Overdue Status:</strong> Zero POs are currently past contractual SLA. Next vendor lead-time window is Nov 08, 2026.`;
       } else if (lower.includes('trend') || lower.includes('analyze') || lower.includes('quarterly')) {
         answer = `<strong>Quarterly Performance & Trend Insights (Q3-Q4 Telemetry):</strong><br>
         • <strong>Revenue Velocity:</strong> Gross mall transaction volume grew <strong>+18.4%</strong> QoQ (${this.formatCurrency(getTotalGrossSales(MallState.tenants))} today).<br>
@@ -1548,7 +1552,7 @@ window.MallApp = {
         answer = `<strong>Retail Tenant Autonomous Inventory Proposal Draft:</strong><br>
         <strong>Document Title:</strong> MallMatrix Continuous Buffer Management Framework<br>
         <strong>Target Partner:</strong> New Retail Tenant Onboarding<br><br>
-        • <strong>Executive Overview:</strong> Integrated sales telemetry eliminates store stockouts by up to 94% using real-time buffer safety thresholds.<br>
+        • <strong>Executive Overview:</strong> Integrated POS telemetry eliminates store stockouts by up to 94% using real-time buffer safety thresholds.<br>
         • <strong>Service Level Agreement (SLA):</strong> Automated batch PO dispatch initiates within 120 seconds of threshold breach.<br>
         • <strong>Operational Tier:</strong> Mesh Autonomous Inflow (automated dock receiving, supplier webhook sync, and Copilot trend tracking).<br>
         • <strong>Immediate Action:</strong> Proposal packet draft ready for export to PDF / Tenant Management review.`;
@@ -1557,17 +1561,17 @@ window.MallApp = {
         <strong>Source File:</strong> <code>MallMatrix-Operations-Audit-Nov2026.pdf</code><br><br>
         • <strong>Lease & Safety Compliance:</strong> 46 of 48 tenant retail stores maintain 100% adherence.<br>
         • <strong>Critical Replenishment:</strong> 4 SKUs require immediate supplier reordering (Zara Wool Overcoat, Apple 30W Adapter, Nike Pegasus 41, Sephora Serum).<br>
-        • <strong>Financial Health:</strong> Today's Gross Mall Volume is <strong>${this.formatCurrency(getTotalGrossSales(MallState.tenants))}</strong> with 99.8% system uptime.<br>
+        • <strong>Financial Health:</strong> Today's Gross Mall Volume is <strong>${this.formatCurrency(getTotalGrossSales(MallState.tenants))}</strong> with 99.8% POS uptime.<br>
         • <strong>Receiving Dock Schedule:</strong> Next multi-vendor dock window opens tomorrow at 06:00 AM EST (Zones A & B).`;
       } else if (lower.includes('urgent') || lower.includes('low stock')) {
         answer = `<strong>Urgent Restock Advisory:</strong><br>
         • <strong>Zara Wool Overcoat</strong> (SKU-ZAR-882): 4 units remaining (Buffer: 25)<br>
         • <strong>Apple 30W Adapter</strong> (SKU-APP-102): 8 units remaining (Buffer: 50)<br>
         • <strong>Nike Pegasus 41</strong> (SKU-NIK-401): 6 units remaining (Buffer: 30)<br><br>
-        Recommendation: Restock low buffer inventory items now to secure availability.`;
+        Recommendation: Run automated batch reorder now to secure Friday delivery.`;
       } else if (lower.includes('zara')) {
         answer = `<strong>Zara Flagship (#204):</strong><br>
-        Current sales velocity is 18 units/day. Restock advisory is active for 75 units to maintain safety buffer.`;
+        Current sales velocity is 18 units/day. PO #8942 has been generated for 75 units (${this.formatCurrency(14250.00)} total) and is currently <em>Pending</em> for vendor dispatch.`;
       } else if (lower.includes('food') || lower.includes('dining')) {
         answer = `<strong>Food Court Demand Projection:</strong><br>
         Weekend mall footfall is expected to increase by +35%. Coffee beans and fresh perishables are scheduled for early Friday dock delivery. Compliance score is 96%.`;
@@ -1785,33 +1789,69 @@ window.MallApp = {
     }
   },
 
-  confirmRestockFromDrawer() {
+  createPOFromDrawer() {
     if (!this._activeRestockSku) return;
     const p = MallState.products.find(item => item.sku === this._activeRestockSku);
     if (!p) return;
 
     const qtyInput = document.getElementById('invDrawerQty');
+    const vendorSelect = document.getElementById('invDrawerVendor');
     const qty = parseInt(qtyInput ? qtyInput.value : 0, 10);
 
     if (isNaN(qty) || qty <= 0) {
-      this.showToast('Please enter a valid restock quantity (at least 1 unit).', 'info');
+      this.showToast('Please enter a valid reorder quantity (at least 1 unit).', 'info');
       return;
     }
 
-    p.stock = (Number(p.stock) || 0) + qty;
-    this.saveProducts();
+    const vendor = vendorSelect ? vendorSelect.value : `${p.tenant} Logistics Hub`;
+    const totalCost = qty * p.price;
+    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + 3);
+    const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Add new PO to Reordering page list with status "Pending" and rich details
+    const newPO = {
+      id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+      supplier: vendor,
+      vendorContact: `${vendor} Direct Dispatch (${vendor.toLowerCase().replace(/[^a-z]/g, '')}@mallmatrix-b2b.com)`,
+      leadTime: '3 business days',
+      items: `${qty}x ${p.name}`,
+      tenant: `${p.tenant} (${p.unit})`,
+      unit: p.unit,
+      value: totalCost,
+      status: 'Pending',
+      reason: `Triggered: stock ${p.stock} < min buffer ${p.minBuffer}`,
+      createdDate: nowStr,
+      expectedDelivery: `${expDateStr} (3 days)`,
+      timeline: {
+        created: nowStr,
+        approved: null,
+        shipped: null,
+        delivered: null
+      },
+      lineItems: [
+        { name: p.name, sku: p.sku, qty: qty, price: p.price, subtotal: totalCost }
+      ],
+      rejectionReason: null
+    };
+
+    MallState.purchaseOrders.unshift(newPO);
+    this.savePurchaseOrders();
 
     // Close the drawer
     this.closeRestockDrawer();
 
-    // Re-render Inventory view
+    // Re-render Reordering list and Inventory view
+    this.renderPurchaseOrders();
     this.renderInventoryTable();
 
-    this.showToast(`Restocked ${qty} units for ${p.name}! (New stock: ${p.stock})`, 'success');
+    // Show exact success toast requested: "PO created for <product>"
+    this.showToast(`PO created for ${p.name}`, 'success');
   },
 
-  createPOFromDrawer() {
-    this.confirmRestockFromDrawer();
+  confirmRestockFromDrawer() {
+    this.createPOFromDrawer();
   },
 
   // BATCH REORDER CONFIRMATION MODAL & EXECUTION
@@ -1874,7 +1914,7 @@ window.MallApp = {
       body.innerHTML = `
         <div class="batch-modal-summary-grid">
           <div class="batch-modal-kpi">
-            <span class="batch-modal-kpi-label">Restock Items</span>
+            <span class="batch-modal-kpi-label">POs to Generate</span>
             <div class="batch-modal-kpi-val" style="color: var(--accent);">${lowStockItems.length} Orders</div>
           </div>
           <div class="batch-modal-kpi">
@@ -2056,7 +2096,7 @@ window.MallApp = {
     // 3. Orchestrator Summary strip
     const orchTriggersEl = document.getElementById('orchReplenishTriggersVal');
     if (orchTriggersEl) {
-      orchTriggersEl.textContent = `${stats.lowCount} Alerts`;
+      orchTriggersEl.textContent = `${stats.poInFlight} Auto-POs`;
     }
     const orchBreachesEl = document.getElementById('orchBufferBreachesVal');
     if (orchBreachesEl) {
@@ -2131,7 +2171,14 @@ window.MallApp = {
     const staffCoverageEl = document.getElementById('staffAgentCoverage');
     if (staffCoverageEl) staffCoverageEl.textContent = `${stats.shiftCoverage}%`;
 
-                            
+    // Agent 5: Reorder Agent
+    const reorderTransitEl = document.getElementById('reorderAgentTransit');
+    if (reorderTransitEl) reorderTransitEl.textContent = `${stats.poInTransit} POs`;
+    const reorderApprovalsEl = document.getElementById('reorderAgentApprovals');
+    if (reorderApprovalsEl) reorderApprovalsEl.textContent = `${stats.poPending} POs`;
+    const reorderLeadEl = document.getElementById('reorderAgentLeadTime');
+    if (reorderLeadEl) reorderLeadEl.textContent = `${stats.avgLeadDays}d`;
+
     // 6. Estimated Retail Spending in Orchestrator summary
     const orchSpendingEl = document.getElementById('orchEstimatedSpendingVal');
     if (orchSpendingEl) {
@@ -2655,7 +2702,7 @@ window.MallApp = {
       }
     }
 
-    
+    // Store filtered POs and render export button
     this._currentFilteredPOs = orders;
     this.renderReorderExportButton();
 
@@ -3574,7 +3621,7 @@ window.MallApp = {
         turnoverClass = 'turnover-amber';
       }
 
-      // Terminal status dot
+      // POS status dot
       let dotClass = 'dot-online';
       let statusLabel = 'Online';
       if (t.posStatus === 'delayed') {
@@ -3807,7 +3854,7 @@ window.MallApp = {
 
       <div class="tenant-stat-card">
         <div class="tenant-stat-card-header">
-          <span class="tenant-stat-label">Online</span>
+          <span class="tenant-stat-label">POS Online</span>
           <span class="tenant-stat-badge badge-success">Optimal</span>
         </div>
         <div class="tenant-stat-number" style="color: var(--success);">${posOnline}</div>
@@ -3816,7 +3863,7 @@ window.MallApp = {
 
       <div class="tenant-stat-card ${posOffline > 0 ? 'alert-danger' : ''}">
         <div class="tenant-stat-card-header">
-          <span class="tenant-stat-label">Offline</span>
+          <span class="tenant-stat-label">POS Offline</span>
           <span class="tenant-stat-badge ${posOffline > 0 ? 'badge-danger' : 'badge-success'}">
             ${posOffline > 0 ? 'Requires Action' : 'All Connected'}
           </span>
@@ -4168,7 +4215,7 @@ window.MallApp = {
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
-              <span>Register offline since ${t.offlineSince || '14:20'}. Sales may be missing.</span>
+              <span>POS offline since ${t.offlineSince || '14:20'}. Sales may be missing.</span>
             </div>
           ` : ''}
 
@@ -4199,7 +4246,7 @@ window.MallApp = {
           <div class="tenant-card-footer">
             <div class="tenant-footer-pos">
               <span class="tenant-dot ${dotClass}"></span>
-              <span>Store synced ${this.escapeHTML(t.lastSync || 'Just now')}</span>
+              <span>POS synced ${this.escapeHTML(t.lastSync || 'Just now')}</span>
             </div>
             <div>Lease ends ${this.escapeHTML(t.leaseEnd || 'N/A')}</div>
           </div>
@@ -4243,7 +4290,7 @@ window.MallApp = {
             <th onclick="MallApp.sortTenantTable('category')" title="Sort by Category">Category</th>
             <th onclick="MallApp.sortTenantTable('stock')" title="Sort by Stock">Active SKUs</th>
             <th onclick="MallApp.sortTenantTable('sales')" title="Sort by Sales">Sales Today</th>
-            <th onclick="MallApp.sortTenantTable('pos')" title="Sort by Register Status">Terminal Sync</th>
+            <th onclick="MallApp.sortTenantTable('pos')" title="Sort by POS Status">POS Sync</th>
             <th onclick="MallApp.sortTenantTable('lease')" title="Sort by Lease End">Lease Ends</th>
             <th>Status</th>
             <th style="text-align: right;">Actions</th>
@@ -4539,7 +4586,7 @@ window.MallApp = {
     const isExpiring = !isOffline && (store.status === 'Lease Expiring' || this.isLeaseExpiringSoon(store.leaseEnd));
     let badgeHtml = `<span class="status-pill pill-delivered">Active Lease</span>`;
     if (isOffline) {
-      badgeHtml = `<span class="status-pill pill-cancelled">Offline</span>`;
+      badgeHtml = `<span class="status-pill pill-cancelled">POS Offline</span>`;
     } else if (isExpiring) {
       badgeHtml = `<span class="status-pill pill-delayed">Lease Expiring Soon</span>`;
     }
@@ -4616,10 +4663,10 @@ window.MallApp = {
         </div>
       </div>
 
-      <!-- SECTION 3: STORE TELEMETRY & HARDWARE -->
+      <!-- SECTION 3: POS TELEMETRY & HARDWARE -->
       <div class="tenant-drawer-section">
         <div class="tenant-drawer-section-title">
-          <span>Store Hardware & Telemetry Health</span>
+          <span>POS Hardware & Telemetry Health</span>
           <span style="font-size: 0.72rem; color: var(--text-muted);">${store.terminals || 4} Active Terminals</span>
         </div>
         ${isOffline ? `
@@ -4629,7 +4676,7 @@ window.MallApp = {
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <span>Store terminal stream offline since ${store.offlineSince || '14:20'}. Telemetry packets queued locally.</span>
+            <span>POS terminal stream offline since ${store.offlineSince || '14:20'}. Telemetry packets queued locally.</span>
           </div>
         ` : ''}
         <div class="tenant-drawer-kpi-grid">
@@ -4792,7 +4839,7 @@ window.MallApp = {
       { key: 'salesAmount', label: 'Sales Today', format: v => this.formatCurrency(v), excelType: 'number' },
       { key: 'unitsSold', label: 'Units Sold', excelType: 'number' },
       { key: 'stockHealth', label: 'Stock Health %', format: v => `${v}%`, excelType: 'number' },
-      { key: 'posStatus', label: 'Register Status', format: v => String(v || '').toUpperCase() },
+      { key: 'posStatus', label: 'POS Status', format: v => String(v || '').toUpperCase() },
       { key: 'lastSync', label: 'Last Sync' },
       { key: 'status', label: 'Status' },
       { key: 'leaseStart', label: 'Lease Start' },
@@ -5226,7 +5273,7 @@ window.MallApp = {
   getSalesExportConfig() {
     return {
       moduleKey: 'sales',
-      moduleTitle: 'Sales Analytics',
+      moduleTitle: 'Sales & POS Analytics',
       getData: () => this.getCalculatedSalesRows(),
       getAllData: () => this.getCalculatedSalesRows(),
       columns: [
@@ -5253,7 +5300,7 @@ window.MallApp = {
         },
         {
           key: 'posStatus',
-          label: 'Register Status',
+          label: 'POS Status',
           format: val => String(val || 'online').toUpperCase()
         }
       ],
@@ -5310,8 +5357,8 @@ window.MallApp = {
         { key: 'salesAmount', label: 'Sales Today', format: val => this.formatCurrency(val), excelType: 'number' },
         { key: 'unitsSold', label: 'Units Sold', excelType: 'number' },
         { key: 'stockHealth', label: 'Stock Health %', format: val => `${val}%`, excelType: 'number' },
-        { key: 'posStatus', label: 'Register Status', format: val => String(val || '').toUpperCase() },
-        { key: 'lastSync', label: 'Last Sync' },
+        { key: 'posStatus', label: 'POS Status', format: val => String(val || '').toUpperCase() },
+        { key: 'lastSync', label: 'Last POS Sync' },
         { key: 'status', label: 'Status' },
         { key: 'leaseEnd', label: 'Lease Expiration' },
         { key: 'monthlyRent', label: 'Monthly Rent', format: val => this.formatCurrency(val), excelType: 'number' },
@@ -5603,6 +5650,7 @@ window.MallApp = {
     } else {
       let config = null;
       if (viewName === 'inventory') config = this.getInventoryExportConfig();
+      else if (viewName === 'reorder') config = this.getReorderExportConfig();
       else if (viewName === 'sales') config = this.getSalesExportConfig();
       else if (viewName === 'staff') config = this.getStaffExportConfig();
       else if (viewName === 'tenants') config = this.getTenantsExportConfig();
@@ -5634,7 +5682,16 @@ window.MallApp = {
           <span>Add SKU Product</span>
         </button>
       `;
-
+    } else if (viewName === 'reorder') {
+      primaryWrap.innerHTML = `
+        <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.openBatchReorderModal()" aria-label="Batch Reorder All Low Stock">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-.57-8.38l5.67-5.67"></path>
+          </svg>
+          <span>Batch Reorder All Low Stock</span>
+        </button>
+      `;
     } else if (viewName === 'staff') {
       primaryWrap.innerHTML = `
         <button type="button" class="btn-header-primary-action" id="headerPrimaryActionBtn" onclick="MallApp.showToast('Staff schedule dispatch active', 'info')" aria-label="Schedule Staff">
@@ -5721,10 +5778,17 @@ window.MallApp = {
           lastExport: getLastExported('inventory'),
           iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
         },
-
+        {
+          key: 'reorder',
+          title: 'Purchase Orders',
+          desc: 'Safety stock replenishment queue, supplier SLAs, approval audit logs, and lead times.',
+          count: `${MallState.purchaseOrders.length} Orders`,
+          lastExport: getLastExported('reorder'),
+          iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`
+        },
         {
           key: 'sales',
-          title: 'Sales Analytics',
+          title: 'Sales & POS Analytics',
           desc: `Store revenue, units sold, turnover velocity, and terminal status (${this._exportDateRange || 'today'}).`,
           count: `${calculatedSalesCount} Stores`,
           lastExport: getLastExported('sales'),
@@ -5741,7 +5805,7 @@ window.MallApp = {
         {
           key: 'tenants',
           title: 'Tenant Stores Directory',
-          desc: 'Retail tenants, assigned unit locations, managers, contact details, and terminal link status.',
+          desc: 'Retail tenants, assigned unit locations, managers, contact details, and POS link status.',
           count: `${MallState.tenants.length} Tenants`,
           lastExport: getLastExported('tenants'),
           iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
@@ -5957,7 +6021,7 @@ window.MallApp = {
           summaryRow: this.getReorderExportConfig().getSummaryRow(poRows)
         },
         {
-          name: 'Store Sales Data',
+          name: 'Store Sales POS',
           rows: salesRows,
           columns: this.getSalesExportConfig().columns,
           summaryRow: this.getSalesExportConfig().getSummaryRow(salesRows)
@@ -6216,7 +6280,7 @@ window.MallApp = {
           </div>
           <div class="inline-error-content">
             <strong class="inline-error-title">Data Synchronization Error</strong>
-            <p class="inline-error-msg">${this.escapeHTML(message || 'Failed to stream live retail telemetry and sales transactions.')}</p>
+            <p class="inline-error-msg">${this.escapeHTML(message || 'Failed to stream live retail telemetry and POS transactions.')}</p>
           </div>
         </div>
         <button type="button" class="btn-error-retry" onclick="MallApp.retryDataLoad()">
@@ -6247,7 +6311,7 @@ window.MallApp = {
   },
 
   simulateError() {
-    this.showErrorBanner('Failed to fetch real-time transaction telemetry from tenant gateways (Network timeout).');
+    this.showErrorBanner('Failed to fetch real-time POS transaction telemetry from tenant gateways (Network timeout).');
     this.showToast('Simulated data error triggered. Click "Retry" on the banner to reconnect.', 'error');
   },
 
@@ -6332,7 +6396,8 @@ window.MallApp = {
     const navActions = [
       { id: 'nav-dash', label: 'Go to Dashboard', sub: 'Overview, KPIs & telemetry stream', view: 'dashboard', icon: '📊' },
       { id: 'nav-inv', label: 'Go to Inventory', sub: 'Browse SKUs, buffer thresholds & stock levels', view: 'inventory', icon: '📦' },
-      { id: 'nav-sales', label: 'Go to Manage Sales', sub: 'Retail sales velocity & turnover analytics', view: 'sales', icon: '💰' },
+      { id: 'nav-reorder', label: 'Go to Reordering System', sub: 'Automated POs & procurement engine', view: 'reorder', icon: '🔄' },
+      { id: 'nav-sales', label: 'Go to Manage Sales', sub: 'Retail POS velocity & turnover analytics', view: 'sales', icon: '💰' },
       { id: 'nav-staff', label: 'Go to Staff Management', sub: 'Floor auditors & shift rosters', view: 'staff', icon: '👥' },
       { id: 'nav-tenants', label: 'Go to Tenant Stores', sub: 'Mall directory & lease tracking', view: 'tenants', icon: '🏬' },
       { id: 'nav-export', label: 'Open Data Export Center', sub: 'Generate Excel, PDF & CSV datasets', view: 'export', icon: '📥' },
@@ -6414,7 +6479,32 @@ window.MallApp = {
       });
     }
 
-
+    // 4. Purchase Orders
+    const matchedPOs = MallState.purchaseOrders.filter(po =>
+      !lowerQ ? false : (
+        po.id.toLowerCase().includes(lowerQ) ||
+        po.supplier.toLowerCase().includes(lowerQ) ||
+        po.items.toLowerCase().includes(lowerQ) ||
+        po.status.toLowerCase().includes(lowerQ)
+      )
+    );
+    if (matchedPOs.length) {
+      sectionsHtml += `<div class="cmd-section-label">Purchase Orders (${matchedPOs.length})</div>`;
+      matchedPOs.slice(0, 3).forEach(po => {
+        sectionsHtml += `
+          <div class="cmd-result-item" onclick="MallApp.navigateRoute('/reordering'); MallApp.openPODetailDrawer('${po.id}'); MallApp.closeCommandPalette();">
+            <div class="cmd-item-left">
+              <span class="cmd-item-icon">📋</span>
+              <div>
+                <div class="cmd-item-title">${this.escapeHTML(po.id)}: ${this.escapeHTML(po.supplier)}</div>
+                <div class="cmd-item-sub">${this.escapeHTML(po.items)} • ${this.formatCurrency(po.value)} • ${po.status}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">${po.status}</span>
+          </div>
+        `;
+      });
+    }
 
     // 5. Staff
     const matchedStaff = MallState.staff.filter(s =>
@@ -6502,7 +6592,22 @@ window.MallApp = {
       });
     });
 
-
+    // Pending PO Approvals
+    const pendingPOs = MallState.purchaseOrders.filter(po => po.status === 'Pending');
+    pendingPOs.forEach(po => {
+      list.push({
+        id: `notif-po-${po.id}`,
+        type: 'po',
+        title: `PO Awaiting Approval: ${po.id}`,
+        desc: `${po.supplier} (${po.items}) totaling ${this.formatCurrency(po.value)}. Sign-off required.`,
+        time: '45m ago',
+        unread: !this._readNotifications?.has(`notif-po-${po.id}`),
+        action: () => {
+          this.switchView('reorder');
+          this.openPODetailDrawer(po.id);
+        }
+      });
+    });
 
     return list;
   },
@@ -7237,7 +7342,7 @@ window.MallApp = {
           </div>
           <div class="profile-stat-box">
             <span class="profile-stat-num">${(profile.stats?.posApproved || 89).toLocaleString()}</span>
-            <span class="profile-stat-label">Audits logged</span>
+            <span class="profile-stat-label">POs approved</span>
           </div>
           <div class="profile-stat-box">
             <span class="profile-stat-num">${(profile.stats?.reportsExported || 34).toLocaleString()}</span>
@@ -7279,9 +7384,9 @@ window.MallApp = {
             <span class="profile-metric-helper">+12% vs last month</span>
           </div>
           <div class="profile-metric-card">
-            <span class="profile-metric-label">Audits Logged</span>
+            <span class="profile-metric-label">POs Approved</span>
             <span class="profile-metric-val">${(profile.stats?.posApproved || 89).toLocaleString()}</span>
-            <span class="profile-metric-helper">Compliance active</span>
+            <span class="profile-metric-helper">5 pending review</span>
           </div>
           <div class="profile-metric-card">
             <span class="profile-metric-label">Reports Exported</span>
@@ -8399,7 +8504,7 @@ window.MallApp = {
               <label style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);">
                 <div>
                   <div style="font-size: 0.86rem; font-weight: 600; color: var(--text);">Daily Operations Digest</div>
-                  <div style="font-size: 0.74rem; color: var(--text-muted);">Morning summary of consolidated turnover and store feeds</div>
+                  <div style="font-size: 0.74rem; color: var(--text-muted);">Morning summary of consolidated turnover and POS feeds</div>
                 </div>
                 <input type="checkbox" id="notif_daily" ${notifs.dailySummary?.inApp ? 'checked' : ''} ${!isNotifEditing ? 'disabled' : ''} style="accent-color: var(--accent); width: 18px; height: 18px;">
               </label>

@@ -22,7 +22,7 @@ export const DEFAULT_PROFILE = {
   state: 'California',
   pinCode: '90210',
   country: 'United States',
-  bio: 'Head of mall retail operations, stock telemetry mesh, and multi-tenant compliance orchestration.',
+  bio: 'Head of mall retail operations, stock telemetry mesh, automated supplier replenishments, and multi-tenant compliance orchestration.',
 
   // Work Details (Enterprise Role & Org)
   employeeId: 'EMP-8042',
@@ -36,9 +36,10 @@ export const DEFAULT_PROFILE = {
   accessLevel: 'Admin',
   permissions: [
     { id: 'inv', name: 'Inventory', desc: 'SKU creation, stock audit, buffer threshold adjustments', granted: true },
-    { id: 'sales', name: 'Sales', desc: 'Turnover reports, revenue analytics, store telemetry streams', granted: true },
+    { id: 'reorder', name: 'Reordering', desc: 'PO approval, vendor dispatch, batch reorder pipelines', granted: true },
+    { id: 'sales', name: 'Sales', desc: 'Turnover reports, revenue analytics, POS telemetry streams', granted: true },
     { id: 'staff', name: 'Staff', desc: 'Shift scheduling, compliance tracking, auditor duty rosters', granted: true },
-    { id: 'tenants', name: 'Tenants', desc: 'Store directory, onboarding leases, store telemetry check', granted: true },
+    { id: 'tenants', name: 'Tenants', desc: 'Store directory, onboarding leases, POS telemetry check', granted: true },
     { id: 'export', name: 'Export', desc: 'Full data snapshots, Excel/PDF multi-format downloads', granted: true }
   ],
 
@@ -58,7 +59,7 @@ export const DEFAULT_PROFILE = {
   lastLogin: '11 Nov 2026, 17:08',
   stats: {
     ordersHandled: 1420,
-    posApproved: 89, // Audits Logged
+    posApproved: 89,
     reportsExported: 34
   },
 
@@ -92,6 +93,7 @@ export const DEFAULT_PROFILE = {
     defaultLanding: 'Dashboard',
     notifications: {
       lowStockAlerts: { email: true, inApp: true, sms: false },
+      poApprovals: { email: true, inApp: true, sms: true },
       overdueRents: { email: true, inApp: true, sms: false },
       dailySummary: { email: false, inApp: true, sms: false }
     }
@@ -99,12 +101,12 @@ export const DEFAULT_PROFILE = {
 
   // Activity Timeline
   activities: [
-    { id: 1, type: 'audit', title: 'Restocked Wool Overcoat', detail: 'Direct stock replenishment for Zara Flagship (75 units)', time: '10 mins ago', date: 'Today, 17:35', tag: 'Inventory' },
+    { id: 1, type: 'po', title: 'Approved PO-8942', detail: 'Bulk restock for Nike Store (Valuation: $14,250)', time: '10 mins ago', date: 'Today, 17:35', tag: 'Procurement' },
     { id: 2, type: 'export', title: 'Exported Inventory Report', detail: 'Downloaded full SKU catalog as Excel XLSX', time: '1 hour ago', date: 'Today, 16:42', tag: 'Export' },
     { id: 3, type: 'sku', title: 'Added SKU-AUD-109', detail: 'Created new Wireless Noise Cancelling Headset', time: '3 hours ago', date: 'Today, 14:10', tag: 'Inventory' },
     { id: 4, type: 'tenant', title: 'Updated Lease Terms', detail: 'Extended Apple Store floor agreement to 2028', time: 'Yesterday', date: '10 Nov 2026, 16:15', tag: 'Compliance' },
     { id: 5, type: 'security', title: 'Security Audit Verified', detail: 'Passed autonomous agent synchronicity mesh checks', time: '2 days ago', date: '09 Nov 2026, 11:00', tag: 'Security' },
-    { id: 6, type: 'audit', title: 'Buffer Compliance Audit', detail: 'Safety buffer checked for Zara Flagship', time: '3 days ago', date: '08 Nov 2026, 09:30', tag: 'Operations' },
+    { id: 6, type: 'po', title: 'Triggered automated PO-8941', detail: 'Safety buffer breached for Zara Flagship', time: '3 days ago', date: '08 Nov 2026, 09:30', tag: 'Procurement' },
     { id: 7, type: 'staff', title: 'Updated Shift Duty Roster', detail: 'Assigned 8 floor specialists to weekend duty', time: '4 days ago', date: '07 Nov 2026, 14:00', tag: 'Operations' },
     { id: 8, type: 'export', title: 'Exported Tenant Summary PDF', detail: 'Sent 48 stores directory audit to mall leadership', time: '5 days ago', date: '06 Nov 2026, 17:45', tag: 'Export' },
     { id: 9, type: 'tenant', title: 'Onboarded L’Oréal Cosmetics', detail: 'Configured Floor 1 unit #108 initial setup', time: '6 days ago', date: '05 Nov 2026, 11:20', tag: 'Directory' },
