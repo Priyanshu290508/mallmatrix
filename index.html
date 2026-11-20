@@ -1156,20 +1156,13 @@
                   <span class="agent-metric-name">Shift Coverage</span>
                 </div>
               </div>
-              <div class="agent-card-footer">
+                            <div class="agent-card-footer">
                 <span class="agent-cta-text">Inspect Shift Roster</span>
-                <span class="agent-arrow-icon">→</span>
-              </div>
-            </div>
-            </div>
-              <div class="agent-card-footer">
-                <span class="agent-cta-text">Trigger PO Batch</span>
                 <span class="agent-arrow-icon">→</span>
               </div>
             </div>
           </div>
         </div>
-
       </div>
 
       <!-- ======================================================= -->
@@ -1849,7 +1842,157 @@
               <div class="field-error-text" id="prodPriceError"></div>
             </div>
           </div>
-          
+          <div class="modal-footer">
+            <button type="button" class="clean-btn" id="cancelProductModalBtn">Cancel</button>
+            <button type="submit" class="btn-create-order" id="submitProductBtn" disabled
+              style="opacity: 0.5; cursor: not-allowed;">Add Product</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- RESTOCK SIDE DRAWER -->
+    <div class="inv-drawer-backdrop" id="invDrawerBackdrop" onclick="MallApp.closeRestockDrawer()" aria-hidden="true">
+    </div>
+    <aside class="inv-restock-drawer transform transition ease-in-out duration-300" id="invRestockDrawer" role="dialog"
+      aria-modal="true" aria-labelledby="invDrawerTitle" aria-hidden="true" tabindex="-1">
+      <div class="inv-drawer-header">
+        <div>
+          <span class="inv-drawer-kicker">INVENTORY REPLENISHMENT</span>
+          <h3 class="inv-drawer-title" id="invDrawerTitle">Restock Product</h3>
+          <p class="inv-drawer-sku" id="invDrawerSku">SKU-XXX-000</p>
+        </div>
+        <button class="inv-drawer-close" onclick="MallApp.closeRestockDrawer()" aria-label="Close restock drawer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="inv-drawer-body">
+        <!-- PRODUCT SUMMARY CARD -->
+        <div class="inv-drawer-summary-card">
+          <div class="inv-drawer-summary-main">
+            <div>
+              <h4 class="inv-drawer-prod-name" id="invDrawerProdName">Product Name</h4>
+              <div class="inv-drawer-sub-meta">
+                <span class="inv-drawer-sku-badge" id="invDrawerSkuBadge">SKU-000</span>
+                <span class="inv-drawer-tenant-name" id="invDrawerTenant">Tenant Store</span>
+              </div>
+            </div>
+            <div id="invDrawerStatusPill"></div>
+          </div>
+
+          <div class="inv-drawer-stat-row">
+            <div class="inv-drawer-stat">
+              <span class="inv-drawer-stat-label">Current Stock</span>
+              <span class="inv-drawer-stat-val" id="invDrawerCurrentStock">0</span>
+            </div>
+            <div class="inv-drawer-stat">
+              <span class="inv-drawer-stat-label">Min Buffer</span>
+              <span class="inv-drawer-stat-val" id="invDrawerMinBuffer">0</span>
+            </div>
+            <div class="inv-drawer-stat">
+              <span class="inv-drawer-stat-label">Unit Price</span>
+              <span class="inv-drawer-stat-val" id="invDrawerUnitPrice">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESTOCK QUANTITY INPUT WITH +/- STEPPERS -->
+        <div class="inv-drawer-field">
+          <div class="inv-drawer-field-header">
+            <label class="inv-drawer-label" for="invDrawerQty">Restock Quantity</label>
+            <span class="inv-drawer-calc-badge" id="invDrawerFormulaBadge">Suggested: min buffer × 3 - current stock</span>
+          </div>
+          <div class="inv-stepper-wrap">
+            <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(-1)"
+              aria-label="Decrease quantity">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            <input type="number" id="invDrawerQty" class="inv-stepper-input" min="1" value="25"
+              aria-label="Restock quantity">
+            <button type="button" class="inv-stepper-btn" onclick="MallApp.adjustRestockQty(1)"
+              aria-label="Increase quantity">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+          <span class="inv-drawer-hint" id="invDrawerSuggestedNote">Auto-calculated using safety buffer target</span>
+        </div>
+
+        <!-- VENDOR DROPDOWN & LEAD TIME -->
+        <div class="inv-drawer-field">
+          <label class="inv-drawer-label" for="invDrawerVendor">Vendor / Supplier</label>
+          <select id="invDrawerVendor" class="clean-select inv-drawer-select" onchange="MallApp.onDrawerVendorChange()">
+            <option value="Inditex Global Logistics" data-lead="3">Inditex Global Logistics (Express Freight)</option>
+            <option value="Apple Retail Supply Ops" data-lead="2">Apple Retail Supply Ops (Direct Air)</option>
+            <option value="Nike Distribution Hub" data-lead="4">Nike Distribution Hub (Regional Hub)</option>
+            <option value="LVMH Luxury Supply" data-lead="3">LVMH Luxury Supply (Secure Transit)</option>
+            <option value="H&M Supply Chain Services" data-lead="3">H&M Supply Chain Services (Standard Road)</option>
+            <option value="Starbucks Supply Chain EMEA" data-lead="2">Starbucks Supply Chain EMEA (Cold Chain)</option>
+            <option value="MallMatrix Express Delivery" data-lead="1">MallMatrix Express Delivery (Priority Intra-Mall)</option>
+            <option value="Global Consolidated Freight" data-lead="5">Global Consolidated Freight (Bulk Freight)</option>
+          </select>
+        </div>
+
+        <div class="inv-drawer-meta-row">
+          <div class="inv-drawer-meta-item">
+            <span class="inv-drawer-meta-label">Expected Lead Time</span>
+            <div class="inv-drawer-lead-badge" id="invDrawerLeadTime">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span id="invDrawerLeadDays">3 business days</span>
+            </div>
+          </div>
+          <div class="inv-drawer-meta-item">
+            <span class="inv-drawer-meta-label">Restock Channel</span>
+            <div class="inv-drawer-lead-badge" style="background:#F1F5F9; color:#475569;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+              <span>Direct Inventory Restock</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ESTIMATED TOTAL COST CARD -->
+        <div class="inv-drawer-cost-card">
+          <div class="inv-drawer-cost-row">
+            <div class="inv-drawer-cost-detail">
+              <span>Estimated Total Cost</span>
+              <span class="inv-drawer-calc-formula" id="invDrawerCalcFormula">0 units × $0.00</span>
+            </div>
+            <strong class="inv-drawer-total-cost" id="invDrawerCostVal">$0.00</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- DRAWER FOOTER WITH CANCEL & CONFIRM RESTOCK BUTTONS -->
+      <div class="inv-drawer-footer">
+        <button type="button" class="inv-drawer-btn-cancel" onclick="MallApp.closeRestockDrawer()">
+          Cancel
+        </button>
+        <button type="button" class="inv-drawer-btn-create" id="invDrawerSubmitBtn"
+          onclick="MallApp.confirmRestockFromDrawer()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Confirm Restock
+        </button>
+      </div>
+    </aside>
 
     <!-- 3. IMPORT PRODUCTS MODAL -->
     <div class="modal-backdrop" id="importProductsModal" onclick="if(event.target === this) MallApp.closeImportModal()"
