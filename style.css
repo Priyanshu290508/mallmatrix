@@ -11421,3 +11421,449 @@ html.dark .header-mall-select {
   color: var(--text, #1E293B);
   min-width: 200px;
 }
+
+
+/* ========================================================
+   MallMatrix button motion system
+   ======================================================== */
+
+:root {
+  --btn-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --btn-dur: 0.18s;
+}
+
+/* 1. Precise Transitions Replacing "transition: all" */
+.btn-create-order,
+.btn-header-primary-order,
+.btn-header-primary-action,
+.btn-orch-primary,
+.btn-orch-secondary,
+.btn-primary-reorder,
+.btn-table-action,
+.btn-action-restock,
+.btn-action-approve,
+.btn-action-reject,
+.btn-action-ship,
+.btn-action-deliver,
+.btn-action-archive,
+.btn-import-products,
+.btn-export-everything,
+.btn-export-full-report,
+.btn-new-topic,
+.btn-danger-action,
+.btn-clear-history,
+.inv-drawer-btn-create,
+.inv-drawer-btn-cancel,
+.inv-drawer-close-btn,
+.batch-modal-btn-confirm,
+.batch-modal-btn-cancel,
+.modal-close-btn,
+.clean-btn,
+.btn-primary,
+.btn-secondary,
+.btn-download-error-csv,
+.btn-error-retry,
+.btn-export-profile-data,
+.login-submit-btn,
+.export-btn-card-format,
+.floating-copilot-pill,
+.ai-assistant-toggle,
+.pill-btn,
+.datalibrary-export-btn,
+.nav-tab-btn,
+.btn-icon-square {
+  transition: transform var(--btn-dur) var(--btn-ease),
+              box-shadow var(--btn-dur) var(--btn-ease),
+              background-color var(--btn-dur) var(--btn-ease),
+              color var(--btn-dur) var(--btn-ease),
+              border-color var(--btn-dur) var(--btn-ease),
+              opacity var(--btn-dur) var(--btn-ease);
+}
+
+/* 2. Press Effect on :active */
+.btn-create-order:active:not(:disabled):not(.is-loading),
+.btn-header-primary-order:active:not(:disabled):not(.is-loading),
+.btn-header-primary-action:active:not(:disabled):not(.is-loading),
+.btn-orch-primary:active:not(:disabled):not(.is-loading),
+.btn-orch-secondary:active:not(:disabled):not(.is-loading),
+.btn-primary-reorder:active:not(:disabled):not(.is-loading),
+.btn-table-action:active:not(:disabled):not(.is-loading),
+.btn-action-restock:active:not(:disabled):not(.is-loading),
+.btn-action-approve:active:not(:disabled):not(.is-loading),
+.btn-action-reject:active:not(:disabled):not(.is-loading),
+.btn-action-ship:active:not(:disabled):not(.is-loading),
+.btn-action-deliver:active:not(:disabled):not(.is-loading),
+.btn-action-archive:active:not(:disabled):not(.is-loading),
+.btn-import-products:active:not(:disabled):not(.is-loading),
+.btn-export-everything:active:not(:disabled):not(.is-loading),
+.btn-export-full-report:active:not(:disabled):not(.is-loading),
+.btn-new-topic:active:not(:disabled):not(.is-loading),
+.btn-danger-action:active:not(:disabled):not(.is-loading),
+.btn-clear-history:active:not(:disabled):not(.is-loading),
+.inv-drawer-btn-create:active:not(:disabled):not(.is-loading),
+.inv-drawer-btn-cancel:active:not(:disabled):not(.is-loading),
+.inv-drawer-close-btn:active:not(:disabled):not(.is-loading),
+.batch-modal-btn-confirm:active:not(:disabled):not(.is-loading),
+.batch-modal-btn-cancel:active:not(:disabled):not(.is-loading),
+.modal-close-btn:active:not(:disabled):not(.is-loading),
+.clean-btn:active:not(:disabled):not(.is-loading),
+.btn-primary:active:not(:disabled):not(.is-loading),
+.btn-secondary:active:not(:disabled):not(.is-loading),
+.login-submit-btn:active:not(:disabled):not(.is-loading),
+.export-btn-card-format:active:not(:disabled):not(.is-loading),
+.floating-copilot-pill:active:not(:disabled):not(.is-loading),
+.pill-btn:active:not(:disabled):not(.is-loading),
+.datalibrary-export-btn:active:not(:disabled):not(.is-loading),
+.nav-tab-btn:active:not(:disabled):not(.is-loading) {
+  transform: translateY(0) scale(0.97) !important;
+  box-shadow: none !important;
+  transition-duration: 0.08s !important;
+}
+
+/* 3. Keyboard Focus (:focus-visible) */
+.btn-create-order:focus-visible,
+.btn-header-primary-order:focus-visible,
+.btn-header-primary-action:focus-visible,
+.btn-orch-primary:focus-visible,
+.btn-orch-secondary:focus-visible,
+.btn-primary-reorder:focus-visible,
+.btn-table-action:focus-visible,
+.btn-action-restock:focus-visible,
+.btn-action-approve:focus-visible,
+.btn-action-reject:focus-visible,
+.btn-action-ship:focus-visible,
+.btn-action-deliver:focus-visible,
+.btn-action-archive:focus-visible,
+.btn-import-products:focus-visible,
+.btn-export-everything:focus-visible,
+.btn-export-full-report:focus-visible,
+.btn-new-topic:focus-visible,
+.btn-danger-action:focus-visible,
+.btn-clear-history:focus-visible,
+.inv-drawer-btn-create:focus-visible,
+.inv-drawer-btn-cancel:focus-visible,
+.inv-drawer-close-btn:focus-visible,
+.batch-modal-btn-confirm:focus-visible,
+.batch-modal-btn-cancel:focus-visible,
+.modal-close-btn:focus-visible,
+.clean-btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.login-submit-btn:focus-visible,
+.export-btn-card-format:focus-visible,
+.floating-copilot-pill:focus-visible,
+.pill-btn:focus-visible,
+.datalibrary-export-btn:focus-visible,
+.nav-tab-btn:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 3px !important;
+}
+
+/* 4. Shine Sweep on Hover for Primary Violet Buttons */
+.btn-header-primary-order,
+.btn-orch-primary,
+.btn-primary-reorder,
+.btn-create-order,
+.inv-drawer-btn-create,
+.login-submit-btn,
+.btn-header-primary-action {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-header-primary-order::after,
+.btn-orch-primary::after,
+.btn-primary-reorder::after,
+.btn-create-order::after,
+.inv-drawer-btn-create::after,
+.login-submit-btn::after,
+.btn-header-primary-action::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  bottom: -60%;
+  left: -80%;
+  width: 50%;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(20deg);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.btn-header-primary-order:hover:not(:disabled):not(.is-loading)::after,
+.btn-orch-primary:hover:not(:disabled):not(.is-loading)::after,
+.btn-primary-reorder:hover:not(:disabled):not(.is-loading)::after,
+.btn-create-order:hover:not(:disabled):not(.is-loading)::after,
+.inv-drawer-btn-create:hover:not(:disabled):not(.is-loading)::after,
+.login-submit-btn:hover:not(:disabled):not(.is-loading)::after,
+.btn-header-primary-action:hover:not(:disabled):not(.is-loading)::after {
+  opacity: 1;
+  left: 140%;
+  transition: left 0.65s var(--btn-ease), opacity 0.3s ease;
+}
+
+/* 5. Icon Motion */
+/* Rotate + icons 90 degrees on hover */
+.btn-create-order svg,
+.btn-header-primary-order svg,
+.btn-header-primary-action svg,
+.btn-action-restock svg,
+.inv-drawer-btn-create svg {
+  transition: transform var(--btn-dur) var(--btn-ease);
+}
+
+.btn-create-order:hover:not(:disabled) svg,
+.btn-header-primary-order:hover:not(:disabled) svg,
+.btn-action-restock:hover:not(:disabled) svg {
+  transform: rotate(90deg);
+}
+
+/* Slide arrow icons 3px to the right on hover (never rotate download/upload) */
+.btn-with-arrow svg,
+.agent-card-footer:hover .agent-arrow-icon,
+.export-btn-card-format:hover svg,
+.btn-export-profile-data:hover svg {
+  transform: translateX(3px);
+  transition: transform var(--btn-dur) var(--btn-ease);
+}
+
+/* 6. Sidebar Menu Items Motion & Active Indicator */
+.menu-item {
+  position: relative;
+  transition: background-color var(--btn-dur) var(--btn-ease),
+              color var(--btn-dur) var(--btn-ease),
+              box-shadow var(--btn-dur) var(--btn-ease),
+              transform var(--btn-dur) var(--btn-ease);
+}
+
+.menu-item .menu-icon svg {
+  transition: transform var(--btn-dur) var(--btn-ease);
+}
+
+.menu-item:hover:not(.active) .menu-icon svg {
+  transform: translateX(2px);
+}
+
+.menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3.5px;
+  background-color: #FFFFFF;
+  border-radius: 0 4px 4px 0;
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform var(--btn-dur) var(--btn-ease);
+  pointer-events: none;
+}
+
+.menu-item.active::before {
+  transform: scaleY(1);
+}
+
+/* 7. Table Action Buttons: Semantic Colors & Smooth Fill */
+.btn-table-action,
+.btn-action-approve,
+.btn-action-reject,
+.btn-action-ship,
+.btn-action-deliver,
+.btn-action-restock,
+.btn-action-archive {
+  transition: background-color var(--btn-dur) var(--btn-ease),
+              color var(--btn-dur) var(--btn-ease),
+              border-color var(--btn-dur) var(--btn-ease),
+              transform var(--btn-dur) var(--btn-ease),
+              box-shadow var(--btn-dur) var(--btn-ease);
+}
+
+.btn-action-approve:hover:not(:disabled):not(.is-loading) {
+  background-color: #059669 !important;
+  color: #FFFFFF !important;
+  border-color: #059669 !important;
+}
+
+.btn-action-reject:hover:not(:disabled):not(.is-loading) {
+  background-color: var(--danger, #DC2626) !important;
+  color: #FFFFFF !important;
+  border-color: var(--danger, #DC2626) !important;
+}
+
+.btn-action-ship:hover:not(:disabled):not(.is-loading) {
+  background-color: var(--accent) !important;
+  color: #FFFFFF !important;
+  border-color: var(--accent) !important;
+}
+
+.btn-action-deliver:hover:not(:disabled):not(.is-loading) {
+  background-color: #059669 !important;
+  color: #FFFFFF !important;
+  border-color: #059669 !important;
+}
+
+.btn-action-restock:hover:not(:disabled):not(.is-loading) {
+  background-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  border-color: #DC2626 !important;
+}
+
+/* 8. Floating AI Copilot Button Glow & Motion */
+@keyframes copilotGlowLight {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(91, 61, 245, 0.35);
+  }
+  50% {
+    box-shadow: 0 8px 30px rgba(91, 61, 245, 0.7);
+  }
+}
+
+@keyframes copilotGlowDark {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(109, 77, 242, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(109, 77, 242, 0.75);
+  }
+}
+
+.floating-copilot-pill {
+  animation: copilotGlowLight 3s ease-in-out infinite;
+  transition: transform var(--btn-dur) var(--btn-ease),
+              box-shadow var(--btn-dur) var(--btn-ease),
+              opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-copilot-pill:hover {
+  animation-play-state: paused;
+}
+
+.floating-copilot-pill .copilot-sparkle-icon svg {
+  transition: transform 0.3s var(--btn-ease);
+}
+
+.floating-copilot-pill:hover .copilot-sparkle-icon svg {
+  transform: rotate(20deg) scale(1.12);
+}
+
+.floating-copilot-pill.copilot-overlay-hidden,
+body.has-overlay-open .floating-copilot-pill {
+  animation: none !important;
+}
+
+/* Dark Mode Breathing Glow for Floating AI Copilot */
+html.dark .floating-copilot-pill {
+  animation: copilotGlowDark 3s ease-in-out infinite;
+}
+
+html.dark .floating-copilot-pill:hover {
+  animation-play-state: paused;
+}
+
+/* 9. Feedback State Classes (.is-loading, .is-success, .is-error) */
+.is-loading {
+  cursor: wait !important;
+  pointer-events: none !important;
+  opacity: 0.88 !important;
+  position: relative !important;
+}
+
+.is-loading .btn-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 7px;
+  animation: btnSpin 0.75s linear infinite;
+  vertical-align: middle;
+}
+
+.is-loading .btn-spinner svg {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes btnSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.is-success {
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+  color: #FFFFFF !important;
+  pointer-events: none !important;
+  transform: none !important;
+  box-shadow: 0 2px 10px rgba(5, 150, 105, 0.4) !important;
+}
+
+.is-success .btn-success-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 7px;
+  animation: btnTickPop 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  vertical-align: middle;
+}
+
+@keyframes btnTickPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.is-error {
+  background-color: #DC2626 !important;
+  border-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  animation: btnShake 0.45s ease-in-out !important;
+}
+
+@keyframes btnShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.btn-feedback-text {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* 10. Prefers-Reduced-Motion Accessibility Overrides */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .floating-copilot-pill {
+    animation: none !important;
+  }
+
+  .btn-header-primary-order::after,
+  .btn-orch-primary::after,
+  .btn-primary-reorder::after,
+  .btn-create-order::after,
+  .inv-drawer-btn-create::after,
+  .login-submit-btn::after,
+  .btn-header-primary-action::after {
+    display: none !important;
+  }
+
+  .is-loading .btn-spinner {
+    animation: none !important;
+  }
+
+  .is-error {
+    animation: none !important;
+  }
+}

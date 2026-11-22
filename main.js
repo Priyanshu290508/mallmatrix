@@ -23,6 +23,8 @@ import {
   useToast
 } from './src/utils/toast.js';
 
+import { withButtonFeedback } from './src/utils/buttonFeedback.js';
+
 import {
   initialStores,
   initialProducts,
@@ -146,6 +148,19 @@ window.MallState = MallState;
 
 // Global Application Controller
 window.MallApp = {
+  withButtonFeedback,
+  runHealthAudit(e) {
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button')))) || document.getElementById('btnRunHealthAudit');
+    return withButtonFeedback(btn, async () => {
+      await new Promise(r => setTimeout(r, 600));
+      this.showToast('Full Mesh Diagnostic Passed: 48 Stores in Sync', 'success');
+    }, {
+      loadingText: 'Auditing Mesh...',
+      successText: 'Audit Passed',
+      minLoadingMs: 500,
+      successMs: 900
+    });
+  },
   _invSort: { col: null, dir: 'asc' },
   _invPage: 1,
   _invRowsPerPage: 10,
@@ -1735,10 +1750,13 @@ window.MallApp = {
     this.showToast('Issues log downloaded (.csv)', 'info');
   },
 
-  async executeSmartImport() {
+  async executeSmartImport(e) {
     if (!this._importDatasets || this._importDatasets.length === 0) return;
 
-    let hasInr = false;
+    const confirmBtn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button')))) || document.getElementById('btnConfirmImport');
+
+    return withButtonFeedback(confirmBtn, async () => {
+      let hasInr = false;
     for (const ds of this._importDatasets) {
       if (ds.headers && ds.headers.some(h => h.toLowerCase().endsWith('_inr'))) {
         hasInr = true;
@@ -1870,6 +1888,12 @@ window.MallApp = {
 
     await new Promise(r => setTimeout(r, 600));
     this.closeImportModal();
+    }, {
+      loadingText: 'Importing All...',
+      successText: 'Import Complete!',
+      minLoadingMs: 500,
+      successMs: 800
+    });
   },
 
   downloadImportTemplate(e) {
@@ -2505,7 +2529,7 @@ window.MallApp = {
     }
   },
 
-  createPOFromDrawer() {
+  createPOFromDrawer(e) {
     if (!this._activeRestockSku) return;
     const p = MallState.products.find(item => item.sku === this._activeRestockSku);
     if (!p) return;
@@ -2519,55 +2543,66 @@ window.MallApp = {
       return;
     }
 
-    const vendor = vendorSelect ? vendorSelect.value : `${p.tenant} Logistics Hub`;
-    const totalCost = qty * p.price;
-    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const expDate = new Date();
-    expDate.setDate(expDate.getDate() + 3);
-    const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button')))) || document.getElementById('invDrawerSubmitBtn');
 
-    // Add new PO to Reordering page list with status "Pending" and rich details
-    const newPO = {
-      id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
-      supplier: vendor,
-      vendorContact: `${vendor} Direct Dispatch (${vendor.toLowerCase().replace(/[^a-z]/g, '')}@mallmatrix-b2b.com)`,
-      leadTime: '3 business days',
-      items: `${qty}x ${p.name}`,
-      tenant: `${p.tenant} (${p.unit})`,
-      unit: p.unit,
-      value: totalCost,
-      status: 'Pending',
-      reason: `Triggered: stock ${p.stock} < min buffer ${p.minBuffer}`,
-      createdDate: nowStr,
-      expectedDelivery: `${expDateStr} (3 days)`,
-      timeline: {
-        created: nowStr,
-        approved: null,
-        shipped: null,
-        delivered: null
-      },
-      lineItems: [
-        { name: p.name, sku: p.sku, qty: qty, price: p.price, subtotal: totalCost }
-      ],
-      rejectionReason: null
-    };
+    return withButtonFeedback(btn, async () => {
+      const vendor = vendorSelect ? vendorSelect.value : `${p.tenant} Logistics Hub`;
+      const totalCost = qty * p.price;
+      const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const expDate = new Date();
+      expDate.setDate(expDate.getDate() + 3);
+      const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-    MallState.purchaseOrders.unshift(newPO);
-    this.savePurchaseOrders();
+      // Add new PO to Reordering page list with status "Pending" and rich details
+      const newPO = {
+        id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+        supplier: vendor,
+        vendorContact: `${vendor} Direct Dispatch (${vendor.toLowerCase().replace(/[^a-z]/g, '')}@mallmatrix-b2b.com)`,
+        leadTime: '3 business days',
+        items: `${qty}x ${p.name}`,
+        tenant: `${p.tenant} (${p.unit})`,
+        unit: p.unit,
+        value: totalCost,
+        status: 'Pending',
+        reason: `Triggered: stock ${p.stock} < min buffer ${p.minBuffer}`,
+        createdDate: nowStr,
+        expectedDelivery: `${expDateStr} (3 days)`,
+        timeline: {
+          created: nowStr,
+          approved: null,
+          shipped: null,
+          delivered: null
+        },
+        lineItems: [
+          { name: p.name, sku: p.sku, qty: qty, price: p.price, subtotal: totalCost }
+        ],
+        rejectionReason: null
+      };
 
-    // Close the drawer
-    this.closeRestockDrawer();
+      MallState.purchaseOrders.unshift(newPO);
+      this.savePurchaseOrders();
 
-    // Re-render Reordering list and Inventory view
-    this.renderPurchaseOrders();
-    this.renderInventoryTable();
+      await new Promise(r => setTimeout(r, 200));
 
-    // Show exact success toast requested: "PO created for <product>"
-    this.showToast(`PO created for ${p.name}`, 'success');
+      // Close the drawer
+      this.closeRestockDrawer();
+
+      // Re-render Reordering list and Inventory view
+      this.renderPurchaseOrders();
+      this.renderInventoryTable();
+
+      // Show exact success toast requested: "PO created for <product>"
+      this.showToast(`PO created for ${p.name}`, 'success');
+    }, {
+      loadingText: 'Creating PO...',
+      successText: 'PO Created',
+      minLoadingMs: 350,
+      successMs: 700
+    });
   },
 
-  confirmRestockFromDrawer() {
-    this.createPOFromDrawer();
+  confirmRestockFromDrawer(e) {
+    return this.createPOFromDrawer(e);
   },
 
   // BATCH REORDER CONFIRMATION MODAL & EXECUTION
@@ -2692,64 +2727,75 @@ window.MallApp = {
     this.setOverlayOpen(false);
   },
 
-  confirmBatchReorder() {
+  confirmBatchReorder(e) {
     const lowStockItems = MallState.products.filter(p => p.stock <= p.minBuffer);
     if (lowStockItems.length === 0) {
       this.closeBatchReorderModal();
       return;
     }
 
-    let createdCount = 0;
-    let totalVal = 0;
-    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const expDate = new Date();
-    expDate.setDate(expDate.getDate() + 3);
-    const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button')))) || document.getElementById('btnConfirmBatchReorder');
 
-    lowStockItems.forEach(p => {
-      const suggestedQty = Math.max(1, (p.minBuffer * 3) - p.stock);
-      const subtotal = suggestedQty * p.price;
-      totalVal += subtotal;
+    return withButtonFeedback(btn, async () => {
+      let createdCount = 0;
+      let totalVal = 0;
+      const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const expDate = new Date();
+      expDate.setDate(expDate.getDate() + 3);
+      const expDateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-      // Update in-memory stock
-      p.stock += suggestedQty;
+      lowStockItems.forEach(p => {
+        const suggestedQty = Math.max(1, (p.minBuffer * 3) - p.stock);
+        const subtotal = suggestedQty * p.price;
+        totalVal += subtotal;
 
-      // Create new PO with Pending status
-      const newPO = {
-        id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
-        supplier: `${p.tenant} Logistics Hub`,
-        vendorContact: `${p.tenant} Wholesale Dispatch (dispatch@${p.tenant.toLowerCase().replace(/[^a-z]/g, '')}.com)`,
-        leadTime: '3 business days',
-        items: `${suggestedQty}x ${p.name}`,
-        tenant: `${p.tenant} (${p.unit})`,
-        unit: p.unit,
-        value: subtotal,
-        status: 'Pending',
-        reason: `Triggered: stock ${p.stock - suggestedQty} < min buffer ${p.minBuffer}`,
-        createdDate: nowStr,
-        expectedDelivery: `${expDateStr} (3 days)`,
-        timeline: {
-          created: nowStr,
-          approved: null,
-          shipped: null,
-          delivered: null
-        },
-        lineItems: [
-          { name: p.name, sku: p.sku, qty: suggestedQty, price: p.price, subtotal: subtotal }
-        ],
-        rejectionReason: null
-      };
+        // Update in-memory stock
+        p.stock += suggestedQty;
 
-      MallState.purchaseOrders.unshift(newPO);
-      createdCount++;
+        // Create new PO with Pending status
+        const newPO = {
+          id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+          supplier: `${p.tenant} Logistics Hub`,
+          vendorContact: `${p.tenant} Wholesale Dispatch (dispatch@${p.tenant.toLowerCase().replace(/[^a-z]/g, '')}.com)`,
+          leadTime: '3 business days',
+          items: `${suggestedQty}x ${p.name}`,
+          tenant: `${p.tenant} (${p.unit})`,
+          unit: p.unit,
+          value: subtotal,
+          status: 'Pending',
+          reason: `Triggered: stock ${p.stock - suggestedQty} < min buffer ${p.minBuffer}`,
+          createdDate: nowStr,
+          expectedDelivery: `${expDateStr} (3 days)`,
+          timeline: {
+            created: nowStr,
+            approved: null,
+            shipped: null,
+            delivered: null
+          },
+          lineItems: [
+            { name: p.name, sku: p.sku, qty: suggestedQty, price: p.price, subtotal: subtotal }
+          ],
+          rejectionReason: null
+        };
+
+        MallState.purchaseOrders.unshift(newPO);
+        createdCount++;
+      });
+
+      this.saveProducts();
+      this.savePurchaseOrders();
+      this.renderAll();
+
+      await new Promise(r => setTimeout(r, 200));
+      this.closeBatchReorderModal();
+
+      this.showToast(`Batch Reorder confirmed! Created ${createdCount} Purchase Orders (${this.formatCurrency(totalVal)}).`, 'success');
+    }, {
+      loadingText: 'Generating POs...',
+      successText: 'Orders Placed',
+      minLoadingMs: 400,
+      successMs: 700
     });
-
-    this.saveProducts();
-    this.savePurchaseOrders();
-    this.renderAll();
-    this.closeBatchReorderModal();
-
-    this.showToast(`Batch Reorder confirmed! Created ${createdCount} Purchase Orders (${this.formatCurrency(totalVal)}).`, 'success');
   },
 
   generateBatchReorder() {
@@ -3487,7 +3533,7 @@ window.MallApp = {
       if (isPending) {
         actionButtons = `
           <div class="reorder-actions-wrap">
-            <button type="button" class="btn-table-action btn-action-approve" onclick="event.stopPropagation(); MallApp.approvePO('${po.id}')" title="Approve this Purchase Order">
+            <button type="button" class="btn-table-action btn-action-approve" onclick="event.stopPropagation(); MallApp.approvePO('${po.id}', event)" title="Approve this Purchase Order">
               Approve
             </button>
             <button type="button" class="btn-table-action btn-action-reject" onclick="event.stopPropagation(); MallApp.openRejectModal('${po.id}')" title="Reject with comments">
@@ -3498,7 +3544,7 @@ window.MallApp = {
       } else if (isApproved) {
         actionButtons = `
           <div class="reorder-actions-wrap">
-            <button type="button" class="btn-table-action btn-action-ship" onclick="event.stopPropagation(); MallApp.shipPO('${po.id}')" title="Mark as dispatched / in transit">
+            <button type="button" class="btn-table-action btn-action-ship" onclick="event.stopPropagation(); MallApp.shipPO('${po.id}', event)" title="Mark as dispatched / in transit">
               Ship
             </button>
           </div>
@@ -3506,7 +3552,7 @@ window.MallApp = {
       } else if (isShipped) {
         actionButtons = `
           <div class="reorder-actions-wrap">
-            <button type="button" class="btn-table-action btn-action-deliver" onclick="event.stopPropagation(); MallApp.deliverPO('${po.id}')" title="Confirm physical receipt and update inventory">
+            <button type="button" class="btn-table-action btn-action-deliver" onclick="event.stopPropagation(); MallApp.deliverPO('${po.id}', event)" title="Confirm physical receipt and update inventory">
               Deliver
             </button>
           </div>
@@ -3565,78 +3611,99 @@ window.MallApp = {
   },
 
   // PO ACTION HANDLERS WITH TOAST NOTIFICATIONS
-  approvePO(poId) {
-    const po = MallState.purchaseOrders.find(item => item.id === poId);
-    if (!po) return;
+  approvePO(poId, e) {
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button'))));
+    return withButtonFeedback(btn, async () => {
+      await new Promise(r => setTimeout(r, 280));
+      const po = MallState.purchaseOrders.find(item => item.id === poId);
+      if (!po) return;
 
-    po.status = 'Approved';
-    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
-    po.timeline.approved = nowStr;
+      po.status = 'Approved';
+      const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+      po.timeline.approved = nowStr;
 
-    this.savePurchaseOrders();
-    this.renderPurchaseOrders();
+      this.savePurchaseOrders();
+      this.renderPurchaseOrders();
 
-    // If detail drawer is showing this PO, re-render drawer
-    if (this._activeDetailPoId === poId) {
-      this.openPODetailDrawer(poId);
-    }
+      // If detail drawer is showing this PO, re-render drawer
+      if (this._activeDetailPoId === poId) {
+        this.openPODetailDrawer(poId);
+      }
 
-    this.showToast(`Purchase Order ${po.id} approved successfully!`, 'success');
+      this.showToast(`Purchase Order ${po.id} approved successfully!`, 'success');
+    }, {
+      loadingText: 'Approving...',
+      minLoadingMs: 350
+    });
   },
 
-  shipPO(poId) {
-    const po = MallState.purchaseOrders.find(item => item.id === poId);
-    if (!po) return;
+  shipPO(poId, e) {
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button'))));
+    return withButtonFeedback(btn, async () => {
+      await new Promise(r => setTimeout(r, 280));
+      const po = MallState.purchaseOrders.find(item => item.id === poId);
+      if (!po) return;
 
-    po.status = 'Shipped';
-    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
-    po.timeline.shipped = nowStr;
+      po.status = 'Shipped';
+      const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+      po.timeline.shipped = nowStr;
 
-    this.savePurchaseOrders();
-    this.renderPurchaseOrders();
+      this.savePurchaseOrders();
+      this.renderPurchaseOrders();
 
-    if (this._activeDetailPoId === poId) {
-      this.openPODetailDrawer(poId);
-    }
+      if (this._activeDetailPoId === poId) {
+        this.openPODetailDrawer(poId);
+      }
 
-    this.showToast(`Purchase Order ${po.id} marked as Shipped! In transit.`, 'info');
+      this.showToast(`Purchase Order ${po.id} marked as Shipped! In transit.`, 'info');
+    }, {
+      loadingText: 'Shipping...',
+      minLoadingMs: 350
+    });
   },
 
-  deliverPO(poId) {
-    const po = MallState.purchaseOrders.find(item => item.id === poId);
-    if (!po) return;
+  deliverPO(poId, e) {
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button'))));
+    return withButtonFeedback(btn, async () => {
+      await new Promise(r => setTimeout(r, 280));
+      const po = MallState.purchaseOrders.find(item => item.id === poId);
+      if (!po) return;
 
-    po.status = 'Delivered';
-    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
-    po.timeline.delivered = nowStr;
+      po.status = 'Delivered';
+      const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+      po.timeline.delivered = nowStr;
 
-    // Increment delivered stock in MallState.products if lineItems exist
-    let stockChanged = false;
-    if (po.lineItems && po.lineItems.length) {
-      po.lineItems.forEach(item => {
-        const prod = MallState.products.find(p => p.sku === item.sku || p.name === item.name);
-        if (prod) {
-          prod.stock = (Number(prod.stock) || 0) + (Number(item.qty) || 0);
-          stockChanged = true;
-        }
-      });
-    }
-    if (stockChanged) {
-      this.saveProducts();
-      this.renderInventoryTable();
-    }
+      // Increment delivered stock in MallState.products if lineItems exist
+      let stockChanged = false;
+      if (po.lineItems && po.lineItems.length) {
+        po.lineItems.forEach(item => {
+          const prod = MallState.products.find(p => p.sku === item.sku || p.name === item.name);
+          if (prod) {
+            prod.stock = (Number(prod.stock) || 0) + (Number(item.qty) || 0);
+            stockChanged = true;
+          }
+        });
+      }
+      if (stockChanged) {
+        this.saveProducts();
+        this.renderInventoryTable();
+      }
 
-    this.savePurchaseOrders();
-    this.renderPurchaseOrders();
+      this.savePurchaseOrders();
+      this.renderPurchaseOrders();
 
-    if (this._activeDetailPoId === poId) {
-      this.openPODetailDrawer(poId);
-    }
+      if (this._activeDetailPoId === poId) {
+        this.openPODetailDrawer(poId);
+      }
 
-    this.showToast(`Purchase Order ${po.id} delivered! Stock updated.`, 'success');
+      this.showToast(`Purchase Order ${po.id} delivered! Stock updated.`, 'success');
+    }, {
+      loadingText: 'Delivering...',
+      minLoadingMs: 350
+    });
   },
 
   archivePO(poId) {
@@ -3722,7 +3789,7 @@ window.MallApp = {
     this.setOverlayOpen(false);
   },
 
-  confirmRejectPO() {
+  confirmRejectPO(e) {
     if (!this._activeRejectPoId) return;
     const po = MallState.purchaseOrders.find(item => item.id === this._activeRejectPoId);
     if (!po) return;
@@ -3741,21 +3808,29 @@ window.MallApp = {
       return;
     }
 
-    const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    po.status = 'Rejected';
-    po.rejectionReason = comment;
-    if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
-    po.timeline.rejected = nowStr;
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button')))) || document.getElementById('btnConfirmRejectPO');
 
-    this.savePurchaseOrders();
-    this.renderPurchaseOrders();
+    return withButtonFeedback(btn, async () => {
+      await new Promise(r => setTimeout(r, 280));
+      const nowStr = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      po.status = 'Rejected';
+      po.rejectionReason = comment;
+      if (!po.timeline) po.timeline = { created: po.createdDate || nowStr };
+      po.timeline.rejected = nowStr;
 
-    if (this._activeDetailPoId === po.id) {
-      this.openPODetailDrawer(po.id);
-    }
+      this.savePurchaseOrders();
+      this.renderPurchaseOrders();
 
-    this.closeRejectModal();
-    this.showToast(`Purchase Order ${po.id} rejected. Reason: ${comment}`, 'warning');
+      if (this._activeDetailPoId === po.id) {
+        this.openPODetailDrawer(po.id);
+      }
+
+      this.closeRejectModal();
+      this.showToast(`Purchase Order ${po.id} rejected. Reason: ${comment}`, 'warning');
+    }, {
+      loadingText: 'Rejecting...',
+      minLoadingMs: 350
+    });
   },
 
   // 3. PO DETAIL SLIDE-OVER DRAWER (TIMELINE, REASON, VENDOR, ITEMS, TOTAL)
@@ -3968,7 +4043,7 @@ window.MallApp = {
             Reject PO
           </button>
           ${downloadBtnHtml}
-          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.approvePO('${po.id}')">
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.approvePO('${po.id}', event)">
             Approve PO
           </button>
         `;
@@ -3978,7 +4053,7 @@ window.MallApp = {
             Close
           </button>
           ${downloadBtnHtml}
-          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.shipPO('${po.id}')" style="background: var(--accent); color: var(--primary-btn-text);">
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.shipPO('${po.id}', event)" style="background: var(--accent); color: var(--primary-btn-text);">
             Mark as Shipped
           </button>
         `;
@@ -3988,7 +4063,7 @@ window.MallApp = {
             Close
           </button>
           ${downloadBtnHtml}
-          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.deliverPO('${po.id}')" style="background: #10B981;">
+          <button type="button" class="inv-drawer-btn-create" onclick="MallApp.deliverPO('${po.id}', event)" style="background: #10B981;">
             Mark as Delivered
           </button>
         `;
@@ -6552,15 +6627,15 @@ window.MallApp = {
           </div>
 
           <div class="export-card-format-group">
-            <button type="button" class="export-btn-card-format format-csv" onclick="MallApp.exportDataset('${d.key}', 'csv')">
+            <button type="button" class="export-btn-card-format format-csv" onclick="MallApp.exportDataset('${d.key}', 'csv', event)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               CSV
             </button>
-            <button type="button" class="export-btn-card-format format-xlsx" onclick="MallApp.exportDataset('${d.key}', 'xlsx')">
+            <button type="button" class="export-btn-card-format format-xlsx" onclick="MallApp.exportDataset('${d.key}', 'xlsx', event)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
               Excel
             </button>
-            <button type="button" class="export-btn-card-format format-pdf" onclick="MallApp.exportDataset('${d.key}', 'pdf')">
+            <button type="button" class="export-btn-card-format format-pdf" onclick="MallApp.exportDataset('${d.key}', 'pdf', event)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
               PDF
             </button>
@@ -6669,135 +6744,165 @@ window.MallApp = {
     this.showToast(`Export range updated: ${diffDays} days`, 'info');
   },
 
-  exportDataset(moduleKey, format) {
-    let config = null;
-    if (moduleKey === 'inventory') config = this.getInventoryExportConfig();
-    else if (moduleKey === 'reorder') config = this.getReorderExportConfig();
-    else if (moduleKey === 'sales') {
-      config = this.getSalesExportConfig();
-      config.getData = () => this.getCalculatedSalesRows(this._exportDateMultiplier);
-    } else if (moduleKey === 'staff') config = this.getStaffExportConfig();
-    else if (moduleKey === 'tenants') config = this.getTenantsExportConfig();
+  exportDataset(moduleKey, format, e) {
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button'))));
 
-    if (!config) return;
+    return withButtonFeedback(btn, async () => {
+      let config = null;
+      if (moduleKey === 'inventory') config = this.getInventoryExportConfig();
+      else if (moduleKey === 'reorder') config = this.getReorderExportConfig();
+      else if (moduleKey === 'sales') {
+        config = this.getSalesExportConfig();
+        config.getData = () => this.getCalculatedSalesRows(this._exportDateMultiplier);
+      } else if (moduleKey === 'staff') config = this.getStaffExportConfig();
+      else if (moduleKey === 'tenants') config = this.getTenantsExportConfig();
 
-    try {
-      const rows = config.getData();
-      const filename = getExportFilename(moduleKey, format);
-      const summaryRow = config.getSummaryRow ? config.getSummaryRow(rows) : null;
+      if (!config) return;
 
-      if (format === 'csv') {
-        exportToCSV(rows, config.columns, filename, {
-          moduleName: moduleKey,
-          moduleTitle: config.moduleTitle,
-          summaryRow
-        });
-        this.showToast(`${config.moduleTitle} exported as CSV`, 'success');
-      } else if (format === 'xlsx') {
-        exportToExcel({
-          name: config.moduleTitle.substring(0, 31),
-          rows,
-          columns: config.columns,
-          summaryRow
-        }, filename, {
-          moduleName: moduleKey,
-          moduleTitle: config.moduleTitle
-        });
-        this.showToast(`${config.moduleTitle} exported as Excel`, 'success');
-      } else if (format === 'pdf') {
-        exportToPDF(`${config.moduleTitle} Report`, rows, config.columns, filename, {
-          moduleName: moduleKey,
-          moduleTitle: config.moduleTitle,
-          summaryRow
-        });
-        this.showToast(`${config.moduleTitle} exported as PDF`, 'success');
-      }
+      try {
+        const rows = config.getData();
+        const filename = getExportFilename(moduleKey, format);
+        const summaryRow = config.getSummaryRow ? config.getSummaryRow(rows) : null;
 
-      this.renderExportCenter();
-    } catch (err) {
-      console.error('Export dataset failed:', err);
-      this.showToast(`Export failed: ${err.message}`, 'error');
-    }
-  },
-
-  exportEverythingExcel() {
-    try {
-      const filename = getExportFilename('all-modules', 'xlsx');
-      const salesRows = this.getCalculatedSalesRows(this._exportDateMultiplier);
-      const poRows = [...MallState.purchaseOrders];
-      const invRows = [...MallState.products];
-      const staffRows = [...MallState.staff];
-      const tenantRows = [...MallState.tenants];
-
-      const sheets = [
-        {
-          name: 'Inventory Catalog',
-          rows: invRows,
-          columns: this.getInventoryExportConfig().columns
-        },
-        {
-          name: 'Purchase Orders',
-          rows: poRows,
-          columns: this.getReorderExportConfig().columns,
-          summaryRow: this.getReorderExportConfig().getSummaryRow(poRows)
-        },
-        {
-          name: 'Store Sales & Revenue',
-          rows: salesRows,
-          columns: this.getSalesExportConfig().columns,
-          summaryRow: this.getSalesExportConfig().getSummaryRow(salesRows)
-        },
-        {
-          name: 'Staff Directory',
-          rows: staffRows,
-          columns: this.getStaffExportConfig().columns
-        },
-        {
-          name: 'Tenant Stores Directory',
-          rows: tenantRows,
-          columns: this.getTenantsExportConfig().columns
+        if (format === 'csv') {
+          exportToCSV(rows, config.columns, filename, {
+            moduleName: moduleKey,
+            moduleTitle: config.moduleTitle,
+            summaryRow
+          });
+          this.showToast(`${config.moduleTitle} exported as CSV`, 'success');
+        } else if (format === 'xlsx') {
+          exportToExcel({
+            name: config.moduleTitle.substring(0, 31),
+            rows,
+            columns: config.columns,
+            summaryRow
+          }, filename, {
+            moduleName: moduleKey,
+            moduleTitle: config.moduleTitle
+          });
+          this.showToast(`${config.moduleTitle} exported as Excel`, 'success');
+        } else if (format === 'pdf') {
+          exportToPDF(`${config.moduleTitle} Report`, rows, config.columns, filename, {
+            moduleName: moduleKey,
+            moduleTitle: config.moduleTitle,
+            summaryRow
+          });
+          this.showToast(`${config.moduleTitle} exported as PDF`, 'success');
         }
-      ];
 
-      exportToExcel(sheets, filename, {
-        moduleName: 'all-modules',
-        moduleTitle: 'Complete Mall Operations'
-      });
-
-      this.showToast('All 5 MallMatrix modules exported as multi-sheet Excel workbook!', 'success');
-      this.renderExportCenter();
-    } catch (err) {
-      console.error('Export everything failed:', err);
-      this.showToast(`Export failed: ${err.message}`, 'error');
-    }
+        this.renderExportCenter();
+      } catch (err) {
+        console.error('Export dataset failed:', err);
+        this.showToast(`Export failed: ${err.message}`, 'error');
+        throw err;
+      }
+    }, {
+      loadingText: 'Exporting...',
+      successText: 'Downloaded',
+      minLoadingMs: 350,
+      successMs: 700
+    });
   },
 
-  exportFullReportPDF() {
-    try {
-      const salesRows = this.getCalculatedSalesRows(this._exportDateMultiplier);
-      const totalRev = salesRows.reduce((acc, cur) => acc + (cur.calculatedSales || cur.salesAmount), 0);
-      const lowStockCount = MallState.products.filter(p => p.stock <= p.minBuffer).length;
-      const pendingPOCount = MallState.purchaseOrders.filter(p => p.status === 'Pending').length;
-      const staffOnDuty = MallState.staff.filter(s => s.status === 'On Duty').length;
+  exportEverythingExcel(e) {
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button')))) || document.getElementById('exportEverythingBtn');
 
-      const mallData = {
-        totalRevenue: totalRev,
-        lowStockCount,
-        pendingPOCount,
-        staffOnDuty,
-        tenants: salesRows,
-        products: MallState.products,
-        purchaseOrders: MallState.purchaseOrders,
-        staff: MallState.staff
-      };
+    return withButtonFeedback(btn, async () => {
+      try {
+        const filename = getExportFilename('all-modules', 'xlsx');
+        const salesRows = this.getCalculatedSalesRows(this._exportDateMultiplier);
+        const poRows = [...MallState.purchaseOrders];
+        const invRows = [...MallState.products];
+        const staffRows = [...MallState.staff];
+        const tenantRows = [...MallState.tenants];
 
-      exportFullReportToPDF(mallData);
-      this.showToast('Full Mall Operations Report exported as PDF!', 'success');
-      this.renderExportCenter();
-    } catch (err) {
-      console.error('Full report export failed:', err);
-      this.showToast(`Export failed: ${err.message}`, 'error');
-    }
+        const sheets = [
+          {
+            name: 'Inventory Catalog',
+            rows: invRows,
+            columns: this.getInventoryExportConfig().columns
+          },
+          {
+            name: 'Purchase Orders',
+            rows: poRows,
+            columns: this.getReorderExportConfig().columns,
+            summaryRow: this.getReorderExportConfig().getSummaryRow(poRows)
+          },
+          {
+            name: 'Store Sales & Revenue',
+            rows: salesRows,
+            columns: this.getSalesExportConfig().columns,
+            summaryRow: this.getSalesExportConfig().getSummaryRow(salesRows)
+          },
+          {
+            name: 'Staff Directory',
+            rows: staffRows,
+            columns: this.getStaffExportConfig().columns
+          },
+          {
+            name: 'Tenant Stores Directory',
+            rows: tenantRows,
+            columns: this.getTenantsExportConfig().columns
+          }
+        ];
+
+        exportToExcel(sheets, filename, {
+          moduleName: 'all-modules',
+          moduleTitle: 'Complete Mall Operations'
+        });
+
+        this.showToast('All 5 MallMatrix modules exported as multi-sheet Excel workbook!', 'success');
+        this.renderExportCenter();
+      } catch (err) {
+        console.error('Export everything failed:', err);
+        this.showToast(`Export failed: ${err.message}`, 'error');
+        throw err;
+      }
+    }, {
+      loadingText: 'Exporting Excel...',
+      successText: 'Excel Ready',
+      minLoadingMs: 400,
+      successMs: 800
+    });
+  },
+
+  exportFullReportPDF(e) {
+    const btn = (e && (e.currentTarget || (e.target && e.target.closest('button')))) || (typeof window !== 'undefined' && window.event && (window.event.currentTarget || (window.event.target && window.event.target.closest('button')))) || document.getElementById('exportFullReportBtn');
+
+    return withButtonFeedback(btn, async () => {
+      try {
+        const salesRows = this.getCalculatedSalesRows(this._exportDateMultiplier);
+        const totalRev = salesRows.reduce((acc, cur) => acc + (cur.calculatedSales || cur.salesAmount), 0);
+        const lowStockCount = MallState.products.filter(p => p.stock <= p.minBuffer).length;
+        const pendingPOCount = MallState.purchaseOrders.filter(p => p.status === 'Pending').length;
+        const staffOnDuty = MallState.staff.filter(s => s.status === 'On Duty').length;
+
+        const mallData = {
+          totalRevenue: totalRev,
+          lowStockCount,
+          pendingPOCount,
+          staffOnDuty,
+          tenants: salesRows,
+          products: MallState.products,
+          purchaseOrders: MallState.purchaseOrders,
+          staff: MallState.staff
+        };
+
+        exportFullReportToPDF(mallData);
+        this.showToast('Full Mall Operations Report exported as PDF!', 'success');
+        this.renderExportCenter();
+      } catch (err) {
+        console.error('Full report export failed:', err);
+        this.showToast(`Export failed: ${err.message}`, 'error');
+        throw err;
+      }
+    }, {
+      loadingText: 'Generating PDF...',
+      successText: 'PDF Ready',
+      minLoadingMs: 500,
+      successMs: 800
+    });
   },
 
   handleClearExportHistory() {
@@ -7734,8 +7839,6 @@ window.MallApp = {
     const passwordInput = document.getElementById('loginPassword');
     const rememberInput = document.getElementById('loginRemember');
     const submitBtn = document.getElementById('loginSubmitBtn');
-    const submitText = document.getElementById('loginSubmitText');
-    const submitSpinner = document.getElementById('loginSubmitSpinner');
     const alertBox = document.getElementById('loginAlertError');
     const alertText = document.getElementById('loginAlertErrorText');
 
@@ -7751,48 +7854,48 @@ window.MallApp = {
     const password = passwordInput.value;
     const remember = rememberInput ? rememberInput.checked : false;
 
-    // Set loading state
-    if (submitBtn) submitBtn.disabled = true;
-    if (submitText) submitText.style.display = 'none';
-    if (submitSpinner) submitSpinner.style.display = 'inline-flex';
     if (alertBox) alertBox.style.display = 'none';
 
-    try {
-      const result = await authLogin(email, password, remember);
+    return withButtonFeedback(submitBtn, async () => {
+      try {
+        const result = await authLogin(email, password, remember);
 
-      if (result.success) {
-        this.updateUserProfile();
-        this.showToast(`Welcome back, ${result.user?.name || 'Alex'}!`, 'success');
+        if (result.success) {
+          this.updateUserProfile();
+          this.showToast(`Welcome back, ${result.user?.name || 'Alex'}!`, 'success');
 
-        // Redirect to intended route or default to /dashboard
-        let redirectTarget = '/dashboard';
-        try {
-          const saved = sessionStorage.getItem('mallmatrix_redirect_after_login');
-          if (saved && saved !== '/' && saved !== '/login') {
-            redirectTarget = saved;
-            sessionStorage.removeItem('mallmatrix_redirect_after_login');
+          // Redirect to intended route or default to /dashboard
+          let redirectTarget = '/dashboard';
+          try {
+            const saved = sessionStorage.getItem('mallmatrix_redirect_after_login');
+            if (saved && saved !== '/' && saved !== '/login') {
+              redirectTarget = saved;
+              sessionStorage.removeItem('mallmatrix_redirect_after_login');
+            }
+          } catch (err) {}
+
+          this.navigateRoute(redirectTarget);
+        } else {
+          if (alertBox) {
+            if (alertText) alertText.textContent = result.error || 'Incorrect email or password';
+            alertBox.style.display = 'flex';
           }
-        } catch (err) {}
-
-        this.navigateRoute(redirectTarget);
-      } else {
-        if (alertBox) {
-          if (alertText) alertText.textContent = result.error || 'Incorrect email or password';
+          throw new Error(result.error || 'Incorrect email or password');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        if (alertBox && alertBox.style.display !== 'flex') {
+          if (alertText) alertText.textContent = err.message || 'An unexpected error occurred. Please try again.';
           alertBox.style.display = 'flex';
         }
+        throw err;
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      if (alertBox) {
-        if (alertText) alertText.textContent = 'An unexpected error occurred. Please try again.';
-        alertBox.style.display = 'flex';
-      }
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-      if (submitText) submitText.style.display = 'inline-block';
-      if (submitSpinner) submitSpinner.style.display = 'none';
-      this.validateLoginForm();
-    }
+    }, {
+      loadingText: 'Signing in...',
+      successText: 'Welcome!',
+      minLoadingMs: 350,
+      successMs: 650
+    });
   },
 
   resetLoginForm() {
