@@ -228,7 +228,7 @@
   <div class="login-page-view" id="view-login" style="display: none;">
     <!-- TOP BAR -->
     <header class="login-top-bar" aria-label="Login Header">
-      <a href="/" class="login-brand" onclick="MallApp.navigateRoute('/', event)" title="MallMatrix Home">
+      <a href="/landing.html" class="login-brand" title="MallMatrix Home">
         <div class="login-brand-logo-wrap">
           <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="login-brand-logo-img">
         </div>
@@ -236,7 +236,7 @@
       </a>
 
       <div class="login-top-actions">
-        <a href="/" class="login-back-home-link" onclick="MallApp.navigateRoute('/', event)">
+        <a href="/landing.html" class="login-back-home-link">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -383,15 +383,14 @@
   <!-- ========================================================
        2. MAIN APP LAYOUT (Rendered at "/dashboard", "/inventory", etc.)
        ======================================================== -->
-  <div class="app-layout" id="appLayout">
+  <div class="app-layout" id="appLayout" style="display: none;">
     <!-- MOBILE OVERLAY BACKDROP -->
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <!-- ==================== SIDEBAR ==================== -->
     <aside class="sidebar" id="sidebar">
       <!-- SIDEBAR BRAND HEADER (Only Logo and Name) -->
-      <a href="/" class="sidebar-brand-header" title="Go to MallMatrix Landing Page"
-        onclick="MallApp.navigateRoute('/', event)">
+      <a href="/landing.html" class="sidebar-brand-header" title="Go to MallMatrix Landing Page">
         <div class="brand-logo-wrap">
           <img src="/mallmatrix_logo.jpg" alt="MallMatrix Logo" class="brand-logo-img">
         </div>
@@ -2814,17 +2813,45 @@
        3. 404 NOT FOUND VIEW (Rendered on unknown routes)
        ======================================================== -->
   <div class="not-found-view" id="view-not-found" style="display: none;">
+    <style>
+      .not-found-actions {
+        display: inline-flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .not-found-btn-secondary {
+        background-color: transparent !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
+      }
+      .not-found-btn-secondary:hover {
+        background-color: var(--surface-hover, rgba(255, 255, 255, 0.05)) !important;
+        border-color: var(--accent) !important;
+        color: var(--accent) !important;
+      }
+    </style>
     <div class="not-found-card">
       <div class="not-found-code">404</div>
       <h1 class="not-found-title">Page not found</h1>
       <p class="not-found-desc">The page you are looking for doesn't exist or has been moved.</p>
-      <a href="/dashboard" class="not-found-btn" onclick="MallApp.navigateRoute('/dashboard', event)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-        <span>Go to dashboard</span>
-      </a>
+      <div class="not-found-actions">
+        <a href="/dashboard" class="not-found-btn" onclick="MallApp.navigateRoute('/dashboard', event)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span>Go to dashboard</span>
+        </a>
+        <a href="/landing.html" class="not-found-btn not-found-btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Back to home</span>
+        </a>
+      </div>
     </div>
   </div>
 

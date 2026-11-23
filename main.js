@@ -572,10 +572,14 @@ window.MallApp = {
       } catch (e) {}
     }
 
-    let view = cleanPath;
+    let view = cleanPath.replace(/\.html$/, '');
     if (view === 'reordering') view = 'reorder';
     if (!view || view === 'landing' || view === 'home') {
-      view = 'landing';
+      window.location.replace('/landing.html');
+      return;
+    }
+    if (view === 'index') {
+      view = 'dashboard';
     }
 
     const PROTECTED_VIEWS = ['dashboard', 'inventory', 'reorder', 'sales', 'staff', 'tenants', 'export', 'copilot', 'profile', 'datalibrary'];
@@ -598,8 +602,13 @@ window.MallApp = {
   },
 
   checkRoute() {
+    const rawPath = (window.location.pathname || '').toLowerCase();
+    if (rawPath === '/landing.html' || rawPath.endsWith('/landing.html')) {
+      return;
+    }
+
     const hash = (window.location.hash || '').toLowerCase().replace('#', '').replace(/^\//, '');
-    let path = (window.location.pathname || '').toLowerCase().replace(/^\//, '');
+    let path = rawPath.replace(/^\//, '');
     if (path.endsWith('.html')) {
       path = path.replace(/\.html$/, '');
     }
@@ -617,10 +626,15 @@ window.MallApp = {
     } catch (e) {}
 
     const target = hash || path;
+
+    // Opening "/", "/home" or "/landing" in the browser redirects cleanly to /landing.html
+    if (target === '' || target === 'landing' || target === 'home') {
+      window.location.replace('/landing.html');
+      return;
+    }
+
     const ROUTE_MAP = {
-      '': 'landing',
-      'landing': 'landing',
-      'home': 'landing',
+      'index': 'dashboard',
       'login': 'login',
       'signin': 'login',
       'dashboard': 'dashboard',
@@ -647,12 +661,21 @@ window.MallApp = {
 
     // If user is not authenticated and attempts to access a protected view, redirect to /login
     if (PROTECTED_VIEWS.includes(resolved) && !isAuthenticated()) {
-      const returnPath = window.location.pathname || ('/' + (resolved === 'reorder' ? 'reordering' : resolved));
+      let returnPath = window.location.pathname || ('/' + (resolved === 'reorder' ? 'reordering' : resolved));
+      if (returnPath === '/index' || returnPath === '/index.html') {
+        returnPath = '/dashboard';
+      }
       try {
         sessionStorage.setItem('mallmatrix_redirect_after_login', returnPath);
       } catch (e) {}
       this.switchView('login', true);
       return;
+    }
+
+    if (target === 'index' && isAuthenticated()) {
+      try {
+        window.history.replaceState({ view: 'dashboard' }, '', '/dashboard');
+      } catch (e) {}
     }
 
     this.switchView(resolved, false);
@@ -682,16 +705,18 @@ window.MallApp = {
   },
 
   switchView(viewName, pushHistory = true) {
-    if (!viewName) viewName = 'landing';
+    if (!viewName || viewName === 'landing' || viewName === 'home') {
+      window.location.replace('/landing.html');
+      return;
+    }
+    if (viewName === 'index') viewName = 'dashboard';
     if (viewName === 'reordering') viewName = 'reorder';
     MallState.activeView = viewName;
 
     // Push state to browser history for native back/forward buttons and bookmarks
     if (pushHistory) {
       let routePath = '/dashboard';
-      if (viewName === 'landing') {
-        routePath = '/';
-      } else if (viewName === 'login') {
+      if (viewName === 'login') {
         routePath = '/login';
       } else if (viewName === 'reorder') {
         routePath = '/reordering';
@@ -719,16 +744,7 @@ window.MallApp = {
     const notFoundEl = document.getElementById('view-not-found');
     const floatingCopilotBtn = document.getElementById('floatingCopilotBtn');
 
-    if (viewName === 'landing') {
-      if (landingEl) landingEl.style.display = 'block';
-      if (loginEl) loginEl.style.display = 'none';
-      if (appLayoutEl) appLayoutEl.style.display = 'none';
-      if (notFoundEl) notFoundEl.style.display = 'none';
-      if (floatingCopilotBtn) floatingCopilotBtn.style.display = 'none';
-      document.title = "MallMatrix — Orchestrate Your Mall's Inventory Instantly and Effortlessly";
-      window.scrollTo(0, 0);
-      return;
-    }
+    if (landingEl) landingEl.style.display = 'none';
 
     if (viewName === 'login') {
       if (landingEl) landingEl.style.display = 'none';
